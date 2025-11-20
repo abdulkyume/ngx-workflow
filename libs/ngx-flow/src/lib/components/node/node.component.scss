@@ -1,0 +1,25 @@
+.ngx-flow__node {
+  cursor: grab;
+
+  &.selected .ngx-flow__node-rect {
+    stroke: var(--ngx-flow-selection-color, #1a192b);
+    stroke-width: 2px;
+  }
+
+  &.dragging {
+    cursor: grabbing;
+    opacity: 0.8;
+  }
+}
+
+.ngx-flow__node-rect {
+  fill: var(--ngx-flow-node-bg, #fff);
+  stroke: var(--ngx-flow-node-border, #1a192b);
+  stroke-width: 1.5px;
+}
+
+.ngx-flow__node-label {
+  font-family: sans-serif;
+  font-size: 14px;
+  fill: var(--ngx-flow-node-text-color, #333);
+}

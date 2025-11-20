@@ -1,0 +1,20 @@
+.ngx-flow__handle {
+  transform: translate(0, 0); /* Will be positioned dynamically by parent node */
+
+  &--source .ngx-flow__handle-circle {
+    fill: var(--ngx-flow-source-handle-color, #1a192b);
+    stroke: var(--ngx-flow-source-handle-border, #fff);
+    stroke-width: 1.5;
+  }
+
+  &--target .ngx-flow__handle-circle {
+    fill: var(--ngx-flow-target-handle-color, #1a192b);
+    stroke: var(--ngx-flow-target-handle-border, #fff);
+    stroke-width: 1.5;
+  }
+
+  &--valid-target .ngx-flow__handle-circle {
+    fill: var(--ngx-flow-handle-valid-target-color, #00ff00);
+    stroke: var(--ngx-flow-handle-valid-target-border, #007f00);
+  }
+}

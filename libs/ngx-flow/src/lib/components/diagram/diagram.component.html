@@ -1,0 +1,50 @@
+<svg
+  class="ngx-flow__diagram"
+  (wheel)="onWheel($event)"
+  (pointerdown)="onPointerDown($event)"
+  (pointermove)="onPointerMove($event)"
+  (pointerup)="onPointerUp($event)"
+  (pointerleave)="onPointerLeave($event)"
+>
+  <defs>
+    <pattern
+      id="ngx-flow__grid-pattern"
+      x="0"
+      y="0"
+      width="20"
+      height="20"
+      patternUnits="userSpaceOnUse"
+    >
+      <circle cx="0.5" cy="0.5" r="0.5" fill="#ccc" />
+    </pattern>
+  </defs>
+
+  <rect
+    width="100%"
+    height="100%"
+    fill="url(#ngx-flow__grid-pattern)"
+    class="ngx-flow__background"
+  />
+
+  <g class="ngx-flow__viewport" [attr.transform]="transform">
+    <g *ngFor="let edge of edges(); trackBy: trackByEdgeId">
+      <ngx-edge [edge]="edge"></ngx-edge>
+    </g>
+
+    <!-- Render temporary edges (previews) -->
+    <g *ngFor="let tempEdge of tempEdges(); trackBy: trackByEdgeId">
+      <ngx-edge [edge]="tempEdge" [isTemporary]="true"></ngx-edge>
+    </g>
+
+    <g *ngFor="let node of nodes(); trackBy: trackByNodeId">
+      <ngx-node [node]="node"></ngx-node>
+    </g>
+    <!-- Lasso Selection Rectangle -->
+    <rect *ngIf="isSelecting"
+          [attr.x]="selectionStart.x < selectionEnd.x ? selectionStart.x : selectionEnd.x"
+          [attr.y]="selectionStart.y < selectionEnd.y ? selectionStart.y : selectionEnd.y"
+          [attr.width]="Math.abs(selectionEnd.x - selectionStart.x)"
+          [attr.height]="Math.abs(selectionEnd.y - selectionStart.y)"
+          class="ngx-flow__selection-box"></rect>
+  </g>
+</svg>

@@ -1,0 +1,29 @@
+.ngx-flow__edge-path {
+  stroke: var(--ngx-flow-edge-color, #b1b1b7);
+  stroke-width: 2;
+  fill: none;
+  pointer-events: none; /* Make path non-interactive to rely on hitbox */
+}
+
+.ngx-flow__edge-hitbox {
+  stroke: transparent;
+  stroke-width: 20; /* Invisible wider path for easier clicking */
+  fill: none;
+  cursor: pointer;
+  stroke-linecap: round;
+}
+
+.ngx-flow__edge.selected .ngx-flow__edge-path {
+  stroke: var(--ngx-flow-selection-color, #1a192b);
+}
+
+.ngx-flow__edge.animated .ngx-flow__edge-path {
+  stroke-dasharray: 5 5;
+  animation: dash 1s linear infinite;
+}
+
+@keyframes dash {
+  to {
+    stroke-dashoffset: -100;
+  }
+}

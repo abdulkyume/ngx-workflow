@@ -1,0 +1,10 @@
+<svg:g
+  class="ngx-flow__edge"
+  [class.selected]="edge.selected"
+  [class.animated]="edge.animated"
+  (click)="onClick($event)"
+  (contextmenu)="onContextMenu($event)"
+>
+  <svg:path class="ngx-flow__edge-path" [attr.d]="path()"></svg:path>
+  <svg:path class="ngx-flow__edge-hitbox" [attr.d]="path()"></svg:path>
+</svg:g>

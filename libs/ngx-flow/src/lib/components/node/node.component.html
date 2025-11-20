@@ -1,0 +1,58 @@
+<svg:g
+  class="ngx-flow__node"
+  [class.selected]="node.selected"
+  [class.dragging]="node.dragging"
+  [attr.transform]="'translate(' + node.position.x + ',' + node.position.y + ')'"
+>
+  <!-- Node outline and background handled by the wrapper -->
+  <svg:rect
+    [attr.width]="node.width || defaultWidth"
+    [attr.height]="node.height || defaultHeight"
+    rx="3"
+    ry="3"
+    class="ngx-flow__node-rect"
+  ></svg:rect>
+
+  <!-- Dynamic content for custom nodes using ngComponentOutlet -->
+  <ng-container *ngIf="customNodeComponent; else defaultNodeContent">
+    <ng-container
+      *ngComponentOutlet="customNodeComponent; inputs: { node: node }"
+    ></ng-container>
+  </ng-container>
+
+  <ng-template #defaultNodeContent>
+    <svg:text x="85" y="30" text-anchor="middle" alignment-baseline="middle" class="ngx-flow__node-label">
+      {{ node.data?.label || node.id }}
+    </svg:text>
+  </ng-template>
+
+  <!-- Node handles are components, they will have their own svg namespacing -->
+  <ngx-handle
+    [nodeId]="node.id"
+    id="top"
+    type="source"
+    position="top"
+    [style.transform]="'translate(' + (node.width || defaultWidth) / 2 + 'px, 0px)'"
+  ></ngx-handle>
+  <ngx-handle
+    [nodeId]="node.id"
+    id="right"
+    type="source"
+    position="right"
+    [style.transform]="'translate(' + (node.width || defaultWidth) + 'px, ' + (node.height || defaultHeight) / 2 + 'px)'"
+  ></ngx-handle>
+  <ngx-handle
+    [nodeId]="node.id"
+    id="bottom"
+    type="source"
+    position="bottom"
+    [style.transform]="'translate(' + (node.width || defaultWidth) / 2 + 'px, ' + (node.height || defaultHeight) + 'px)'"
+  ></ngx-handle>
+  <ngx-handle
+    [nodeId]="node.id"
+    id="left"
+    type="source"
+    position="left"
+    [style.transform]="'translate(0px, ' + (node.height || defaultHeight) / 2 + 'px)'"
+  ></ngx-handle>
+</svg:g>

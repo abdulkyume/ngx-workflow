@@ -1,0 +1,89 @@
+body {
+  margin: 0;
+  font-family: sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+:root {
+  /* Default light theme variables */
+  --ngx-flow-selection-color: #1a192b;
+  --ngx-flow-node-bg: #ffffff;
+  --ngx-flow-node-border: #1a192b;
+  --ngx-flow-node-text-color: #333333;
+  --ngx-flow-edge-color: #b1b1b7;
+  --ngx-flow-source-handle-color: #1a192b;
+  --ngx-flow-source-handle-border: #ffffff;
+  --ngx-flow-target-handle-color: #1a192b;
+  --ngx-flow-target-handle-border: #ffffff;
+  --ngx-flow-handle-valid-target-color: #00ff00;
+  --ngx-flow-handle-valid-target-border: #007f00;
+  --ngx-flow-background-color: #f8f8f8;
+}
+
+/* Dark mode (optional - can be toggled by a class on body/html) */
+/*
+body.dark-mode {
+  --ngx-flow-selection-color: #c9c9c9;
+  --ngx-flow-node-bg: #333333;
+  --ngx-flow-node-border: #eeeeee;
+  --ngx-flow-node-text-color: #ffffff;
+  --ngx-flow-edge-color: #777777;
+  --ngx-flow-source-handle-color: #c9c9c9;
+  --ngx-flow-source-handle-border: #333333;
+  --ngx-flow-target-handle-color: #c9c9c9;
+  --ngx-flow-target-handle-border: #333333;
+  --ngx-flow-handle-valid-target-color: #008000;
+  --ngx-flow-handle-valid-target-border: #004000;
+  --ngx-flow-background-color: #1a192b;
+}
+*/
+
+.header {
+  padding: 10px 20px;
+  background-color: #f0f0f0;
+  border-bottom: 1px solid #ddd;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 24px;
+  color: #333;
+}
+
+.controls button {
+  margin-left: 10px;
+  padding: 8px 15px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #fff;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.controls button:hover {
+  background-color: #e0e0e0;
+}
+
+.flow-container {
+  height: calc(100vh - 100px); /* Adjust based on header/footer height */
+  width: 100%;
+}
+
+.flow-diagram {
+  width: 100%;
+  height: 100%;
+  border: 1px solid #ccc;
+}
+
+.footer {
+  padding: 10px 20px;
+  background-color: #f0f0f0;
+  border-top: 1px solid #ddd;
+  text-align: center;
+  font-size: 14px;
+  color: #666;
+}
