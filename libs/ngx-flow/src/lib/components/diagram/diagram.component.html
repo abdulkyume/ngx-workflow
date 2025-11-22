@@ -1,25 +1,26 @@
-<svg
-  #svg
-  class="ngx-flow__diagram"
-  (wheel)="onWheel($event)"
-  (pointerdown)="onPointerDown($event)"
-  (pointermove)="onPointerMove($event)"
-  (pointerup)="onPointerUp($event)"
-  (pointerleave)="onPointerLeave($event)"
->
-  <defs>
-    <pattern
-      id="ngx-flow__grid-pattern"
-      x="0"
-      y="0"
-      width="20"
-      height="20"
-      patternUnits="userSpaceOnUse"
-    >
-      <circle cx="0.5" cy="0.5" r="0.5" fill="#ccc" />
-    </pattern>
+<div class="ngx-flow__container">
+  <svg
+    #svg
+    class="ngx-flow__diagram"
+    (wheel)="onWheel($event)"
+    (pointerdown)="onPointerDown($event)"
+    (pointermove)="onPointerMove($event)"
+    (pointerup)="onPointerUp($event)"
+    (pointerleave)="onPointerLeave($event)"
+  >
+    <defs>
+      <pattern
+        id="ngx-flow__grid-pattern"
+        x="0"
+        y="0"
+        width="20"
+        height="20"
+        patternUnits="userSpaceOnUse"
+      >
+        <circle cx="0.5" cy="0.5" r="0.5" fill="#ccc" />
+      </pattern>
 
-    <!-- Edge Markers -->
+      <!-- Edge Markers -->
     <!-- Arrow marker -->
     <marker
       id="ngx-flow__arrow"
@@ -207,3 +208,14 @@
     </g>
   </g>
 </svg>
+
+<!-- Zoom Controls (outside SVG for better event handling) -->
+<ngx-zoom-controls
+  *ngIf="showZoomControls"
+  [zoom]="viewport().zoom"
+  (zoomIn)="zoomIn()"
+  (zoomOut)="zoomOut()"
+  (fitView)="fitView()"
+  (resetZoom)="resetZoom()"
+></ngx-zoom-controls>
+</div>

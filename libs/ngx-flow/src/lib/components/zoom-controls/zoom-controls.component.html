@@ -1,0 +1,46 @@
+<div class="ngx-flow__zoom-controls">
+  <button 
+    class="ngx-flow__zoom-button" 
+    (click)="onZoomIn()"
+    [disabled]="zoom >= maxZoom"
+    title="Zoom In"
+  >
+    <svg width="16" height="16" viewBox="0 0 16 16">
+      <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" fill="none"/>
+    </svg>
+  </button>
+  
+  <button 
+    class="ngx-flow__zoom-button" 
+    (click)="onZoomOut()"
+    [disabled]="zoom <= minZoom"
+    title="Zoom Out"
+  >
+    <svg width="16" height="16" viewBox="0 0 16 16">
+      <path d="M3 8h10" stroke="currentColor" stroke-width="2" fill="none"/>
+    </svg>
+  </button>
+  
+  <button 
+    class="ngx-flow__zoom-button" 
+    (click)="onFitView()"
+    title="Fit View"
+  >
+    <svg width="16" height="16" viewBox="0 0 16 16">
+      <rect x="2" y="2" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none"/>
+      <path d="M5 5L11 11M11 5L5 11" stroke="currentColor" stroke-width="1.5"/>
+    </svg>
+  </button>
+  
+  <button 
+    class="ngx-flow__zoom-button" 
+    (click)="onResetZoom()"
+    title="Reset Zoom (100%)"
+  >
+    <svg width="16" height="16" viewBox="0 0 16 16">
+      <text x="8" y="12" text-anchor="middle" font-size="10" fill="currentColor">1:1</text>
+    </svg>
+  </button>
+  
+  <div class="ngx-flow__zoom-level">{{ zoomPercent }}%</div>
+</div>

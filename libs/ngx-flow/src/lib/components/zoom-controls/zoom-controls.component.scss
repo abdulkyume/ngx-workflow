@@ -1,0 +1,60 @@
+.ngx-flow__zoom-controls {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--ngx-flow-zoom-controls-bg, #fff);
+  border: 1px solid var(--ngx-flow-zoom-controls-border, #ddd);
+  border-radius: 8px;
+  padding: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  user-select: none;
+}
+
+.ngx-flow__zoom-button {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ngx-flow-zoom-button-bg, #f5f5f5);
+  border: 1px solid var(--ngx-flow-zoom-button-border, #ddd);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--ngx-flow-zoom-button-color, #333);
+  padding: 0;
+
+  &:hover:not(:disabled) {
+    background: var(--ngx-flow-zoom-button-hover-bg, #e8e8e8);
+    border-color: var(--ngx-flow-zoom-button-hover-border, #bbb);
+  }
+
+  &:active:not(:disabled) {
+    background: var(--ngx-flow-zoom-button-active-bg, #ddd);
+    transform: scale(0.95);
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  svg {
+    display: block;
+  }
+}
+
+.ngx-flow__zoom-level {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ngx-flow-zoom-level-color, #666);
+  padding: 4px 0;
+  border-top: 1px solid var(--ngx-flow-zoom-controls-border, #ddd);
+  margin-top: 4px;
+  min-width: 40px;
+}

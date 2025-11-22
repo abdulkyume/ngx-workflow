@@ -7,6 +7,7 @@ import { NGX_FLOW_NODE_TYPES } from '../../injection-tokens';
 import { NodeComponentType } from '../../types';
 import { getBezierPath, getStraightPath, getStepPath } from '../../utils';
 import { v4 as uuidv4 } from 'uuid';
+import { ZoomControlsComponent } from '../zoom-controls/zoom-controls.component';
 
 // Helper function to get a node from the array
 function getNode(id: string, nodes: Node[]): Node | undefined {
@@ -53,7 +54,7 @@ function getHandleAbsolutePosition(node: Node, handleId: string | undefined): XY
   styleUrls: ['./diagram.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true,
-  imports: [CommonModule, NgComponentOutlet]
+  imports: [CommonModule, NgComponentOutlet, ZoomControlsComponent]
 })
 export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   @ViewChild('svg', { static: true }) svgRef!: ElementRef<SVGSVGElement>;
@@ -62,6 +63,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   @Input() initialNodes: Node[] = [];
   @Input() initialEdges: Edge[] = [];
   @Input() initialViewport?: Viewport;
+  @Input() showZoomControls: boolean = true;
 
   // Output events
   @Output() nodeClick = new EventEmitter<Node>();
@@ -629,7 +631,68 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
       return null;
   }
 
+  zoomIn(): void {
+    const currentViewport = this.viewport();
+    const newZoom = Math.min(currentViewport.zoom * 1.2, 10);
+    this.diagramStateService.setViewport({
+      ...currentViewport,
+      zoom: newZoom
+    });
+  }
+
+  zoomOut(): void {
+    const currentViewport = this.viewport();
+    const newZoom = Math.max(currentViewport.zoom / 1.2, 0.1);
+    this.diagramStateService.setViewport({
+      ...currentViewport,
+      zoom: newZoom
+    });
+  }
+
+  resetZoom(): void {
+    const currentViewport = this.viewport();
+    this.diagramStateService.setViewport({
+      ...currentViewport,
+      zoom: 1
+    });
+  }
+
   fitView(): void {
-    console.log('fitView not yet implemented');
+    const nodes = this.nodes();
+    if (nodes.length === 0) return;
+
+    // Calculate bounds of all nodes
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+
+    nodes.forEach(node => {
+      const width = node.width || this.defaultNodeWidth;
+      const height = node.height || this.defaultNodeHeight;
+      
+      minX = Math.min(minX, node.position.x);
+      minY = Math.min(minY, node.position.y);
+      maxX = Math.max(maxX, node.position.x + width);
+      maxY = Math.max(maxY, node.position.y + height);
+    });
+
+    const boundsWidth = maxX - minX;
+    const boundsHeight = maxY - minY;
+
+    // Get SVG dimensions
+    const svgRect = this.svgRef.nativeElement.getBoundingClientRect();
+    const padding = 50; // Padding around nodes
+
+    // Calculate zoom to fit
+    const zoomX = (svgRect.width - padding * 2) / boundsWidth;
+    const zoomY = (svgRect.height - padding * 2) / boundsHeight;
+    const zoom = Math.min(zoomX, zoomY, 2); // Max zoom of 2x for fit view
+
+    // Calculate center position
+    const x = (svgRect.width - boundsWidth * zoom) / 2 - minX * zoom;
+    const y = (svgRect.height - boundsHeight * zoom) / 2 - minY * zoom;
+
+    this.diagramStateService.setViewport({ x, y, zoom });
   }
 }
