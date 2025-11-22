@@ -1,50 +1,288 @@
 # ngx-flow
 
-`ngx-flow` is a powerful and flexible open-source diagramming library for Angular 20+, inspired by React Flow. It enables you to create interactive flowcharts, node-based editors, and other diagramming tools with ease, leveraging SVG for rendering, Angular Signals for state management, and a clean TypeScript architecture.
+An Angular library for building interactive workflow diagrams with drag-and-drop nodes and connectable edges.
 
 ## Features
 
--   **SVG Rendering:** High-performance, scalable vector graphics for crisp diagrams.
--   **Angular Signals:** Modern state management for reactive and efficient updates.
--   **Custom Nodes & Edges:** Easily extendable architecture to define your own node and edge components.
--   **Pluggable Layouts:** Integrate with popular graph layout algorithms like Dagre and ELK.
--   **Interactive Elements:** Dragging nodes, panning and zooming the canvas, connectable handles for creating edges.
--   **Lasso Selection:** Select multiple nodes with a drag-and-drop rectangle.
--   **Undo/Redo:** Built-in history management for operations.
--   **TypeScript:** Fully typed and designed for Angular best practices.
--   **OnPush Strategy:** Optimized change detection for performance.
+- 🎯 **Drag & Drop Nodes** - Reposition nodes by dragging
+- 🔗 **Connect Edges** - Connect nodes via handles with bezier/straight/step paths
+- 🔍 **Pan & Zoom** - Navigate large diagrams with mouse wheel zoom and canvas panning
+- 🎨 **Customizable** - Style nodes and edges via CSS variables or custom components
+- ↩️ **Undo/Redo** - Full undo/redo support for all diagram changes
+- ⌨️ **Keyboard Shortcuts** - Delete, undo (Ctrl+Z), redo (Ctrl+Shift+Z)
+- 📦 **Lasso Selection** - Select multiple nodes (Shift + drag)
 
 ## Installation
 
-To get started with `ngx-flow`, follow the detailed installation instructions.
+```bash
+npm install ngx-flow
+```
 
-[Read the Installation Guide](INSTALLATION.md)
+## Quick Start
 
-## Basic Usage
+### Declarative Approach (Recommended)
 
-Learn how to integrate `ngx-flow` into your Angular application and create your first diagram.
+Use `@Input()` and `@Output()` properties for a more Angular-friendly, template-driven approach:
 
-[Read the Usage Guide](USAGE.md)
+```typescript
+import { Component } from '@angular/core';
+import { Node, Edge } from 'ngx-flow';
 
-## Advanced Usage
+@Component({
+  selector: 'app-workflow',
+  template: `
+    <div style="width: 100%; height: 600px;">
+      <ngx-diagram
+        [initialNodes]="nodes"
+        [initialEdges]="edges"
+        (nodeClick)="onNodeClick($event)"
+        (connect)="onConnect($event)"
+      ></ngx-diagram>
+    </div>
+  `
+})
+export class WorkflowComponent {
+  nodes: Node[] = [
+    {
+      id: '1',
+      position: { x: 50, y: 50 },
+      data: { label: 'Start' },
+      draggable: true
+    },
+    {
+      id: '2',
+      position: { x: 300, y: 50 },
+      data: { label: 'Process' },
+      draggable: true
+    }
+  ];
 
--   **Custom Nodes & Edges:** Extend the library with your own visual components.
-    [Read the Custom Nodes & Edges Guide](CUSTOM_NODES_EDGES.md)
--   **Layouts:** Apply automatic graph layouts to arrange your nodes.
-    [Read the Layout Guide](LAYOUT.md)
+  edges: Edge[] = [
+    {
+      id: 'e1',
+      source: '1',
+      sourceHandle: 'right',
+      target: '2',
+      targetHandle: 'left',
+      type: 'bezier'
+    }
+  ];
+
+  onNodeClick(node: Node) {
+    console.log('Node clicked:', node);
+  }
+
+  onConnect(connection: { source: string; target: string }) {
+    console.log('New connection:', connection);
+    // Add new edge to your data
+    this.edges = [...this.edges, {
+      id: Date.now().toString(),
+      ...connection,
+      type: 'bezier'
+    }];
+  }
+}
+```
+
+### Imperative Approach (Service Injection)
+
+Use `DiagramStateService` for programmatic control:
+
+```typescript
+import { NgxFlowModule } from 'ngx-flow';
+
+@NgModule({
+  imports: [NgxFlowModule],
+})
+export class AppModule {}
+```
+
+### 2. Use the Component
+
+```typescript
+import { Component } from '@angular/core';
+import { DiagramStateService } from 'ngx-flow';
+
+@Component({
+  selector: 'app-workflow',
+  template: `
+    <div style="width: 100%; height: 600px;">
+      <ngx-diagram></ngx-diagram>
+    </div>
+    <button (click)="addNode()">Add Node</button>
+  `
+})
+export class WorkflowComponent {
+  constructor(private diagramState: DiagramStateService) {
+    // Add initial nodes
+    this.diagramState.addNode({
+      id: '1',
+      position: { x: 50, y: 50 },
+      data: { label: 'Start' },
+      draggable: true,
+      width: 170,
+      height: 60
+    });
+
+    this.diagramState.addNode({
+      id: '2',
+      position: { x: 300, y: 50 },
+      data: { label: 'Process' },
+      draggable: true,
+      width: 170,
+      height: 60
+    });
+
+    // Add an edge
+    this.diagramState.addEdge({
+      id: 'e1',
+      source: '1',
+      sourceHandle: 'right',
+      target: '2',
+      targetHandle: 'left',
+      type: 'bezier'
+    });
+  }
+
+  addNode() {
+    this.diagramState.addNode({
+      id: Date.now().toString(),
+      position: { x: 200, y: 200 },
+      data: { label: 'New Node' },
+      draggable: true
+    });
+  }
+}
+```
 
 ## API Reference
 
-Explore the full API of `ngx-flow` components, services, and interfaces.
+### DiagramComponent
 
-[Read the API Reference](API_REFERENCE.md)
+#### Inputs
 
-## Contributing
+- `[initialNodes]` - Initial array of nodes to display
+- `[initialEdges]` - Initial array of edges to display
+- `[initialViewport]` - Initial viewport state `{ x: number, y: number, zoom: number }`
 
-We welcome contributions! Please read our guidelines to help us improve `ngx-flow`.
+#### Outputs
 
-[Read the Contributing Guide](CONTRIBUTING.md)
+- `(nodeClick)` - Emitted when a node is clicked. Payload: `Node`
+- `(edgeClick)` - Emitted when an edge is clicked. Payload: `Edge`
+- `(connect)` - Emitted when a new edge is created. Payload: `{ source: string, sourceHandle?: string, target: string, targetHandle?: string }`
+- `(nodesChange)` - Emitted when nodes change. Payload: `Node[]`
+- `(edgesChange)` - Emitted when edges change. Payload: `Edge[]`
+
+### DiagramStateService
+
+The main service for managing diagram state.
+
+#### Methods
+
+- `addNode(node: Node): void` - Add a new node
+- `removeNode(nodeId: string): void` - Remove a node
+- `moveNode(nodeId: string, position: XYPosition): void` - Move a node
+- `addEdge(edge: Edge): void` - Add a new edge
+- `removeEdge(edgeId: string): void` - Remove an edge
+- `selectNodes(nodeIds: string[], append?: boolean): void` - Select nodes
+- `undo(): void` - Undo last change
+- `redo(): void` - Redo last undone change
+
+#### Signals
+
+- `nodes()` - Current nodes array
+- `edges()` - Current edges array
+- `viewport()` - Current viewport state (x, y, zoom)
+
+#### Events
+
+- `nodeClick` - Emitted when a node is clicked
+- `edgeClick` - Emitted when an edge is clicked
+- `connect` - Emitted when a new edge is created
+- `nodesChange` - Emitted when nodes change
+- `edgesChange` - Emitted when edges change
+
+### Node Interface
+
+```typescript
+interface Node {
+  id: string;
+  position: { x: number; y: number };
+  data?: any;
+  width?: number;  // Default: 170
+  height?: number; // Default: 60
+  selected?: boolean;
+  dragging?: boolean;
+  draggable?: boolean; // Default: true
+  type?: string;
+}
+```
+
+### Edge Interface
+
+```typescript
+interface Edge {
+  id: string;
+  source: string;
+  sourceHandle?: string; // 'top' | 'right' | 'bottom' | 'left'
+  target: string;
+  targetHandle?: string; // 'top' | 'right' | 'bottom' | 'left'
+  type?: 'bezier' | 'straight' | 'step'; // Default: 'bezier'
+  animated?: boolean;
+  style?: { [key: string]: any };
+}
+```
+
+## Interactions
+
+### Node Dragging
+- Click and drag on a node's body to move it
+- Nodes must have `draggable: true` to be draggable
+
+### Creating Edges
+1. Click on a handle (small blue circle at node edges)
+2. Drag to another node's handle
+3. Release to create the connection
+
+### Panning
+- Click and drag on empty canvas to pan
+- Or use middle mouse button
+
+### Zooming
+- Use mouse wheel to zoom in/out
+- Zoom is centered on mouse position
+
+### Selection
+- Click a node to select it
+- Ctrl/Cmd + click to add to selection
+- Shift + drag on canvas for lasso selection
+- Press Delete to remove selected nodes/edges
+
+### Undo/Redo
+- Ctrl/Cmd + Z to undo
+- Ctrl/Cmd + Shift + Z to redo
+
+## Customization
+
+### CSS Variables
+
+```css
+:root {
+  --ngx-flow-node-bg: #fff;
+  --ngx-flow-node-border: #1a192b;
+  --ngx-flow-node-text-color: #333;
+  --ngx-flow-source-handle-color: #1a192b;
+  --ngx-flow-source-handle-border: #fff;
+  --ngx-flow-handle-valid-target-color: #00ff00;
+  --ngx-flow-edge-stroke: #b1b1b7;
+  --ngx-flow-edge-stroke-selected: #555;
+}
+```
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT
+
+## Contributing
+
+Contributions are welcome! Please open an issue or submit a pull request.

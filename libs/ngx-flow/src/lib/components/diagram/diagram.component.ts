@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, ElementRef, OnInit, Renderer2, NgZone, OnDestroy, HostListener, WritableSignal, Inject, Optional, computed, ViewChild } from '@angular/core';
+import { Component, ChangeDetectionStrategy, ElementRef, OnInit, Renderer2, NgZone, OnDestroy, HostListener, WritableSignal, Inject, Optional, computed, ViewChild, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule, NgComponentOutlet } from '@angular/common';
 import { DiagramStateService } from '../../services/diagram-state.service';
 import { Viewport, XYPosition, Node, Edge, TempEdge } from '../../models';
@@ -55,8 +55,20 @@ function getHandleAbsolutePosition(node: Node, handleId: string | undefined): XY
   standalone: true,
   imports: [CommonModule, NgComponentOutlet]
 })
-export class DiagramComponent implements OnInit, OnDestroy {
+export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   @ViewChild('svg', { static: true }) svgRef!: ElementRef<SVGSVGElement>;
+
+  // Input properties for declarative usage
+  @Input() initialNodes: Node[] = [];
+  @Input() initialEdges: Edge[] = [];
+  @Input() initialViewport?: Viewport;
+
+  // Output events
+  @Output() nodeClick = new EventEmitter<Node>();
+  @Output() edgeClick = new EventEmitter<Edge>();
+  @Output() connect = new EventEmitter<{ source: string; sourceHandle?: string; target: string; targetHandle?: string }>();
+  @Output() nodesChange = new EventEmitter<Node[]>();
+  @Output() edgesChange = new EventEmitter<Edge[]>();
 
   viewport!: WritableSignal<Viewport>;
   nodes!: WritableSignal<Node[]>;
@@ -106,6 +118,53 @@ export class DiagramComponent implements OnInit, OnDestroy {
     this.nodes = this.diagramStateService.nodes;
     this.edges = this.diagramStateService.edges;
     this.tempEdges = this.diagramStateService.tempEdges;
+
+    // Set initial data if provided
+    if (this.initialNodes.length > 0) {
+      this.initialNodes.forEach(node => this.diagramStateService.addNode(node));
+    }
+    if (this.initialEdges.length > 0) {
+      this.initialEdges.forEach(edge => this.diagramStateService.addEdge(edge));
+    }
+    if (this.initialViewport) {
+      this.diagramStateService.setViewport(this.initialViewport);
+    }
+
+    // Subscribe to state changes and emit events
+    this.subscriptions.add(
+      this.diagramStateService.nodeClick.subscribe((node: Node) => this.nodeClick.emit(node))
+    );
+    this.subscriptions.add(
+      this.diagramStateService.edgeClick.subscribe((edge: Edge) => this.edgeClick.emit(edge))
+    );
+    this.subscriptions.add(
+      this.diagramStateService.connect.subscribe((connection) => this.connect.emit(connection))
+    );
+    this.subscriptions.add(
+      this.diagramStateService.nodesChange.subscribe((nodes: Node[]) => this.nodesChange.emit(nodes))
+    );
+    this.subscriptions.add(
+      this.diagramStateService.edgesChange.subscribe((edges: Edge[]) => this.edgesChange.emit(edges))
+    );
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    // Handle changes to input properties after initialization
+    if (changes['initialNodes'] && !changes['initialNodes'].firstChange) {
+      // Clear existing nodes and add new ones
+      const currentNodes = this.nodes();
+      currentNodes.forEach(node => this.diagramStateService.removeNode(node.id));
+      this.initialNodes.forEach(node => this.diagramStateService.addNode(node));
+    }
+    if (changes['initialEdges'] && !changes['initialEdges'].firstChange) {
+      // Clear existing edges and add new ones
+      const currentEdges = this.edges();
+      currentEdges.forEach(edge => this.diagramStateService.removeEdge(edge.id));
+      this.initialEdges.forEach(edge => this.diagramStateService.addEdge(edge));
+    }
+    if (changes['initialViewport'] && !changes['initialViewport'].firstChange && this.initialViewport) {
+      this.diagramStateService.setViewport(this.initialViewport);
+    }
   }
 
   ngOnDestroy(): void {
@@ -170,21 +229,16 @@ export class DiagramComponent implements OnInit, OnDestroy {
 
   onPointerDown(event: PointerEvent): void {
     let targetElement = event.target as Element;
-    console.log('onPointerDown', { target: targetElement, tagName: targetElement.tagName, className: targetElement.className });
 
     let handleElement = targetElement.closest('.ngx-flow__handle') as HTMLElement;
     const nodeElement = targetElement.closest('.ngx-flow__node') as HTMLElement;
 
-    console.log('Element detection', { handleElement, nodeElement });
-
     if (event.button !== 0) return;
 
     if (handleElement && handleElement.dataset['type'] === 'source') {
-        console.log('Starting connection');
         // Start Connecting
         this.startConnecting(event, handleElement);
     } else if (nodeElement) {
-        console.log('Starting dragging node');
         // Start Dragging Node
         const nodeId = nodeElement.dataset['id'];
         const node = this.nodes().find(n => n.id === nodeId);
@@ -197,7 +251,6 @@ export class DiagramComponent implements OnInit, OnDestroy {
              this.diagramStateService.selectNodes([node.id], event.ctrlKey || event.metaKey || event.shiftKey);
         }
     } else {
-        console.log('No node or handle detected, checking canvas');
         // Pan or Select
          const isClickingOnCanvas = targetElement === this.svgRef.nativeElement || targetElement.classList.contains('ngx-flow__background');
          if (isClickingOnCanvas) {
@@ -253,8 +306,6 @@ export class DiagramComponent implements OnInit, OnDestroy {
       const nodeId = handleElement.dataset['nodeid'];
       const handleId = handleElement.dataset['handleid'];
 
-      console.log('startConnecting', { nodeId, handleId });
-
       if (!nodeId) return;
 
       this.connectingSourceNodeId = nodeId;
@@ -285,7 +336,6 @@ export class DiagramComponent implements OnInit, OnDestroy {
         targetX: sourceX,
         targetY: sourceY,
       };
-      console.log('Adding temp edge', newTempEdge);
       this.diagramStateService.addTempEdge(newTempEdge);
   }
 
@@ -307,13 +357,6 @@ export class DiagramComponent implements OnInit, OnDestroy {
         const elementUnderMouse = document.elementFromPoint(event.clientX, event.clientY);
         const closestHandle = elementUnderMouse?.closest('.ngx-flow__handle') as HTMLElement;
 
-        console.log('updateConnection', { 
-          elementUnderMouse: elementUnderMouse?.tagName, 
-          closestHandle: closestHandle ? 'found' : 'null',
-          nodeId: closestHandle?.dataset['nodeid'],
-          handleId: closestHandle?.dataset['handleid']
-        });
-
         this.clearTargetHandleHighlight();
 
         if (closestHandle) {
@@ -322,11 +365,9 @@ export class DiagramComponent implements OnInit, OnDestroy {
 
           // Allow connecting to any handle on a different node
           if (targetNodeId && targetNodeId !== this.connectingSourceNodeId) {
-            console.log('Valid target handle found!', { targetNodeId, targetHandleId });
             this.currentTargetHandle = { nodeId: targetNodeId, handleId: targetHandleId, type: 'target' };
             this.renderer.addClass(closestHandle, 'ngx-flow__handle--valid-target');
           } else {
-            console.log('Same node or no nodeId');
             this.currentTargetHandle = null;
           }
         } else {
@@ -339,12 +380,6 @@ export class DiagramComponent implements OnInit, OnDestroy {
       event.stopPropagation();
       event.preventDefault();
 
-      console.log('finishConnecting', { 
-        currentTargetHandle: this.currentTargetHandle, 
-        connectingSourceNodeId: this.connectingSourceNodeId,
-        currentPreviewEdgeId: this.currentPreviewEdgeId 
-      });
-
       this.isConnecting = false;
       this.svgRef.nativeElement.releasePointerCapture(event.pointerId);
       this.clearTargetHandleHighlight();
@@ -354,12 +389,6 @@ export class DiagramComponent implements OnInit, OnDestroy {
       }
 
       if (this.currentTargetHandle && this.connectingSourceNodeId) {
-        console.log('Creating edge', {
-          source: this.connectingSourceNodeId,
-          sourceHandle: this.connectingSourceHandleId,
-          target: this.currentTargetHandle.nodeId,
-          targetHandle: this.currentTargetHandle.handleId
-        });
         const newEdge: Edge = {
           id: uuidv4(),
           source: this.connectingSourceNodeId,
@@ -369,8 +398,6 @@ export class DiagramComponent implements OnInit, OnDestroy {
           type: 'bezier',
         };
         this.diagramStateService.addEdge(newEdge);
-      } else {
-        console.log('No valid target handle, edge not created');
       }
 
       this.currentPreviewEdgeId = null;
