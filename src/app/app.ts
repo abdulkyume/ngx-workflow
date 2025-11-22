@@ -125,4 +125,39 @@ export class App implements OnInit {
   get edgesCount(): number {
     return this.edges.length;
   }
+  // Export the current diagram state as JSON and trigger download
+  exportJSON(): void {
+    const diagramState = {
+      nodes: this.nodes,
+      edges: this.edges,
+      viewport: this.viewport,
+    };
+    const jsonStr = JSON.stringify(diagramState, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'diagram.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // Import diagram state from a selected JSON file
+  importJSON(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files?.length) return;
+    const file = input.files[0];
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(reader.result as string);
+        if (parsed.nodes) this.nodes = parsed.nodes;
+        if (parsed.edges) this.edges = parsed.edges;
+        if (parsed.viewport) this.viewport = parsed.viewport;
+      } catch (e) {
+        console.error('Failed to parse diagram JSON', e);
+      }
+    };
+    reader.readAsText(file);
+  }
 }

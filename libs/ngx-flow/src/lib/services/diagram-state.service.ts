@@ -89,7 +89,27 @@ export class DiagramStateService {
       viewport: { ...this.viewport() },
     };
   }
+  // Public method to retrieve the current diagram state (for export)
+  getDiagramState(): DiagramState {
+    return this.getCurrentState();
+  }
 
+  /**
+   * Replace the entire diagram state (nodes, edges, viewport) with the given state.
+   * Used for importing diagram JSON.
+   */
+  setDiagramState(state: DiagramState): void {
+    // Save current state for undo
+    this.undoRedoService.saveState(this.getCurrentState());
+    // Replace signals
+    this.nodes.set(state.nodes.map(n => ({ ...n, selected: false, dragging: false, draggable: true })));
+    this.edges.set(state.edges.map(e => ({ ...e, selected: false })));
+    this.viewport.set(state.viewport);
+    // Emit changes
+    this.nodesChange.emit(this.nodes());
+    this.edgesChange.emit(this.edges());
+    this.viewportChange.emit(this.viewport());
+  }
   // Apply state from undo/redo service
   private applyState(state: DiagramState): void {
     this.nodes.set(state.nodes);

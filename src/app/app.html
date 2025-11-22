@@ -3,8 +3,10 @@
   <div class="controls">
     <button (click)="addRandomNode()">Add Node</button>
     <button (click)="applyElkLayout()">ELK Layout</button>
+  <button (click)="exportJSON()">Export JSON</button>
+  <input type="file" accept="application/json" (change)="importJSON($event)" />
     <button (click)="fitView()">Fit View</button>
-    <button (click)="clearFlow()">Clear All</button>
+  <button (click)="clearFlow()">Clear All</button>
   </div>
 </div>
 
