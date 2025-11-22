@@ -168,6 +168,15 @@ export class DiagramStateService {
     );
   }
 
+  moveNodes(moves: { id: string; position: XYPosition }[]): void {
+    this.nodes.update((currentNodes) =>
+      currentNodes.map((node) => {
+        const move = moves.find((m) => m.id === node.id);
+        return move ? { ...node, position: move.position } : node;
+      })
+    );
+  }
+
   // --- Edge Management ---
 
   addEdge(edge: Edge): void {

@@ -9,6 +9,7 @@ import { getBezierPath, getStraightPath, getStepPath } from '../../utils';
 import { v4 as uuidv4 } from 'uuid';
 import { ZoomControlsComponent } from '../zoom-controls/zoom-controls.component';
 import { MinimapComponent } from '../minimap/minimap.component';
+import { BackgroundComponent } from '../background/background.component';
 
 // Helper function to get a node from the array
 function getNode(id: string, nodes: Node[]): Node | undefined {
@@ -55,7 +56,7 @@ function getHandleAbsolutePosition(node: Node, handleId: string | undefined): XY
   styleUrls: ['./diagram.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true,
-  imports: [CommonModule, NgComponentOutlet, ZoomControlsComponent, MinimapComponent]
+  imports: [CommonModule, NgComponentOutlet, ZoomControlsComponent, MinimapComponent, BackgroundComponent]
 })
 export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   @ViewChild('svg', { static: true }) svgRef!: ElementRef<SVGSVGElement>;
@@ -68,6 +69,14 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
 
   // Input for showing/hiding minimap
   @Input() showMinimap: boolean = true;
+
+  // Input for background configuration
+  @Input() showBackground: boolean = true;
+  @Input() backgroundVariant: 'dots' | 'lines' | 'cross' = 'dots';
+  @Input() backgroundGap: number = 20;
+  @Input() backgroundSize: number = 1;
+  @Input() backgroundColor: string = '#81818a';
+  @Input() backgroundBgColor: string = '#f0f0f0';
 
   // Output events
   @Output() nodeClick = new EventEmitter<Node>();

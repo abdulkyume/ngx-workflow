@@ -1,0 +1,54 @@
+<svg class="ngx-flow__background" [attr.width]="'100%'" [attr.height]="'100%'">
+  <defs>
+    <!-- Dots Pattern -->
+    <pattern 
+      *ngIf="variant === 'dots'"
+      id="ngx-flow__pattern-dots" 
+      [attr.x]="0" 
+      [attr.y]="0" 
+      [attr.width]="gap" 
+      [attr.height]="gap" 
+      patternUnits="userSpaceOnUse"
+      [attr.patternTransform]="patternTransform()">
+      <circle [attr.cx]="size" [attr.cy]="size" [attr.r]="size" [attr.fill]="color" />
+    </pattern>
+
+    <!-- Lines Pattern -->
+    <pattern 
+      *ngIf="variant === 'lines'"
+      id="ngx-flow__pattern-lines" 
+      [attr.x]="0" 
+      [attr.y]="0" 
+      [attr.width]="gap" 
+      [attr.height]="gap" 
+      patternUnits="userSpaceOnUse"
+      [attr.patternTransform]="patternTransform()">
+      <path [attr.d]="'M ' + gap + ' 0 L 0 0 0 ' + gap" [attr.fill]="'none'" [attr.stroke]="color" [attr.stroke-width]="size" />
+    </pattern>
+
+    <!-- Cross Pattern -->
+    <pattern 
+      *ngIf="variant === 'cross'"
+      id="ngx-flow__pattern-cross" 
+      [attr.x]="0" 
+      [attr.y]="0" 
+      [attr.width]="gap" 
+      [attr.height]="gap" 
+      patternUnits="userSpaceOnUse"
+      [attr.patternTransform]="patternTransform()">
+      <path [attr.d]="'M ' + gap + ' 0 L 0 0 0 ' + gap" [attr.fill]="'none'" [attr.stroke]="color" [attr.stroke-width]="size" />
+      <path [attr.d]="'M 0 ' + (gap/2) + ' L ' + gap + ' ' + (gap/2) + ' M ' + (gap/2) + ' 0 L ' + (gap/2) + ' ' + gap" [attr.fill]="'none'" [attr.stroke]="color" [attr.stroke-width]="size" />
+    </pattern>
+  </defs>
+
+  <rect 
+    width="100%" 
+    height="100%" 
+    [attr.fill]="backgroundColor" 
+  />
+  <rect 
+    width="100%" 
+    height="100%" 
+    [attr.fill]="'url(#ngx-flow__pattern-' + variant + ')'" 
+  />
+</svg>

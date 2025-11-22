@@ -1,4 +1,12 @@
 <div class="ngx-flow__container">
+  <ngx-background
+    *ngIf="showBackground"
+    [variant]="backgroundVariant"
+    [gap]="backgroundGap"
+    [size]="backgroundSize"
+    [color]="backgroundColor"
+    [backgroundColor]="backgroundBgColor"
+  ></ngx-background>
   <svg
     #svg
     class="ngx-flow__diagram"

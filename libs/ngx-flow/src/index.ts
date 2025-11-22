@@ -1,6 +1,7 @@
 export * from './lib/components/diagram/diagram.component';
 export * from './lib/components/zoom-controls/zoom-controls.component';
 export * from './lib/components/minimap/minimap.component';
+export * from './lib/components/background/background.component';
 export * from './lib/services/diagram-state.service';
 export * from './lib/services/layout.service';
 export * from './lib/services/undo-redo.service';
