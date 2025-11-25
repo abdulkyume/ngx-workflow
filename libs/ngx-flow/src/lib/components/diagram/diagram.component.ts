@@ -10,6 +10,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { ZoomControlsComponent } from '../zoom-controls/zoom-controls.component';
 import { MinimapComponent } from '../minimap/minimap.component';
 import { BackgroundComponent } from '../background/background.component';
+import { AlignmentControlsComponent } from '../alignment-controls/alignment-controls.component';
 
 // Helper function to get a node from the array
 function getNode(id: string, nodes: Node[]): Node | undefined {
@@ -56,9 +57,10 @@ function getHandleAbsolutePosition(node: Node, handleId: string | undefined): XY
   styleUrls: ['./diagram.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true,
-  imports: [CommonModule, NgComponentOutlet, ZoomControlsComponent, MinimapComponent, BackgroundComponent]
+  imports: [CommonModule, NgComponentOutlet, ZoomControlsComponent, MinimapComponent, BackgroundComponent, AlignmentControlsComponent]
 })
 export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
+  // Trigger rebuild
   @ViewChild('svg', { static: true }) svgRef!: ElementRef<SVGSVGElement>;
 
   // Input properties for declarative usage
@@ -1198,5 +1200,36 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
       x: isFinite(pos.x) ? pos.x : 0,
       y: isFinite(pos.y) ? pos.y : 0
     };
+  }
+
+  @HostListener('window:keydown', ['$event'])
+  onKeyDown(event: KeyboardEvent): void {
+    const target = event.target as HTMLElement;
+    // Ignore if focus is on an input or textarea
+    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+      return;
+    }
+
+    // Delete or Backspace to remove selected elements
+    if (event.key === 'Delete' || event.key === 'Backspace') {
+      this.diagramStateService.deleteSelectedElements();
+    }
+
+    // Ctrl+A or Cmd+A to select all
+    if ((event.ctrlKey || event.metaKey) && event.key === 'a') {
+      event.preventDefault(); // Prevent default browser select all
+      this.diagramStateService.selectAll();
+    }
+
+    // Undo (Ctrl+Z) and Redo (Ctrl+Y or Ctrl+Shift+Z)
+    if (event.ctrlKey || event.metaKey) {
+      if (event.key === 'z') {
+        event.preventDefault();
+        this.diagramStateService.undo();
+      } else if (event.key === 'y' || (event.shiftKey && event.key === 'Z')) {
+        event.preventDefault();
+        this.diagramStateService.redo();
+      }
+    }
   }
 }

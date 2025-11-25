@@ -1,0 +1,16 @@
+<div class="ngx-flow__alignment-controls" *ngIf="showControls()">
+  <div class="ngx-flow__alignment-group">
+    <button (click)="align('left')" title="Align Left">Left</button>
+    <button (click)="align('center')" title="Align Center">Center</button>
+    <button (click)="align('right')" title="Align Right">Right</button>
+  </div>
+  <div class="ngx-flow__alignment-group">
+    <button (click)="align('top')" title="Align Top">Top</button>
+    <button (click)="align('middle')" title="Align Middle">Middle</button>
+    <button (click)="align('bottom')" title="Align Bottom">Bottom</button>
+  </div>
+  <div class="ngx-flow__alignment-group" *ngIf="showDistribution()">
+    <button (click)="distribute('horizontal')" title="Distribute Horizontally">Dist H</button>
+    <button (click)="distribute('vertical')" title="Distribute Vertically">Dist V</button>
+  </div>
+</div>
