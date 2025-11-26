@@ -32,7 +32,8 @@
     <g class="ngx-flow__viewport" [attr.transform]="transform">
       <!-- Edges -->
       <g *ngFor="let edge of edges(); trackBy: trackByEdgeId" [class.selected]="edge.selected"
-        [class.animated]="edge.animated" class="ngx-flow__edge" (click)="onEdgeClick($event, edge)">
+        [class.animated]="edge.animated" class="ngx-flow__edge" (click)="onEdgeClick($event, edge)"
+        (dblclick)="onEdgeDoubleClick($event, edge)">
         <!-- Edge path with markers -->
         <path [attr.d]="getEdgePath(edge)" class="ngx-flow__edge-path" [style]="edge.style"
           [attr.marker-start]="getMarkerUrl(edge.markerStart)" [attr.marker-end]="getMarkerUrl(edge.markerEnd)"></path>
@@ -40,14 +41,23 @@
         <path [attr.d]="getEdgePath(edge)" class="ngx-flow__edge-hitbox"></path>
 
         <!-- Edge label -->
-        <g *ngIf="edge.label" class="ngx-flow__edge-label">
-          <text [attr.x]="getEdgeLabelPosition(edge).x" [attr.y]="getEdgeLabelPosition(edge).y" text-anchor="middle"
-            dominant-baseline="middle" class="ngx-flow__edge-label-text" [style]="edge.labelStyle">
+        <g *ngIf="edge.label || editingEdgeId === edge.id" class="ngx-flow__edge-label">
+          <foreignObject *ngIf="editingEdgeId === edge.id" [attr.x]="getEdgeLabelPosition(edge).x - 50"
+            [attr.y]="getEdgeLabelPosition(edge).y - 15" width="100" height="30">
+            <input #edgeLabelInput type="text" [value]="edge.label || ''" (blur)="onEdgeLabelBlur()"
+              (keydown.enter)="updateEdgeLabel(edge, edgeLabelInput.value)" class="ngx-flow__edge-label-input"
+              autofocus>
+          </foreignObject>
+
+          <text *ngIf="editingEdgeId !== edge.id" [attr.x]="getEdgeLabelPosition(edge).x"
+            [attr.y]="getEdgeLabelPosition(edge).y" text-anchor="middle" dominant-baseline="middle"
+            class="ngx-flow__edge-label-text" [style]="edge.labelStyle">
             <!-- Label background -->
             <tspan *ngIf="edge.labelBgStyle" class="ngx-flow__edge-label-bg" [style]="edge.labelBgStyle"></tspan>
             {{ edge.label }}
           </text>
         </g>
+
         <!-- Edge Update Handles -->
         <g *ngIf="edge.selected">
           <!-- Source Handle -->

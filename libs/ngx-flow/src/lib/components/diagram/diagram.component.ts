@@ -131,6 +131,24 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   private updatingEdge: Edge | null = null;
   private updatingEdgeHandle: 'source' | 'target' | null = null;
 
+  // Edge Label Editing
+  editingEdgeId: string | null = null;
+
+  onEdgeDoubleClick(event: MouseEvent, edge: Edge): void {
+    event.stopPropagation();
+    event.preventDefault();
+    this.editingEdgeId = edge.id;
+  }
+
+  updateEdgeLabel(edge: Edge, newLabel: string): void {
+    this.diagramStateService.updateEdge(edge.id, { label: newLabel });
+    this.editingEdgeId = null;
+  }
+
+  onEdgeLabelBlur(): void {
+    this.editingEdgeId = null;
+  }
+
   // Default node dimensions
   defaultNodeWidth = 170;
   defaultNodeHeight = 60;
@@ -797,24 +815,6 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
       this.diagramStateService.removeEdge(this.currentPreviewEdgeId);
       this.currentPreviewEdgeId = null;
     }
-
-    if (this.currentTargetHandle) {
-      const { nodeId, handleId, type } = this.currentTargetHandle;
-
-      if (this.updatingEdgeHandle === 'source') {
-        if (type === 'source' && this.isValidConnection(nodeId, this.updatingEdge.target)) {
-          this.diagramStateService.updateEdge(this.updatingEdge.id, nodeId, handleId);
-        }
-      } else {
-        if (this.isValidConnection(this.updatingEdge.source, nodeId)) {
-          this.diagramStateService.updateEdge(this.updatingEdge.id, undefined, undefined, nodeId, handleId);
-        }
-      }
-    }
-
-    this.updatingEdge = null;
-    this.updatingEdgeHandle = null;
-    this.currentTargetHandle = null;
   }
 
 
