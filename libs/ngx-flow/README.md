@@ -267,15 +267,18 @@ interface Edge {
 ### CSS Variables
 
 ```css
-:root {
-  --ngx-flow-node-bg: #fff;
-  --ngx-flow-node-border: #1a192b;
-  --ngx-flow-node-text-color: #333;
-  --ngx-flow-source-handle-color: #1a192b;
-  --ngx-flow-source-handle-border: #fff;
-  --ngx-flow-handle-valid-target-color: #00ff00;
-  --ngx-flow-edge-stroke: #b1b1b7;
-  --ngx-flow-edge-stroke-selected: #555;
+:host {
+  --ngx-flow-primary: #3b82f6;
+  --ngx-flow-primary-hover: #2563eb;
+  --ngx-flow-bg: #f8fafc;
+  --ngx-flow-surface: #ffffff;
+  --ngx-flow-border: #e2e8f0;
+  --ngx-flow-text-primary: #1e293b;
+  --ngx-flow-text-secondary: #64748b;
+  --ngx-flow-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --ngx-flow-shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  --ngx-flow-glass-bg: rgba(255, 255, 255, 0.8);
+  --ngx-flow-glass-blur: blur(12px);
 }
 ```
 
