@@ -1390,6 +1390,64 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     });
   }
 
+  /**
+   * Exports the diagram state as a JSON file.
+   * @param fileName The name of the file to download (default: 'diagram.json')
+   */
+  exportToJSON(fileName: string = 'diagram.json'): void {
+    const state = this.getDiagramState();
+    const jsonString = JSON.stringify(state, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    this.downloadFile(url, fileName);
+    URL.revokeObjectURL(url);
+  }
+
+  /**
+   * Triggers the file input to select a JSON file for import.
+   */
+  triggerImport(): void {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.json';
+    fileInput.style.display = 'none';
+    fileInput.onchange = (e) => this.onFileSelected(e);
+    document.body.appendChild(fileInput);
+    fileInput.click();
+    document.body.removeChild(fileInput);
+  }
+
+  /**
+   * Handles the file selection for import.
+   */
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+
+    const file = input.files[0];
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      try {
+        const jsonString = e.target?.result as string;
+        const state = JSON.parse(jsonString) as DiagramState;
+
+        // Basic validation
+        if (state.nodes && state.edges && state.viewport) {
+          this.setDiagramState(state);
+        } else {
+          console.error('Invalid diagram JSON format');
+          // TODO: Show user notification
+        }
+      } catch (error) {
+        console.error('Error parsing JSON', error);
+        // TODO: Show user notification
+      }
+    };
+
+    reader.readAsText(file);
+  }
+
   private downloadFile(url: string, fileName: string): void {
     const link = document.createElement('a');
     link.href = url;
@@ -1442,6 +1500,26 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
       } else if (event.key === 'y' || (event.shiftKey && event.key === 'Z')) {
         event.preventDefault();
         this.diagramStateService.redo();
+      }
+
+      // Clipboard Operations
+      switch (event.key.toLowerCase()) {
+        case 'c':
+          event.preventDefault();
+          this.diagramStateService.copy();
+          break;
+        case 'x':
+          event.preventDefault();
+          this.diagramStateService.cut();
+          break;
+        case 'v':
+          event.preventDefault();
+          this.diagramStateService.paste();
+          break;
+        case 'd':
+          event.preventDefault();
+          this.diagramStateService.duplicate();
+          break;
       }
     }
   }

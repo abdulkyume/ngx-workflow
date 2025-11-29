@@ -34,7 +34,8 @@
         (dblclick)="onEdgeDoubleClick($event, edge)">
         <!-- Edge path with markers -->
         <path [attr.d]="getEdgePath(edge)" class="ngx-flow__edge-path" [style]="edge.style"
-          [attr.marker-start]="getMarkerUrl(edge.markerStart)" [attr.marker-end]="getMarkerUrl(edge.markerEnd)"></path>
+          [attr.marker-start]="getMarkerUrl(edge.markerStart)" [attr.marker-end]="getMarkerUrl(edge.markerEnd)">
+        </path>
         <!-- Invisible hitbox for easier clicking -->
         <path [attr.d]="getEdgePath(edge)" class="ngx-flow__edge-hitbox"></path>
 
@@ -95,7 +96,8 @@
           data-handleid="right" [attr.data-type]="'source'">
           <!-- Hit area -->
           <circle [attr.cx]="(node.width || defaultNodeWidth) + 10" [attr.cy]="(node.height || defaultNodeHeight) / 2"
-            r="20" fill="transparent" pointer-events="all"></circle>
+            r="20" fill="transparent" pointer-events="all">
+          </circle>
           <!-- Visual -->
           <circle [attr.cx]="(node.width || defaultNodeWidth)" [attr.cy]="(node.height || defaultNodeHeight) / 2" r="6"
             class="ngx-flow__handle-circle"></circle>
@@ -105,7 +107,8 @@
           data-handleid="bottom" [attr.data-type]="'source'">
           <!-- Hit area -->
           <circle [attr.cx]="(node.width || defaultNodeWidth) / 2" [attr.cy]="(node.height || defaultNodeHeight) + 10"
-            r="20" fill="transparent" pointer-events="all"></circle>
+            r="20" fill="transparent" pointer-events="all">
+          </circle>
           <!-- Visual -->
           <circle [attr.cx]="(node.width || defaultNodeWidth) / 2" [attr.cy]="(node.height || defaultNodeHeight)" r="6"
             class="ngx-flow__handle-circle"></circle>
@@ -170,6 +173,14 @@
   </ngx-zoom-controls>
 
   <ngx-alignment-controls></ngx-alignment-controls>
+
+  <div class="ngx-flow__io-controls"
+    style="position: absolute; top: 10px; right: 10px; display: flex; gap: 5px; z-index: 10;">
+    <button (click)="exportToJSON()">Export JSON</button>
+    <button (click)="triggerImport()">Import JSON</button>
+    <button (click)="exportToPNG()">Export PNG</button>
+    <button (click)="exportToSVG()">Export SVG</button>
+  </div>
 
   <ngx-minimap *ngIf="showMinimap"></ngx-minimap>
 </div>

@@ -34,7 +34,7 @@ interface TempEdge extends Edge {
 export class DiagramStateService {
   readonly nodes: WritableSignal<Node[]> = signal<Node[]>([]);
   readonly edges: WritableSignal<Edge[]> = signal<Edge[]>([]);
-  readonly tempEdges: WritableSignal<TempEdge[]> = signal<TempEdge[]>([]); // New signal for preview edges
+  readonly tempEdges: WritableSignal<TempEdge[]> = signal<TempEdge[]>([]);
   readonly viewport: WritableSignal<Viewport> = signal<Viewport>({ x: 0, y: 0, zoom: 1 });
   readonly alignmentGuides = signal<AlignmentGuide[]>([]);
 
