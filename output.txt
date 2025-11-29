@@ -1,7 +1,0 @@
-I understand. You are suggesting a significant architectural change: to render all nodes and edges directly within the main `DiagramComponent` instead of using separate `NodeComponent` and `EdgeComponent` files.
-
-This is definitely possible, and it would simplify the structure by putting all rendering logic in one place.
-
-However, I need to make you aware of a major consequence: **if we do this, we will lose the ability to have custom node and edge types.** The entire system for registering and rendering different types of nodes (like the `rounded-rect` node) relies on using separate components. An all-in-one component would render all nodes and edges in the exact same way.
-
-Please confirm if you are okay with removing the custom node/edge feature in favor of a single-component architecture. If you agree, I will proceed with this major refactoring.
