@@ -26,28 +26,11 @@ npm install ngx-workflow
 
 ## 🏁 Quick Start
 
-### 1. Import the Module
+You can use `ngx-workflow` in two ways: **Standalone Component** (recommended for Angular 14+) or **NgModule**.
 
-In your `app.config.ts` (for standalone apps) or `app.module.ts`:
+### Option 1: Standalone Component (Recommended)
 
-```typescript
-import { ApplicationConfig, importProvidersFrom } from '@angular/core';
-import { NgxWorkflowModule } from 'ngx-workflow';
-
-export const appConfig: ApplicationConfig = {
-  providers: [
-    importProvidersFrom(NgxWorkflowModule)
-  ]
-};
-```
-
-### 2. Use the Component
-
-Add the `<ngx-workflow-diagram>` component to your template. You can use the **Declarative** approach (recommended) or the **Imperative** approach.
-
-#### Declarative Approach (Recommended)
-
-Bind directly to your data. The diagram updates when your data changes.
+Import `NgxWorkflowModule` directly into your standalone component's `imports` array.
 
 ```typescript
 import { Component } from '@angular/core';
@@ -88,10 +71,67 @@ export class AppComponent {
 }
 ```
 
-## 📖 Core Concepts
+### Option 2: NgModule (Modular Approach)
 
-### Nodes
-Nodes are the building blocks of your diagram. They are defined by the `Node` interface.
+If you are using NgModules, import `NgxWorkflowModule` in your module.
+
+```typescript
+import { NgModule } from '@angular/core';
+import { BrowserModule } from '@angular/platform-browser';
+import { NgxWorkflowModule } from 'ngx-workflow';
+import { AppComponent } from './app.component';
+
+@NgModule({
+  declarations: [AppComponent],
+  imports: [
+    BrowserModule,
+    NgxWorkflowModule // Import the module here
+  ],
+  bootstrap: [AppComponent]
+})
+export class AppModule { }
+```
+
+Then use it in your component template just like in the standalone example.
+
+## 📖 API Reference
+
+### `<ngx-workflow-diagram>`
+
+The main component for rendering the workflow.
+
+#### Inputs
+
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `initialNodes` | `Node[]` | `[]` | Initial array of nodes to display. |
+| `initialEdges` | `Edge[]` | `[]` | Initial array of edges to display. |
+| `initialViewport` | `Viewport` | `undefined` | Initial viewport state `{ x, y, zoom }`. |
+| `showZoomControls` | `boolean` | `true` | Whether to show the zoom control buttons (bottom-left). |
+| `showMinimap` | `boolean` | `true` | Whether to show the minimap (bottom-right). |
+| `showBackground` | `boolean` | `true` | Whether to show the background pattern. |
+| `backgroundVariant` | `'dots' \| 'lines' \| 'cross'` | `'dots'` | The pattern style of the background. |
+| `backgroundGap` | `number` | `20` | Gap between background pattern elements. |
+| `backgroundSize` | `number` | `1` | Size of background pattern elements. |
+| `backgroundColor` | `string` | `'#81818a'` | Color of the background pattern dots/lines. |
+| `backgroundBgColor` | `string` | `'#f0f0f0'` | Background color of the canvas itself. |
+| `connectionValidator` | `(source: string, target: string) => boolean` | `undefined` | Custom function to validate connections. Return `false` to prevent connection. |
+| `nodesResizable` | `boolean` | `true` | Global toggle to enable/disable node resizing. |
+
+#### Outputs
+
+| Name | Type | Description |
+|------|------|-------------|
+| `nodeClick` | `EventEmitter<Node>` | Emitted when a node is clicked. |
+| `edgeClick` | `EventEmitter<Edge>` | Emitted when an edge is clicked. |
+| `connect` | `EventEmitter<Connection>` | Emitted when a new connection is created. |
+| `nodesChange` | `EventEmitter<Node[]>` | Emitted when the nodes array changes (move, add, delete). |
+| `edgesChange` | `EventEmitter<Edge[]>` | Emitted when the edges array changes. |
+| `nodeDoubleClick` | `EventEmitter<Node>` | Emitted when a node is double-clicked. |
+
+### Interfaces
+
+#### `Node`
 
 ```typescript
 interface Node {
@@ -100,18 +140,18 @@ interface Node {
   label?: string;          // Default label
   data?: any;              // Custom data passed to your custom node component
   type?: string;           // 'default', 'group', or your custom type
-  width?: number;          // Width in pixels
-  height?: number;         // Height in pixels
+  width?: number;          // Width in pixels (default: 170)
+  height?: number;         // Height in pixels (default: 60)
   draggable?: boolean;     // Is the node draggable? (default: true)
   selectable?: boolean;    // Is the node selectable? (default: true)
   connectable?: boolean;   // Can edges be connected? (default: true)
+  resizable?: boolean;     // Is this specific node resizable? (default: true)
   class?: string;          // Custom CSS class
   style?: object;          // Custom inline styles
 }
 ```
 
-### Edges
-Edges connect two nodes. They are defined by the `Edge` interface.
+#### `Edge`
 
 ```typescript
 interface Edge {
@@ -120,16 +160,13 @@ interface Edge {
   target: string;          // ID of target node
   sourceHandle?: string;   // ID of source handle (optional)
   targetHandle?: string;   // ID of target handle (optional)
-  label?: string;          // Label text
-  type?: 'bezier' | 'straight' | 'step'; // Path type
-  animated?: boolean;      // Show animation?
+  label?: string;          // Label text displayed on the edge
+  type?: 'bezier' | 'straight' | 'step'; // Path type (default: 'bezier')
+  animated?: boolean;      // Show animation (dashed moving line)?
   markerEnd?: 'arrow' | 'arrowclosed'; // Arrowhead type
   style?: object;          // SVG styles (stroke, stroke-width, etc.)
 }
 ```
-
-### Handles
-Handles are the connection points on a node. By default, nodes have 4 handles: `top`, `right`, `bottom`, `left`. You can define custom handles in your custom node components.
 
 ## 🎨 Customization
 
@@ -208,6 +245,12 @@ You can create your own node types by creating an Angular component and register
 | `Ctrl` + `Shift` + `Z` | Redo |
 | `Shift` + `Drag` | Lasso Selection |
 | `Ctrl` + `Click` | Multi-select |
+| `Ctrl` + `C` | Copy |
+| `Ctrl` + `V` | Paste |
+| `Ctrl` + `X` | Cut |
+| `Ctrl` + `D` | Duplicate |
+| `Ctrl` + `G` | Group Selected Nodes |
+| `Ctrl` + `Shift` + `G` | Ungroup Selected Group |
 
 ## 🤝 Contributing
 
