@@ -53,13 +53,15 @@ function getHandleAbsolutePosition(node: Node, handleId: string | undefined): XY
   };
 }
 
+import { SearchControlsComponent } from '../search-controls/search-controls.component';
+
 @Component({
   selector: 'ngx-workflow-diagram',
   templateUrl: './diagram.component.html',
   styleUrls: ['./diagram.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true,
-  imports: [CommonModule, ZoomControlsComponent, MinimapComponent, BackgroundComponent, AlignmentControlsComponent, PropertiesSidebarComponent]
+  imports: [CommonModule, ZoomControlsComponent, MinimapComponent, BackgroundComponent, AlignmentControlsComponent, PropertiesSidebarComponent, SearchControlsComponent]
 })
 export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   // Trigger rebuild
@@ -98,6 +100,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   viewNodes!: Signal<Node[]>;
   filteredNodes!: Signal<Node[]>;
   edges!: WritableSignal<Edge[]>;
+  filteredEdges!: Signal<Edge[]>;
   tempEdges!: WritableSignal<TempEdge[]>;
   alignmentGuides!: Signal<AlignmentGuide[]>;
 
@@ -266,6 +269,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     this.nodes = this.diagramStateService.nodes;
     this.filteredNodes = this.diagramStateService.visibleNodes; // Use visibleNodes for rendering
     this.edges = this.diagramStateService.edges;
+    this.filteredEdges = this.diagramStateService.visibleEdges; // Use visibleEdges for rendering
     this.tempEdges = this.diagramStateService.tempEdges;
     this.alignmentGuides = this.diagramStateService.alignmentGuides;
 
@@ -469,6 +473,23 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     if (selectedNodes.length === 1 && selectedNodes[0].type === 'group') {
       this.diagramStateService.ungroupNodes(selectedNodes[0].id);
     }
+  }
+  @HostListener('window:keydown.arrowup', ['$event'])
+  @HostListener('window:keydown.arrowdown', ['$event'])
+  @HostListener('window:keydown.arrowleft', ['$event'])
+  @HostListener('window:keydown.arrowright', ['$event'])
+  onArrowKeyPress(event: any): void {
+    if (this.isInputActive(event)) return;
+
+    const selectedNodes = this.diagramStateService.selectedNodes();
+    if (selectedNodes.length === 0) return;
+
+    event.preventDefault();
+    const step = event.shiftKey ? 1 : 10;
+    const dx = event.key === 'ArrowLeft' ? -step : event.key === 'ArrowRight' ? step : 0;
+    const dy = event.key === 'ArrowUp' ? -step : event.key === 'ArrowDown' ? step : 0;
+
+    this.diagramStateService.moveNodesByDelta(selectedNodes.map(n => n.id), dx, dy);
   }
 
   toggleGroup(event: Event, node: Node): void {

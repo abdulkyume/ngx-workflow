@@ -26,6 +26,27 @@
   height: 100%;
   overflow: hidden;
   background-color: var(--ngx-workflow-bg);
+
+  /* LOD: Low - Hide text and handles */
+  &[data-lod="low"] {
+    .ngx-workflow__node-label,
+    .ngx-workflow__handle,
+    .ngx-workflow__edge-label {
+      display: none;
+    }
+    
+    .ngx-workflow__node-rect {
+      stroke-width: 1px; /* Thinner stroke */
+    }
+  }
+
+  /* LOD: Medium - Hide handles */
+  &[data-lod="medium"] {
+    .ngx-workflow__handle {
+      opacity: 0; /* Hide but keep interactive if needed, or display: none */
+      pointer-events: none;
+    }
+  }
 }
 
 .ngx-workflow__diagram {
@@ -94,6 +115,12 @@
       filter: drop-shadow(0 10px 15px rgba(0,0,0,0.1));
       transform: scale(1.02);
     }
+  }
+
+  &.highlighted .ngx-workflow__node-rect {
+    stroke: var(--ngx-workflow-primary);
+    stroke-width: 2px;
+    filter: drop-shadow(0 0 0 4px rgba(59, 130, 246, 0.4));
   }
 
   &.dimmed {
@@ -222,7 +249,7 @@ foreignObject {
 .ngx-workflow__io-controls {
   position: absolute;
   top: 16px;
-  left: 16px;
+  right: 16px;
   z-index: 10;
   display: flex;
   gap: 8px;

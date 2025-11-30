@@ -101,6 +101,16 @@ export class DiagramStateService {
     });
   });
 
+  readonly visibleEdges = computed(() => {
+    const edges = this.edges();
+    const visibleNodes = this.visibleNodes();
+    const visibleNodeIds = new Set(visibleNodes.map(n => n.id));
+
+    return edges.filter(edge => {
+      return visibleNodeIds.has(edge.source) || visibleNodeIds.has(edge.target);
+    });
+  });
+
   readonly lodLevel = computed(() => {
     const zoom = this.viewport().zoom;
     if (zoom < 0.4) return 'low';
@@ -270,6 +280,36 @@ export class DiagramStateService {
 
   setViewport(viewport: Partial<Viewport>): void {
     this.viewport.update((currentViewport) => ({ ...currentViewport, ...viewport }));
+  }
+
+  focusNode(nodeId: string): void {
+    const node = this.nodes().find(n => n.id === nodeId);
+    if (!node) return;
+
+    const container = this.containerDimensions();
+    // Default to some reasonable size if container dimensions are missing (e.g. testing)
+    const width = container.width || 800;
+    const height = container.height || 600;
+
+    // Target zoom level
+    const targetZoom = 1.2;
+
+    // Center of the node
+    const nodeCenterX = node.position.x + (node.width || 170) / 2;
+    const nodeCenterY = node.position.y + (node.height || 60) / 2;
+
+    // Center of the container
+    const containerCenterX = width / 2;
+    const containerCenterY = height / 2;
+
+    // Calculate viewport x, y
+    // viewport.x + nodeCenterX * zoom = containerCenterX
+    // viewport.x = containerCenterX - nodeCenterX * zoom
+    const newX = containerCenterX - nodeCenterX * targetZoom;
+    const newY = containerCenterY - nodeCenterY * targetZoom;
+
+    this.setViewport({ x: newX, y: newY, zoom: targetZoom });
+    this.selectNodes([nodeId]);
   }
 
   // --- Selection Management ---
@@ -486,7 +526,23 @@ export class DiagramStateService {
   }
   // --- Clipboard Operations ---
 
-  private clipboard: { nodes: Node[]; edges: Edge[] } = { nodes: [], edges: [] };
+  private get clipboard(): { nodes: Node[]; edges: Edge[] } {
+    try {
+      const data = localStorage.getItem('ngx-workflow-clipboard');
+      return data ? JSON.parse(data) : { nodes: [], edges: [] };
+    } catch (e) {
+      console.warn('Failed to read from clipboard', e);
+      return { nodes: [], edges: [] };
+    }
+  }
+
+  private set clipboard(data: { nodes: Node[]; edges: Edge[] }) {
+    try {
+      localStorage.setItem('ngx-workflow-clipboard', JSON.stringify(data));
+    } catch (e) {
+      console.warn('Failed to write to clipboard', e);
+    }
+  }
 
   copy(): void {
     const selectedNodes = this.selectedNodes();
@@ -504,11 +560,12 @@ export class DiagramStateService {
       nodes: JSON.parse(JSON.stringify(selectedNodes)),
       edges: JSON.parse(JSON.stringify(internalEdges)),
     };
-    console.log('Copied to clipboard:', this.clipboard);
+    console.log('Copied to clipboard');
   }
 
   paste(): void {
-    if (this.clipboard.nodes.length === 0) return;
+    const clipboardData = this.clipboard;
+    if (clipboardData.nodes.length === 0) return;
 
     this.undoRedoService.saveState(this.getCurrentState());
 
@@ -517,7 +574,9 @@ export class DiagramStateService {
     const newEdges: Edge[] = [];
 
     // Create new nodes with new IDs and offset position
-    this.clipboard.nodes.forEach((node) => {
+    // Calculate center of pasted nodes to position them relative to viewport center or mouse?
+    // For now, just offset by 20px from original position (simple)
+    clipboardData.nodes.forEach((node) => {
       const newId = uuidv4();
       idMap.set(node.id, newId);
       newNodes.push({
@@ -529,7 +588,7 @@ export class DiagramStateService {
     });
 
     // Create new edges with updated source/target IDs
-    this.clipboard.edges.forEach((edge) => {
+    clipboardData.edges.forEach((edge) => {
       const newSource = idMap.get(edge.source);
       const newTarget = idMap.get(edge.target);
       if (newSource && newTarget) {
@@ -665,6 +724,25 @@ export class DiagramStateService {
   }
 
   // Move node and handle group children
+  moveNodesByDelta(nodeIds: string[], dx: number, dy: number): void {
+    if (nodeIds.length === 0 || (dx === 0 && dy === 0)) return;
+
+    this.undoRedoService.saveState(this.getCurrentState());
+
+    this.nodes.update(nodes => nodes.map(node => {
+      if (nodeIds.includes(node.id)) {
+        return {
+          ...node,
+          position: {
+            x: node.position.x + dx,
+            y: node.position.y + dy
+          }
+        };
+      }
+      return node;
+    }));
+  }
+
   moveNode(id: string, newPosition: XYPosition): void {
     // console.log('moveNode', id, newPosition);
     const node = this.nodes().find((n) => n.id === id);

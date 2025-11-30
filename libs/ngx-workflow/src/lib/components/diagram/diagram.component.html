@@ -30,7 +30,7 @@
 
     <g class="ngx-workflow__viewport" [attr.transform]="transform">
       <!-- Edges -->
-      <g *ngFor="let edge of edges(); trackBy: trackByEdgeId" [class.selected]="edge.selected"
+      <g *ngFor="let edge of filteredEdges(); trackBy: trackByEdgeId" [class.selected]="edge.selected"
         [class.animated]="edge.animated" class="ngx-workflow__edge" (click)="onEdgeClick($event, edge)"
         (dblclick)="onEdgeDoubleClick($event, edge)">
         <!-- Edge path with markers -->
@@ -79,7 +79,8 @@
 
       <!-- Nodes -->
       <g *ngFor="let node of filteredNodes(); trackBy: trackByNodeId" class="ngx-workflow__node"
-        [attr.data-id]="node.id" [class.selected]="node.selected" [class.dragging]="node.dragging"
+        [attr.aria-label]="node.label" [attr.data-id]="node.id" [class.selected]="node.selected"
+        [class.dragging]="node.dragging" [class.dimmed]="node.dimmed" [class.highlighted]="node.highlighted"
         [attr.transform]="'translate(' + node.position.x + ',' + node.position.y + ')'"
         (dblclick)="onNodeDoubleClick($event, node)">
 
@@ -191,14 +192,10 @@
 
   </svg>
 
+  <ngx-workflow-search-controls></ngx-workflow-search-controls>
+
   <!-- IO Controls -->
   <div class="ngx-workflow__io-controls">
-    <input type="text" placeholder="Search..." (input)="onSearch($event)">
-    <select (change)="onFilterType($event)">
-      <option value="">All Types</option>
-      <option *ngFor="let type of nodeTypeKeys" [value]="type">{{ type }}</option>
-    </select>
-    <div class="ngx-workflow__separator"></div>
     <button (click)="exportToJSON()">Export JSON</button>
     <button (click)="triggerImport()">Import JSON</button>
     <button (click)="exportToPNG()">Export PNG</button>
