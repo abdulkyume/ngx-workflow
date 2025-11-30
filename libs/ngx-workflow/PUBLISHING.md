@@ -53,7 +53,7 @@ After successful publication, your library will be available on the npm registry
 
 -   **Major version (1.0.0):** Incremented for incompatible API changes (breaking changes).
 -   **Minor version (0.1.0):** Incremented for new features that are backward-compatible.
--   **Patch version (0.0.1):** Incremented for backward-compatible bug fixes.
+-   **Patch version (0.0.2cd):** Incremented for backward-compatible bug fixes.
 
 Before releasing a new version:
 

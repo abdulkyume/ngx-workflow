@@ -16,7 +16,7 @@ Update the version number in `libs/ngx-workflow/package.json`. Follow [Semantic 
 ```json
 {
   "name": "ngx-workflow",
-  "version": "0.0.1", 
+  "version": "0.0.2", 
   ...
 }
 ```
