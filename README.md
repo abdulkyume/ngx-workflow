@@ -1,11 +1,11 @@
 # ngx-workflow
 
 [![npm version](https://img.shields.io/npm/v/ngx-workflow.svg)](https://www.npmjs.com/package/ngx-workflow)
-[![License](https://img.shields.io/npm/l/ngx-workflow.svg)](https://github.com/yourusername/ngx-workflow/blob/main/LICENSE)
+[![License](https://img.shields.io/npm/l/ngx-workflow.svg)](https://github.com/abdulkyume/ngx-workflow/blob/main/LICENSE)
 
 A powerful, highly customizable Angular library for building interactive node-based editors, flow charts, and diagrams. Built with Angular Signals for high performance and reactivity.
 
-![Demo Screenshot](https://raw.githubusercontent.com/yourusername/ngx-workflow/main/assets/demo.png)
+![Demo Screenshot](https://raw.githubusercontent.com/abdulkyume/ngx-workflow/main/assets/demo.png)
 
 ## 🚀 Features
 

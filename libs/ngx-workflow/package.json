@@ -25,14 +25,14 @@
     "react-flow",
     "ngx"
   ],
-  "author": "Your Name/Organization",
+  "author": "Abdul Kyume",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-org/ngx-workflow.git"
+    "url": "https://github.com/abdulkyume/ngx-workflow.git"
   },
   "bugs": {
-    "url": "https://github.com/your-org/ngx-workflow/issues"
+    "url": "https://github.com/abdulkyume/ngx-workflowflow/issues"
   },
-  "homepage": "https://github.com/your-org/ngx-workflow#readme"
+  "homepage": "https://github.com/abdulkyume/ngx-workflow#readme"
 }
