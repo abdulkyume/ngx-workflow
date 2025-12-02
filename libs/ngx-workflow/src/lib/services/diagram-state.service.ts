@@ -13,7 +13,7 @@ import { throttleTime } from 'rxjs/operators';
 import { v4 as uuidv4 } from 'uuid';
 import { UndoRedoService } from './undo-redo.service'; // Import UndoRedoService and DiagramState
 
-interface Connection {
+export interface Connection {
   source: string;
   sourceHandle?: string;
   target: string;

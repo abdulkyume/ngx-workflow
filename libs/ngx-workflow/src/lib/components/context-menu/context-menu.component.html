@@ -1,0 +1,8 @@
+<div *ngIf="state().isOpen" class="ngx-workflow-context-menu" [style.left.px]="state().position.x"
+    [style.top.px]="state().position.y">
+    <div *ngFor="let item of state().items" class="ngx-workflow-context-menu-item" [class.disabled]="item.disabled"
+        [class.danger]="item.danger" (click)="!item.disabled && onActionClick($event, item.action)">
+        <span class="label">{{ item.label }}</span>
+        <span *ngIf="item.shortcut" class="shortcut">{{ item.shortcut }}</span>
+    </div>
+</div>

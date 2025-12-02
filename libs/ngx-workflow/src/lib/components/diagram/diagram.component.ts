@@ -2,10 +2,10 @@ import { Component, ChangeDetectionStrategy, ElementRef, OnInit, Renderer2, NgZo
 import { toObservable } from '@angular/core/rxjs-interop';
 import { CommonModule, NgComponentOutlet } from '@angular/common';
 import { DiagramStateService } from '../../services/diagram-state.service';
-import { Viewport, XYPosition, Node, Edge, TempEdge, DiagramState, AlignmentGuide } from '../../models';
+import { Viewport, XYPosition, Node as WorkflowNode, Edge, TempEdge, DiagramState, AlignmentGuide } from '../../models';
 import { Subscription, Observable } from 'rxjs';
 import { NGX_WORKFLOW_NODE_TYPES } from '../../injection-tokens';
-import { NodeComponentType } from '../../types';
+import { NodeComponentType as WorkflowNodeComponentType } from '../../types';
 import { getBezierPath, getStraightPath, getStepPath, getSelfLoopPath, getSmartEdgePath, PathFinder, getPolylineMidpoint } from '../../utils';
 import { v4 as uuidv4 } from 'uuid';
 import { ZoomControlsComponent } from '../zoom-controls/zoom-controls.component';
@@ -13,14 +13,16 @@ import { MinimapComponent } from '../minimap/minimap.component';
 import { BackgroundComponent } from '../background/background.component';
 import { AlignmentControlsComponent } from '../alignment-controls/alignment-controls.component';
 import { PropertiesSidebarComponent } from '../properties-sidebar/properties-sidebar.component';
+import { ContextMenuComponent } from '../context-menu/context-menu.component';
+import { ContextMenuService, ContextMenuItem } from '../../services/context-menu.service';
 
 // Helper function to get a node from the array
-function getNode(id: string, nodes: Node[]): Node | undefined {
+function getNode(id: string, nodes: WorkflowNode[]): WorkflowNode | undefined {
   return nodes.find(n => n.id === id);
 }
 
 // Helper function to determine handle position based on node and handle id/type
-function getHandleAbsolutePosition(node: Node, handleId: string | undefined): XYPosition {
+function getHandleAbsolutePosition(node: WorkflowNode, handleId: string | undefined): XYPosition {
   const nodeWidth = node.width || 170;
   const nodeHeight = node.height || 60;
   let offsetX = 0;
@@ -61,14 +63,14 @@ import { SearchControlsComponent } from '../search-controls/search-controls.comp
   styleUrls: ['./diagram.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true,
-  imports: [CommonModule, ZoomControlsComponent, MinimapComponent, BackgroundComponent, AlignmentControlsComponent, PropertiesSidebarComponent, SearchControlsComponent]
+  imports: [CommonModule, ZoomControlsComponent, MinimapComponent, BackgroundComponent, AlignmentControlsComponent, PropertiesSidebarComponent, SearchControlsComponent, ContextMenuComponent]
 })
 export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   // Trigger rebuild
   @ViewChild('svg', { static: true }) svgRef!: ElementRef<SVGSVGElement>;
 
   // Input properties for declarative usage
-  @Input() initialNodes: Node[] = [];
+  @Input() initialNodes: WorkflowNode[] = [];
   @Input() initialEdges: Edge[] = [];
   @Input() initialViewport?: Viewport;
   @Input() showZoomControls: boolean = true;
@@ -85,20 +87,21 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   @Input() backgroundBgColor: string = '#f0f0f0';
 
   // Output events
-  @Output() nodeClick = new EventEmitter<Node>();
+  @Output() nodeClick = new EventEmitter<WorkflowNode>();
   @Output() edgeClick = new EventEmitter<Edge>();
   @Output() connect = new EventEmitter<{ source: string; sourceHandle?: string; target: string; targetHandle?: string }>();
-  @Output() nodesChange = new EventEmitter<Node[]>();
+  @Output() nodesChange = new EventEmitter<WorkflowNode[]>();
   @Output() edgesChange = new EventEmitter<Edge[]>();
-  @Output() nodeDoubleClick = new EventEmitter<Node>();
+  @Output() nodeDoubleClick = new EventEmitter<WorkflowNode>();
+  @Output() contextMenu = new EventEmitter<{ type: 'node' | 'edge' | 'canvas'; item?: WorkflowNode | Edge; event: MouseEvent }>();
 
   // Sidebar State
-  selectedNodeForEditing: Node | null = null;
+  selectedNodeForEditing: WorkflowNode | null = null;
 
   viewport!: WritableSignal<Viewport>;
-  nodes!: WritableSignal<Node[]>;
-  viewNodes!: Signal<Node[]>;
-  filteredNodes!: Signal<Node[]>;
+  nodes!: WritableSignal<WorkflowNode[]>;
+  viewNodes!: Signal<WorkflowNode[]>;
+  filteredNodes!: Signal<WorkflowNode[]>;
   edges!: WritableSignal<Edge[]>;
   filteredEdges!: Signal<Edge[]>;
   tempEdges!: WritableSignal<TempEdge[]>;
@@ -125,8 +128,8 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
 
   // Node Dragging
   private isDraggingNode = false;
-  private draggingNode: Node | null = null;
-  private draggingNodes: Node[] = []; // All nodes being dragged (for multi-select)
+  private draggingNode: WorkflowNode | null = null;
+  private draggingNodes: WorkflowNode[] = []; // All nodes being dragged (for multi-select)
   private startNodePosition: XYPosition = { x: 0, y: 0 };
   private startNodePositions: Map<string, XYPosition> = new Map(); // Initial positions for multi-drag
   private startPointerPosition: XYPosition = { x: 0, y: 0 };
@@ -140,7 +143,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
 
   // Resizing
   private isResizing = false;
-  private resizingNode: Node | null = null;
+  private resizingNode: WorkflowNode | null = null;
   private resizeHandle: 'nw' | 'ne' | 'sw' | 'se' | null = null;
   private startResizePosition: XYPosition = { x: 0, y: 0 };
   private startNodeDimensions: { width: number; height: number; x: number; y: number } = { width: 0, height: 0, x: 0, y: 0 };
@@ -153,7 +156,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   // Edge Label Editing
   editingEdgeId: string | null = null;
 
-  private updatePathFinder(nodes: Node[]): void {
+  private updatePathFinder(nodes: WorkflowNode[]): void {
     this.pathCache.clear();
     this.pathPointsCache.clear();
     this._pathFinder = new PathFinder(nodes.map(n => ({
@@ -171,7 +174,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     this.editingEdgeId = edge.id;
   }
 
-  onNodeDoubleClick(event: MouseEvent, node: Node): void {
+  onNodeDoubleClick(event: MouseEvent, node: WorkflowNode): void {
     console.log('Node double clicked:', node);
     event.stopPropagation();
     this.selectedNodeForEditing = node;
@@ -200,11 +203,84 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     }
   }
 
+
+  @HostListener('contextmenu', ['$event'])
+  onContextMenu(event: MouseEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const target = event.target as HTMLElement;
+    const nodeElement = target.closest('.ngx-workflow__node') as HTMLElement;
+    const edgeElement = target.closest('.ngx-workflow__edge') as HTMLElement;
+
+    let type: 'node' | 'edge' | 'canvas' = 'canvas';
+    let item: WorkflowNode | Edge | undefined;
+
+    if (nodeElement) {
+      type = 'node';
+      const nodeId = nodeElement.dataset['id'];
+      item = this.nodes().find(n => n.id === nodeId);
+    } else if (edgeElement) {
+      type = 'edge';
+      const edgeId = edgeElement.dataset['id'];
+      if (edgeId) {
+        item = this.edges().find(e => e.id === edgeId);
+      }
+    }
+
+    this.contextMenu.emit({ type, item, event });
+
+    const actions: ContextMenuItem[] = [];
+
+    if (type === 'node' && item) {
+      const node = item as WorkflowNode;
+      actions.push({
+        label: 'Duplicate',
+        action: () => {
+          this.diagramStateService.selectNodes([node.id]);
+          this.diagramStateService.duplicate();
+        },
+        shortcut: 'Ctrl+D'
+      });
+      actions.push({
+        label: 'Delete',
+        action: () => this.diagramStateService.removeNode(node.id),
+        shortcut: 'Del',
+        danger: true
+      });
+    } else if (type === 'edge' && item) {
+      const edge = item as Edge;
+      actions.push({
+        label: 'Delete',
+        action: () => this.diagramStateService.removeEdge(edge.id),
+        shortcut: 'Del',
+        danger: true
+      });
+    } else {
+      // Canvas
+      actions.push({
+        label: 'Fit View',
+        action: () => {
+          this.diagramStateService.setViewport({ x: 0, y: 0, zoom: 1 });
+        }
+      });
+      actions.push({
+        label: 'Paste',
+        action: () => this.diagramStateService.paste(),
+        shortcut: 'Ctrl+V'
+      });
+    }
+
+    if (actions.length > 0) {
+      this.contextMenuService.open({ x: event.clientX, y: event.clientY }, actions, item);
+    }
+  }
+
   closeSidebar(): void {
     this.selectedNodeForEditing = null;
   }
 
-  onPropertiesChange(changes: Partial<Node>): void {
+  onPropertiesChange(changes: Partial<WorkflowNode>): void {
     if (this.selectedNodeForEditing) {
       this.diagramStateService.updateNode(this.selectedNodeForEditing.id, changes);
       // Update local reference to keep sidebar in sync
@@ -251,7 +327,8 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     private ngZone: NgZone,
     private cdRef: ChangeDetectorRef,
     public diagramStateService: DiagramStateService,
-    @Optional() @Inject(NGX_WORKFLOW_NODE_TYPES) public nodeTypes: Record<string, NodeComponentType> | null
+    private contextMenuService: ContextMenuService,
+    @Optional() @Inject(NGX_WORKFLOW_NODE_TYPES) public nodeTypes: Record<string, WorkflowNodeComponentType> | null
   ) {
     this.nodes$ = toObservable(this.diagramStateService.nodes);
   }
@@ -260,7 +337,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     return this.nodeTypes ? Object.keys(this.nodeTypes) : [];
   }
 
-  private nodes$: Observable<Node[]>;
+  private nodes$: Observable<WorkflowNode[]>;
   private resizeObserver!: ResizeObserver;
 
   ngOnInit(): void {
@@ -286,7 +363,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
 
     // Subscribe to state changes and emit events
     this.subscriptions.add(
-      this.diagramStateService.nodeClick.subscribe((node: Node) => this.nodeClick.emit(node))
+      this.diagramStateService.nodeClick.subscribe((node: WorkflowNode) => this.nodeClick.emit(node))
     );
     this.subscriptions.add(
       this.diagramStateService.edgeClick.subscribe((edge: Edge) => this.edgeClick.emit(edge))
@@ -396,7 +473,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     return `translate(${v.x}, ${v.y}) scale(${v.zoom})`;
   }
 
-  trackByNodeId(index: number, node: Node): string {
+  trackByNodeId(index: number, node: WorkflowNode): string {
     return node.id;
   }
 
@@ -492,7 +569,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     this.diagramStateService.moveNodesByDelta(selectedNodes.map(n => n.id), dx, dy);
   }
 
-  toggleGroup(event: Event, node: Node): void {
+  toggleGroup(event: Event, node: WorkflowNode): void {
     event.stopPropagation();
     this.diagramStateService.toggleGroup(node.id);
   }
@@ -772,7 +849,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
 
   // --- Dragging Logic ---
 
-  private startDraggingNode(event: PointerEvent, node: Node): void {
+  private startDraggingNode(event: PointerEvent, node: WorkflowNode): void {
     event.stopPropagation();
     this.isDraggingNode = true;
     this.draggingNode = node;
@@ -867,7 +944,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
 
   // --- Resizing Logic ---
 
-  private startResizing(event: PointerEvent, node: Node, handle: 'nw' | 'ne' | 'sw' | 'se'): void {
+  private startResizing(event: PointerEvent, node: WorkflowNode, handle: 'nw' | 'ne' | 'sw' | 'se'): void {
     event.stopPropagation();
     this.isResizing = true;
     this.resizingNode = node;
@@ -1122,7 +1199,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     const maxY = Math.max(this.selectionStart.y, this.selectionEnd.y);
 
     const selectedNodeIds: string[] = [];
-    this.nodes().forEach((node: Node) => {
+    this.nodes().forEach((node: WorkflowNode) => {
       const nodeX = node.position.x;
       const nodeY = node.position.y;
       const nodeWidth = node.width || this.defaultNodeWidth;
@@ -1282,7 +1359,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
 
   // --- Node Logic ---
 
-  getCustomNodeComponent(type: string | undefined): NodeComponentType | null {
+  getCustomNodeComponent(type: string | undefined): WorkflowNodeComponentType | null {
     if (type && this.nodeTypes && this.nodeTypes[type]) {
       return this.nodeTypes[type];
     }

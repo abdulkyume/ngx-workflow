@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'ngx-workflow-zoom-controls',
+  standalone: true,
   imports: [CommonModule],
   templateUrl: './zoom-controls.component.html',
   styleUrls: ['./zoom-controls.component.scss'],
