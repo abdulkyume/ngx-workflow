@@ -4,6 +4,7 @@
       [attr.width]="node.width || 170" [attr.height]="node.height || 60" [attr.fill]="nodeColor" [class]="nodeClass"
       class="ngx-workflow__minimap-node" />
     <rect class="ngx-workflow__minimap-viewport" [attr.x]="viewportIndicator().x" [attr.y]="viewportIndicator().y"
-      [attr.width]="viewportIndicator().width" [attr.height]="viewportIndicator().height" />
+      [attr.width]="viewportIndicator().width" [attr.height]="viewportIndicator().height"
+      (mousedown)="onViewportMouseDown($event)" style="cursor: move" />
   </svg>
 </div>

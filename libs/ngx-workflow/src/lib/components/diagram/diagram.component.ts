@@ -204,6 +204,8 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   }
 
 
+
+
   @HostListener('contextmenu', ['$event'])
   onContextMenu(event: MouseEvent): void {
     event.preventDefault();
@@ -603,54 +605,54 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     });
   }
 
-  onPointerDown(event: PointerEvent): void {
-    let targetElement = event.target as Element;
 
-    // Check for resize handle first (highest priority)
-    const resizeHandleElement = targetElement.closest('.ngx-workflow__resize-handle') as HTMLElement;
-    if (resizeHandleElement) {
-      const nodeElement = resizeHandleElement.closest('.ngx-workflow__node') as HTMLElement;
-      if (nodeElement) {
-        const nodeId = nodeElement.dataset['id'];
-        const node = this.nodes().find(n => n.id === nodeId);
-        const handle = resizeHandleElement.dataset['handle'] as 'nw' | 'ne' | 'sw' | 'se';
-        if (node && handle && (node.resizable !== false) && this.nodesResizable) {
-          this.startResizing(event, node, handle);
-          return;
-        }
+
+  onPointerDown(event: PointerEvent): void {
+    // Check if right click (button 2) - ignore as it's handled by context menu
+    if (event.button === 2) return;
+
+    const target = event.target as HTMLElement;
+    const handleElement = target.closest('.ngx-workflow__handle') as HTMLElement;
+    const nodeElement = target.closest('.ngx-workflow__node') as HTMLElement;
+    const resizeHandle = target.closest('.ngx-workflow__resize-handle') as HTMLElement;
+
+    if (resizeHandle && nodeElement) {
+      const nodeId = nodeElement.dataset['id'];
+      const node = this.nodes().find(n => n.id === nodeId);
+      const handle = resizeHandle.dataset['handle'] as 'nw' | 'ne' | 'sw' | 'se';
+      if (node && handle) {
+        this.startResizing(event, node, handle);
+        return;
       }
     }
 
-    let handleElement = targetElement.closest('.ngx-workflow__handle') as HTMLElement;
-    const nodeElement = targetElement.closest('.ngx-workflow__node') as HTMLElement;
-
-    if (event.button !== 0) return;
-
-    if (handleElement && handleElement.dataset['type'] === 'source') {
-      // Start Connecting
+    if (handleElement) {
       this.startConnecting(event, handleElement);
-    } else if (nodeElement) {
-      // Start Dragging Node
+      return;
+    }
+
+    if (nodeElement) {
       const nodeId = nodeElement.dataset['id'];
       const node = this.nodes().find(n => n.id === nodeId);
-      if (node && node.draggable) {
-        this.startDraggingNode(event, node);
-      }
-      // Select Node
       if (node) {
-        this.diagramStateService.onNodeClick(node);
-        this.diagramStateService.selectNodes([node.id], event.ctrlKey || event.metaKey || event.shiftKey);
-      }
-    } else {
-      // Pan or Select
-      const isClickingOnCanvas = targetElement === this.svgRef.nativeElement || targetElement.classList.contains('ngx-workflow__background');
-      if (isClickingOnCanvas) {
-        if (event.shiftKey) {
-          this.startSelecting(event);
-        } else {
-          this.startPanning(event);
+        // If node is not selected, select it (and deselect others unless shift is pressed)
+        if (!node.selected) {
+          if (!event.shiftKey) {
+            this.diagramStateService.clearSelection();
+          }
+          this.diagramStateService.selectNodes([node.id], true);
         }
+
+        this.startDraggingNode(event, node);
+        return;
       }
+    }
+
+    // Canvas interactions
+    if (event.shiftKey) {
+      this.startSelecting(event);
+    } else {
+      this.startPanning(event);
     }
   }
 

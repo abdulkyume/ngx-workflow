@@ -282,6 +282,11 @@ export class DiagramStateService {
     this.viewport.update((currentViewport) => ({ ...currentViewport, ...viewport }));
   }
 
+  setContainerDimensions(dimensions: { width: number; height: number }): void {
+    console.log('DiagramStateService.setContainerDimensions', dimensions);
+    this.containerDimensions.set(dimensions);
+  }
+
   focusNode(nodeId: string): void {
     const node = this.nodes().find(n => n.id === nodeId);
     if (!node) return;
@@ -950,7 +955,4 @@ export class DiagramStateService {
     this.viewport.update(v => ({ ...v, zoom }));
   }
 
-  setContainerDimensions(dimensions: { width: number; height: number }): void {
-    this.containerDimensions.set(dimensions);
-  }
 }
