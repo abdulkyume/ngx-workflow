@@ -1,10 +1,10 @@
-<div class="ngx-workflow__alignment-controls" *ngIf="showControls()">
-  <div class="ngx-workflow__alignment-group">
+<div class="ngx-workflow__alignment-controls">
+  <div class="ngx-workflow__alignment-group" *ngIf="showControls()">
     <button (click)="align('left')" title="Align Left">Left</button>
     <button (click)="align('center')" title="Align Center">Center</button>
     <button (click)="align('right')" title="Align Right">Right</button>
   </div>
-  <div class="ngx-workflow__alignment-group">
+  <div class="ngx-workflow__alignment-group" *ngIf="showControls()">
     <button (click)="align('top')" title="Align Top">Top</button>
     <button (click)="align('middle')" title="Align Middle">Middle</button>
     <button (click)="align('bottom')" title="Align Bottom">Bottom</button>
@@ -12,5 +12,9 @@
   <div class="ngx-workflow__alignment-group" *ngIf="showDistribution()">
     <button (click)="distribute('horizontal')" title="Distribute Horizontally">Dist H</button>
     <button (click)="distribute('vertical')" title="Distribute Vertically">Dist V</button>
+  </div>
+  <div class="ngx-workflow__alignment-group">
+    <button (click)="autoLayout('TB')" title="Auto Layout Vertical">Layout V</button>
+    <button (click)="autoLayout('LR')" title="Auto Layout Horizontal">Layout H</button>
   </div>
 </div>

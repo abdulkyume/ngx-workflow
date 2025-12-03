@@ -25,4 +25,8 @@ export class AlignmentControlsComponent {
     distribute(distribution: 'horizontal' | 'vertical'): void {
         this.diagramStateService.distributeNodes(distribution);
     }
+
+    autoLayout(direction: 'TB' | 'LR'): void {
+        this.diagramStateService.applyLayout(direction);
+    }
 }

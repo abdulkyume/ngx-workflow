@@ -98,6 +98,10 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   // Sidebar State
   selectedNodeForEditing: WorkflowNode | null = null;
 
+  // Edge Editing State
+  editingEdgeId: string | null = null;
+  editingEdgeLabel: string = '';
+
   viewport!: WritableSignal<Viewport>;
   nodes!: WritableSignal<WorkflowNode[]>;
   viewNodes!: Signal<WorkflowNode[]>;
@@ -153,8 +157,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   private updatingEdge: Edge | null = null;
   private updatingEdgeHandle: 'source' | 'target' | null = null;
 
-  // Edge Label Editing
-  editingEdgeId: string | null = null;
+
 
   private updatePathFinder(nodes: WorkflowNode[]): void {
     this.pathCache.clear();
@@ -168,11 +171,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     })));
   }
 
-  onEdgeDoubleClick(event: MouseEvent, edge: Edge): void {
-    event.stopPropagation();
-    event.preventDefault();
-    this.editingEdgeId = edge.id;
-  }
+
 
   onNodeDoubleClick(event: MouseEvent, node: WorkflowNode): void {
     console.log('Node double clicked:', node);
@@ -295,8 +294,17 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     this.editingEdgeId = null;
   }
 
-  onEdgeLabelBlur(): void {
-    this.editingEdgeId = null;
+  onEdgeLabelInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.editingEdgeLabel = input.value;
+  }
+
+  onEdgeLabelBlur(edge: Edge): void {
+    if (this.editingEdgeId === edge.id) {
+      this.diagramStateService.updateEdge(edge.id, { label: this.editingEdgeLabel });
+      this.editingEdgeId = null;
+      this.editingEdgeLabel = '';
+    }
   }
 
   // Default node dimensions
@@ -615,6 +623,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     const handleElement = target.closest('.ngx-workflow__handle') as HTMLElement;
     const nodeElement = target.closest('.ngx-workflow__node') as HTMLElement;
     const resizeHandle = target.closest('.ngx-workflow__resize-handle') as HTMLElement;
+    const edgeElement = target.closest('.ngx-workflow__edge') as HTMLElement;
 
     if (resizeHandle && nodeElement) {
       const nodeId = nodeElement.dataset['id'];
@@ -648,6 +657,11 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
       }
     }
 
+    // If clicking an edge, let the specific handlers handle it (don't pan)
+    if (edgeElement) {
+      return;
+    }
+
     // Canvas interactions
     if (event.shiftKey) {
       this.startSelecting(event);
@@ -655,6 +669,8 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
       this.startPanning(event);
     }
   }
+
+
 
   onPointerMove(event: PointerEvent): void {
     // console.log('onPointerMove', { dragging: this.isDraggingNode, connecting: this.isConnecting, resizing: this.isResizing });
@@ -1336,6 +1352,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   onEdgeClick(event: MouseEvent, edge: Edge): void {
+    console.log('onEdgeClick', edge.id);
     event.stopPropagation();
     event.preventDefault();
 
@@ -1357,6 +1374,28 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
           : (isMultiSelect ? e.selected : false)
       }))
     );
+  }
+
+  onEdgeDoubleClick(event: MouseEvent, edge: Edge): void {
+    console.log('onEdgeDoubleClick', edge.id);
+    event.stopPropagation();
+    event.preventDefault();
+    this.editingEdgeId = edge.id;
+    this.editingEdgeLabel = edge.label || '';
+
+    // Force change detection
+    this.cdRef.detectChanges();
+
+    // Focus the input after a short delay to allow rendering
+    setTimeout(() => {
+      const input = this.el.nativeElement.querySelector('.ngx-workflow__edge-label-input') as HTMLInputElement;
+      if (input) {
+        input.focus();
+        input.select();
+      } else {
+        console.warn('Edge label input not found');
+      }
+    }, 10);
   }
 
   // --- Node Logic ---

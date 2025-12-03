@@ -51,9 +51,9 @@
         <g *ngIf="edge.label || editingEdgeId === edge.id" class="ngx-workflow__edge-label">
           <foreignObject *ngIf="editingEdgeId === edge.id" [attr.x]="getEdgeLabelPosition(edge).x - 50"
             [attr.y]="getEdgeLabelPosition(edge).y - 15" width="100" height="30">
-            <input #edgeLabelInput type="text" [value]="edge.label || ''" (blur)="onEdgeLabelBlur()"
-              (keydown.enter)="updateEdgeLabel(edge, edgeLabelInput.value)" class="ngx-workflow__edge-label-input"
-              autofocus>
+            <input #edgeLabelInput type="text" [value]="edge.label || ''" (blur)="onEdgeLabelBlur(edge)"
+              (keydown.enter)="onEdgeLabelBlur(edge)" (input)="onEdgeLabelInput($any($event))"
+              class="ngx-workflow__edge-label-input" autofocus>
           </foreignObject>
 
           <text *ngIf="editingEdgeId !== edge.id" [attr.x]="getEdgeLabelPosition(edge).x"

@@ -11,7 +11,8 @@ import { Node, Edge, Viewport, XYPosition, DiagramState, AlignmentGuide } from '
 import { Observable, Subject, animationFrameScheduler } from 'rxjs';
 import { throttleTime } from 'rxjs/operators';
 import { v4 as uuidv4 } from 'uuid';
-import { UndoRedoService } from './undo-redo.service'; // Import UndoRedoService and DiagramState
+import { UndoRedoService } from './undo-redo.service';
+import { AutoLayoutService } from './auto-layout.service'; // Import UndoRedoService and DiagramState
 
 export interface Connection {
   source: string;
@@ -135,7 +136,10 @@ export class DiagramStateService {
   private edgeUpdates$ = new Subject<Edge[]>();
   private viewportUpdates$ = new Subject<Viewport>();
 
-  constructor(private undoRedoService: UndoRedoService) {
+  constructor(
+    private undoRedoService: UndoRedoService,
+    private autoLayoutService: AutoLayoutService
+  ) {
     // Sync internal subjects to signals (for batched updates)
     this.nodeUpdates$
       .pipe(throttleTime(0, animationFrameScheduler, { leading: true, trailing: true }))
@@ -370,7 +374,7 @@ export class DiagramStateService {
 
     // Clear selection after deletion
     this.clearSelection();
-    console.log('Selected elements deleted');
+    console.log('Selected elements deleted. Nodes:', nodesToDelete, 'Edges:', edgesToDelete);
   }
 
   // --- Alignment & Distribution ---
@@ -953,6 +957,17 @@ export class DiagramStateService {
 
   setZoom(zoom: number): void {
     this.viewport.update(v => ({ ...v, zoom }));
+  }
+
+  applyLayout(direction: 'TB' | 'LR'): void {
+    const currentNodes = this.nodes();
+    const currentEdges = this.edges();
+
+    this.undoRedoService.saveState(this.getCurrentState());
+
+    const newNodes = this.autoLayoutService.calculateLayout(currentNodes, currentEdges, direction);
+
+    this.nodes.set(newNodes);
   }
 
 }
