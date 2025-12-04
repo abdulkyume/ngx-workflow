@@ -29,6 +29,14 @@ interface TempEdge extends Edge {
   targetY: number;
 }
 
+// Interface for box selection
+export interface SelectionBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -41,6 +49,7 @@ export class DiagramStateService {
   readonly searchQuery = signal<string>('');
   readonly filterType = signal<string | null>(null);
   readonly containerDimensions = signal<{ width: number; height: number }>({ width: 0, height: 0 });
+  readonly selectionBox = signal<SelectionBox | null>(null);
 
   // Computed signals
   readonly selectedNodes = computed(() => this.nodes().filter((n) => n.selected));
@@ -975,4 +984,67 @@ export class DiagramStateService {
     this.nodes.set(newNodes);
   }
 
+  // Box Selection Methods
+  startBoxSelection(x: number, y: number): void {
+    this.selectionBox.set({ x, y, width: 0, height: 0 });
+  }
+
+  updateBoxSelection(x: number, y: number): void {
+    const box = this.selectionBox();
+    if (!box) return;
+
+    // Calculate width and height based on drag direction
+    const width = x - box.x;
+    const height = y - box.y;
+
+    this.selectionBox.set({
+      x: width < 0 ? x : box.x,
+      y: height < 0 ? y : box.y,
+      width: Math.abs(width),
+      height: Math.abs(height),
+    });
+  }
+
+  endBoxSelection(): void {
+    const box = this.selectionBox();
+    if (!box) return;
+
+    // Select all nodes that intersect with the selection box
+    const currentNodes = this.nodes();
+    const selectedNodeIds = new Set<string>();
+
+    currentNodes.forEach((node) => {
+      if (this.isNodeInSelectionBox(node, box)) {
+        selectedNodeIds.add(node.id);
+      }
+    });
+
+    // Update node selection
+    this.nodes.set(
+      currentNodes.map((node) => ({
+        ...node,
+        selected: selectedNodeIds.has(node.id),
+      }))
+    );
+
+    // Clear selection box
+    this.selectionBox.set(null);
+  }
+
+  cancelBoxSelection(): void {
+    this.selectionBox.set(null);
+  }
+
+  private isNodeInSelectionBox(node: Node, box: SelectionBox): boolean {
+    const nodeWidth = node.width || 150;
+    const nodeHeight = node.height || 60;
+
+    // Check if node intersects with selection box
+    return !(
+      node.position.x > box.x + box.width ||
+      node.position.x + nodeWidth < box.x ||
+      node.position.y > box.y + box.height ||
+      node.position.y + nodeHeight < box.y
+    );
+  }
 }

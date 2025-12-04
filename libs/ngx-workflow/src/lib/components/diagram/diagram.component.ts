@@ -111,6 +111,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   filteredEdges!: Signal<Edge[]>;
   tempEdges!: WritableSignal<TempEdge[]>;
   alignmentGuides!: Signal<AlignmentGuide[]>;
+  selectionBox!: Signal<any>;
 
   // Expose Math to the template
   Math = Math;
@@ -702,7 +703,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     } else if (this.isPanning) {
       this.stopPanning(event);
     } else if (this.isSelecting) {
-      this.stopSelecting(event);
+      this.endSelecting(event);
     }
   }
 
@@ -1226,63 +1227,6 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     this.svgRef.nativeElement.releasePointerCapture(event.pointerId);
   }
 
-  // --- Selection Logic ---
-
-  private startSelecting(event: PointerEvent): void {
-    this.isSelecting = true;
-    this.selectionStart = this.getDiagramCoordinates(event.clientX, event.clientY);
-    this.selectionEnd = { ...this.selectionStart };
-    this.svgRef.nativeElement.setPointerCapture(event.pointerId);
-  }
-
-  private updateSelection(event: PointerEvent): void {
-    this.ngZone.runOutsideAngular(() => {
-      this.selectionEnd = this.getDiagramCoordinates(event.clientX, event.clientY);
-    });
-  }
-
-  private stopSelecting(event: PointerEvent): void {
-    this.isSelecting = false;
-    this.svgRef.nativeElement.releasePointerCapture(event.pointerId);
-    this.performLassoSelection();
-  }
-
-  private getDiagramCoordinates(clientX: number, clientY: number): XYPosition {
-    const svgRect = this.svgRef.nativeElement.getBoundingClientRect();
-    const viewport = this.viewport();
-
-    const x = (clientX - svgRect.left - viewport.x) / viewport.zoom;
-    const y = (clientY - svgRect.top - viewport.y) / viewport.zoom;
-    return { x, y };
-  }
-
-  private performLassoSelection(): void {
-    const minX = Math.min(this.selectionStart.x, this.selectionEnd.x);
-    const maxX = Math.max(this.selectionStart.x, this.selectionEnd.x);
-    const minY = Math.min(this.selectionStart.y, this.selectionEnd.y);
-    const maxY = Math.max(this.selectionStart.y, this.selectionEnd.y);
-
-    const selectedNodeIds: string[] = [];
-    this.nodes().forEach((node: WorkflowNode) => {
-      const nodeX = node.position.x;
-      const nodeY = node.position.y;
-      const nodeWidth = node.width || this.defaultNodeWidth;
-      const nodeHeight = node.height || this.defaultNodeHeight;
-
-      if (
-        nodeX < maxX &&
-        nodeX + nodeWidth > minX &&
-        nodeY < maxY &&
-        nodeY + nodeHeight > minY
-      ) {
-        selectedNodeIds.push(node.id);
-      }
-    });
-
-    this.diagramStateService.clearSelection();
-    this.diagramStateService.selectNodes(selectedNodeIds, false);
-  }
-
   // --- Edge Logic ---
 
   getEdgePath(edge: Edge | TempEdge, isTemporary: boolean = false): string {
@@ -1792,5 +1736,42 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
         // Handled by onCutKeyPress
       }
     }
+  }
+
+  // --- Box Selection Methods ---
+
+  private startSelecting(event: PointerEvent): void {
+    const rect = this.svgRef.nativeElement.getBoundingClientRect();
+    const viewport = this.viewport();
+
+    const x = (event.clientX - rect.left - viewport.x) / viewport.zoom;
+    const y = (event.clientY - rect.top - viewport.y) / viewport.zoom;
+
+    this.isSelecting = true;
+    this.selectionStart = { x, y };
+    this.selectionEnd = { x, y };
+    this.diagramStateService.startBoxSelection(x, y);
+    this.svgRef.nativeElement.setPointerCapture(event.pointerId);
+  }
+
+  private updateSelection(event: PointerEvent): void {
+    if (!this.isSelecting) return;
+
+    const rect = this.svgRef.nativeElement.getBoundingClientRect();
+    const viewport = this.viewport();
+
+    const x = (event.clientX - rect.left - viewport.x) / viewport.zoom;
+    const y = (event.clientY - rect.top - viewport.y) / viewport.zoom;
+
+    this.selectionEnd = { x, y };
+    this.diagramStateService.updateBoxSelection(x, y);
+  }
+
+  private endSelecting(event: PointerEvent): void {
+    if (!this.isSelecting) return;
+
+    this.isSelecting = false;
+    this.svgRef.nativeElement.releasePointerCapture(event.pointerId);
+    this.diagramStateService.endBoxSelection();
   }
 }
