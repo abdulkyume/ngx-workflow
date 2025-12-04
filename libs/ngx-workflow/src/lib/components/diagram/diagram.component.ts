@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, ElementRef, OnInit, Renderer2, NgZone, OnDestroy, HostListener, WritableSignal, Inject, Optional, computed, ViewChild, Input, Output, EventEmitter, OnChanges, SimpleChanges, Signal, ChangeDetectorRef } from '@angular/core';
+import { Component, ChangeDetectionStrategy, ElementRef, OnInit, Renderer2, NgZone, OnDestroy, HostListener, WritableSignal, Inject, Optional, computed, ViewChild, Input, Output, EventEmitter, OnChanges, SimpleChanges, Signal, ChangeDetectorRef, TemplateRef } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { CommonModule, NgComponentOutlet } from '@angular/common';
 import { DiagramStateService } from '../../services/diagram-state.service';
@@ -15,6 +15,7 @@ import { AlignmentControlsComponent } from '../alignment-controls/alignment-cont
 import { PropertiesSidebarComponent } from '../properties-sidebar/properties-sidebar.component';
 import { ContextMenuComponent } from '../context-menu/context-menu.component';
 import { ContextMenuService, ContextMenuItem } from '../../services/context-menu.service';
+import { SearchControlsComponent } from '../search-controls/search-controls.component';
 
 // Helper function to get a node from the array
 function getNode(id: string, nodes: WorkflowNode[]): WorkflowNode | undefined {
@@ -55,7 +56,7 @@ function getHandleAbsolutePosition(node: WorkflowNode, handleId: string | undefi
   };
 }
 
-import { SearchControlsComponent } from '../search-controls/search-controls.component';
+
 
 @Component({
   selector: 'ngx-workflow-diagram',

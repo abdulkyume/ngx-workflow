@@ -26,20 +26,13 @@
       </marker>
     </defs>
 
-    <!-- Invisible hitbox for easier clicking -->
-    <!-- <path [attr.d]="getEdgePath(edge)" class="ngx-workflow__edge-hitbox"></path> -->
-    <!-- Wait, the loop for edges is below. This was misplaced in previous view? No, it was inside defs? No. -->
-    <!-- I need to be careful with the template structure. -->
-    <!-- The previous view (Step 10472) showed markers inside defs, then rect background, then viewport group. -->
-    <!-- I'll follow that structure. -->
-
     <rect width="100%" height="100%" fill="url(#ngx-workflow__grid-pattern)" class="ngx-workflow__background" />
 
     <g class="ngx-workflow__viewport" [attr.transform]="transform">
       <!-- Edges -->
-      <g *ngFor="let edge of filteredEdges(); trackBy: trackByEdgeId" [attr.data-id]="edge.id"
-        [class.selected]="edge.selected" [class.animated]="edge.animated" class="ngx-workflow__edge"
-        (click)="onEdgeClick($event, edge)" (dblclick)="onEdgeDoubleClick($event, edge)">
+      <g *ngFor="let edge of filteredEdges(); trackBy: trackByEdgeId" [class.selected]="edge.selected"
+        [class.animated]="edge.animated" class="ngx-workflow__edge" (click)="onEdgeClick($event, edge)"
+        (dblclick)="onEdgeDoubleClick($event, edge)">
         <!-- Edge path with markers -->
         <path [attr.d]="getEdgePath(edge)" class="ngx-workflow__edge-path" [style]="edge.style"
           [attr.marker-start]="getMarkerUrl(edge.markerStart)" [attr.marker-end]="getMarkerUrl(edge.markerEnd)">
@@ -52,8 +45,8 @@
           <foreignObject *ngIf="editingEdgeId === edge.id" [attr.x]="getEdgeLabelPosition(edge).x - 50"
             [attr.y]="getEdgeLabelPosition(edge).y - 15" width="100" height="30">
             <input #edgeLabelInput type="text" [value]="edge.label || ''" (blur)="onEdgeLabelBlur(edge)"
-              (keydown.enter)="onEdgeLabelBlur(edge)" (input)="onEdgeLabelInput($any($event))"
-              class="ngx-workflow__edge-label-input" autofocus>
+              (keydown.enter)="onEdgeLabelBlur(edge)" (input)="onEdgeLabelInput($event)" class="ngx-workflow__edge-label-input"
+              autofocus>
           </foreignObject>
 
           <text *ngIf="editingEdgeId !== edge.id" [attr.x]="getEdgeLabelPosition(edge).x"
@@ -104,8 +97,7 @@
 
         <!-- Hit area -->
         <circle [attr.cx]="(node.width || defaultNodeWidth) / 2" cy="-10" r="20" fill="transparent"
-          pointer-events="all">
-        </circle>
+          pointer-events="all"></circle>
         <!-- Visual -->
         <circle [attr.cx]="(node.width || defaultNodeWidth) / 2" [attr.cy]="0" r="6"
           class="ngx-workflow__handle-circle">
