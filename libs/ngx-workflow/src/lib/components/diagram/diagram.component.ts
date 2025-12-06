@@ -17,6 +17,7 @@ import { ContextMenuComponent } from '../context-menu/context-menu.component';
 import { ContextMenuService, ContextMenuItem } from '../../services/context-menu.service';
 import { SearchControlsComponent } from '../search-controls/search-controls.component';
 import { NodeToolbarComponent } from '../node-toolbar/node-toolbar.component';
+import { PanelComponent } from '../panel/panel.component';
 
 // Helper function to get a node from the array
 function getNode(id: string, nodes: WorkflowNode[]): WorkflowNode | undefined {
@@ -65,7 +66,7 @@ function getHandleAbsolutePosition(node: WorkflowNode, handleId: string | undefi
   styleUrls: ['./diagram.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true,
-  imports: [CommonModule, ZoomControlsComponent, MinimapComponent, BackgroundComponent, AlignmentControlsComponent, PropertiesSidebarComponent, SearchControlsComponent, ContextMenuComponent, NodeToolbarComponent]
+  imports: [CommonModule, ZoomControlsComponent, MinimapComponent, BackgroundComponent, AlignmentControlsComponent, PropertiesSidebarComponent, SearchControlsComponent, ContextMenuComponent, NodeToolbarComponent, PanelComponent]
 })
 export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   // Trigger rebuild

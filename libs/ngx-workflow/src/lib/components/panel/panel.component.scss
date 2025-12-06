@@ -1,0 +1,61 @@
+.ngx-workflow__panel {
+  position: fixed;
+  pointer-events: auto;
+  z-index: var(--ngx-workflow-panel-z-index, 5);
+  background: var(--ngx-workflow-panel-bg, transparent);
+  padding: var(--ngx-workflow-panel-padding, 0);
+  border-radius: var(--ngx-workflow-panel-radius, 0);
+  
+  // Top positions
+  &--top-left {
+    top: var(--ngx-workflow-panel-offset, 10px);
+    left: var(--ngx-workflow-panel-offset, 10px);
+  }
+
+  &--top-center {
+    top: var(--ngx-workflow-panel-offset, 10px);
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  &--top-right {
+    top: var(--ngx-workflow-panel-offset, 10px);
+    right: var(--ngx-workflow-panel-offset, 10px);
+  }
+
+  // Center positions
+  &--center-left {
+    top: 50%;
+    left: var(--ngx-workflow-panel-offset, 10px);
+    transform: translateY(-50%);
+  }
+
+  &--center {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  &--center-right {
+    top: 50%;
+    right: var(--ngx-workflow-panel-offset, 10px);
+    transform: translateY(-50%);
+  }
+
+  // Bottom positions
+  &--bottom-left {
+    bottom: var(--ngx-workflow-panel-offset, 10px);
+    left: var(--ngx-workflow-panel-offset, 10px);
+  }
+
+  &--bottom-center {
+    bottom: var(--ngx-workflow-panel-offset, 10px);
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  &--bottom-right {
+    bottom: var(--ngx-workflow-panel-offset, 10px);
+    right: var(--ngx-workflow-panel-offset, 10px);
+  }
+}

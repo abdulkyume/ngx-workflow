@@ -27,6 +27,36 @@
       <button (click)="editNodeLabel(node.id)" title="Edit Properties">✏️</button>
     </ngx-workflow-node-toolbar>
 
+    <!-- Info Panel (top-right) -->
+    <ngx-workflow-panel position="top-right">
+      <div
+        style="background: white; padding: 12px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); min-width: 150px;">
+        <h4 style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600;">Diagram Info</h4>
+        <div style="font-size: 12px; color: #666;">
+          <div>Nodes: {{ nodesCount }}</div>
+          <div>Edges: {{ edgesCount }}</div>
+          <div>Zoom: {{ viewport.zoom | number:'1.1-2' }}x</div>
+        </div>
+      </div>
+    </ngx-workflow-panel>
+
+    <!-- Legend Panel (bottom-left) -->
+    <ngx-workflow-panel position="bottom-left">
+      <div style="background: white; padding: 12px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">
+        <h4 style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600;">Legend</h4>
+        <div style="font-size: 12px;">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+            <div style="width: 16px; height: 16px; background: #3b82f6; border-radius: 3px;"></div>
+            <span>Default Node</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="width: 16px; height: 16px; background: #10b981; border-radius: 3px;"></div>
+            <span>Rounded Node</span>
+          </div>
+        </div>
+      </div>
+    </ngx-workflow-panel>
+
   </ngx-workflow-diagram>
 </div>
 
