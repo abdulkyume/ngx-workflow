@@ -111,9 +111,40 @@ export class App implements OnInit {
     this.nodes = laidOutNodes;
   }
 
-  fitView(): void {
-    // Reset viewport to default
-    this.viewport = { x: 0, y: 0, zoom: 1 };
+  // Viewport Helper Method Tests
+  testZoomIn(): void {
+    if (this.diagram) {
+      this.diagram.diagramStateService.zoomIn();
+      console.log('Zoom In - Current zoom:', this.diagram.diagramStateService.getZoom());
+    }
+  }
+
+  testZoomOut(): void {
+    if (this.diagram) {
+      this.diagram.diagramStateService.zoomOut();
+      console.log('Zoom Out - Current zoom:', this.diagram.diagramStateService.getZoom());
+    }
+  }
+
+  testFitView(): void {
+    if (this.diagram) {
+      this.diagram.diagramStateService.fitView({ padding: 50, maxZoom: 1.5 });
+      console.log('Fit View - Viewport:', this.diagram.diagramStateService.getViewport());
+    }
+  }
+
+  testSetCenter(): void {
+    if (this.diagram) {
+      // Center on node 2's position
+      const node = this.nodes.find(n => n.id === '2');
+      if (node) {
+        this.diagram.diagramStateService.setCenter(
+          node.position.x + (node.width || 170) / 2,
+          node.position.y + (node.height || 60) / 2
+        );
+        console.log('Set Center - Centered on node 2');
+      }
+    }
   }
 
   // Event handlers

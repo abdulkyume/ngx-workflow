@@ -7,7 +7,7 @@ import {
   ElementRef,
   effect,
 } from '@angular/core';
-import { Node, Edge, Viewport, XYPosition, DiagramState, AlignmentGuide } from '../models';
+import { Node, Edge, Viewport, XYPosition, DiagramState, AlignmentGuide, ZoomOptions, ZoomToOptions, FitViewOptions, SetCenterOptions, FitBoundsOptions, Bounds } from '../models';
 import { Observable, Subject, animationFrameScheduler } from 'rxjs';
 import { throttleTime } from 'rxjs/operators';
 import { v4 as uuidv4 } from 'uuid';
@@ -347,6 +347,252 @@ export class DiagramStateService {
 
     this.setViewport({ x: newX, y: newY, zoom: targetZoom });
     this.selectNodes([nodeId]);
+  }
+
+  // --- Viewport Helper Methods ---
+
+  /**
+   * Zoom in by a fixed step.
+   * @param options - Optional zoom options (step, duration)
+   */
+  zoomIn(options?: ZoomOptions): void {
+    const step = options?.step ?? 0.1;
+    const currentZoom = this.viewport().zoom;
+    const newZoom = Math.min(10, currentZoom + step);
+    this.setViewport({ zoom: newZoom });
+  }
+
+  /**
+   * Zoom out by a fixed step.
+   * @param options - Optional zoom options (step, duration)
+   */
+  zoomOut(options?: ZoomOptions): void {
+    const step = options?.step ?? 0.1;
+    const currentZoom = this.viewport().zoom;
+    const newZoom = Math.max(0.1, currentZoom - step);
+    this.setViewport({ zoom: newZoom });
+  }
+
+  /**
+   * Zoom to a specific level.
+   * @param zoomLevel - Target zoom level (0.1 - 10)
+   * @param options - Optional zoom options (center point, duration)
+   */
+  zoomTo(zoomLevel: number, options?: ZoomToOptions): void {
+    const clampedZoom = Math.max(0.1, Math.min(10, zoomLevel));
+
+    if (options?.center) {
+      // Zoom to specific point, keeping that point in the same screen position
+      const viewport = this.viewport();
+      const container = this.containerDimensions();
+
+      const pointX = options.center.x;
+      const pointY = options.center.y;
+
+      // Calculate new viewport position to keep center point in place
+      const newX = container.width / 2 - pointX * clampedZoom;
+      const newY = container.height / 2 - pointY * clampedZoom;
+
+      this.setViewport({ x: newX, y: newY, zoom: clampedZoom });
+    } else {
+      this.setViewport({ zoom: clampedZoom });
+    }
+  }
+
+  /**
+   * Get current zoom level.
+   * @returns Current zoom level
+   */
+  getZoom(): number {
+    return this.viewport().zoom;
+  }
+
+  /**
+   * Get current viewport state.
+   * @returns Copy of current viewport
+   */
+  getViewport(): Viewport {
+    return { ...this.viewport() };
+  }
+
+  /**
+   * Fit all nodes (or specific nodes) to the viewport.
+   * @param options - Optional fit view options
+   */
+  fitView(options?: FitViewOptions): void {
+    const padding = options?.padding ?? 50;
+    const minZoom = options?.minZoom ?? 0.1;
+    const maxZoom = options?.maxZoom ?? 2;
+    const includeHiddenNodes = options?.includeHiddenNodes ?? false;
+
+    let nodesToFit = this.nodes();
+
+    // Filter by specific nodes if provided
+    if (options?.nodes && options.nodes.length > 0) {
+      nodesToFit = nodesToFit.filter(n => options.nodes!.includes(n.id));
+    }
+
+    // Filter hidden nodes
+    if (!includeHiddenNodes) {
+      nodesToFit = nodesToFit.filter(n => !n.dimmed);
+    }
+
+    if (nodesToFit.length === 0) {
+      console.warn('fitView: No nodes to fit');
+      return;
+    }
+
+    // Calculate bounding box
+    const bounds = this.getNodesBounds(nodesToFit);
+
+    // Fit to bounds
+    this.fitBounds(bounds, { padding, minZoom, maxZoom });
+  }
+
+  /**
+   * Center viewport on specific coordinates.
+   * @param x - Flow X coordinate
+   * @param y - Flow Y coordinate
+   * @param options - Optional center options (zoom level)
+   */
+  setCenter(x: number, y: number, options?: SetCenterOptions): void {
+    const container = this.containerDimensions();
+    const zoom = options?.zoom ?? this.viewport().zoom;
+
+    const newX = container.width / 2 - x * zoom;
+    const newY = container.height / 2 - y * zoom;
+
+    this.setViewport({ x: newX, y: newY, zoom });
+  }
+
+  /**
+   * Fit viewport to specific bounds.
+   * @param bounds - Bounding box to fit
+   * @param options - Optional fit bounds options
+   */
+  fitBounds(bounds: Bounds, options?: FitBoundsOptions): void {
+    const padding = options?.padding ?? 50;
+    const minZoom = options?.minZoom ?? 0.1;
+    const maxZoom = options?.maxZoom ?? 2;
+
+    const container = this.containerDimensions();
+
+    if (container.width === 0 || container.height === 0) {
+      console.warn('fitBounds: Container dimensions not available');
+      return;
+    }
+
+    // Calculate zoom to fit bounds
+    const availableWidth = container.width - padding * 2;
+    const availableHeight = container.height - padding * 2;
+
+    const zoomX = availableWidth / bounds.width;
+    const zoomY = availableHeight / bounds.height;
+
+    // Use the smaller zoom to ensure everything fits
+    let zoom = Math.min(zoomX, zoomY);
+
+    // Clamp zoom to limits
+    zoom = Math.max(minZoom, Math.min(maxZoom, zoom));
+
+    // Calculate center of bounds
+    const centerX = bounds.x + bounds.width / 2;
+    const centerY = bounds.y + bounds.height / 2;
+
+    // Calculate viewport position to center the bounds
+    const x = container.width / 2 - centerX * zoom;
+    const y = container.height / 2 - centerY * zoom;
+
+    this.setViewport({ x, y, zoom });
+  }
+
+  /**
+   * Convert screen coordinates to flow coordinates.
+   * @param screenPosition - Screen/client coordinates
+   * @returns Flow coordinates
+   */
+  screenToFlowPosition(screenPosition: XYPosition): XYPosition {
+    const viewport = this.viewport();
+    const svgEl = this.el?.nativeElement;
+
+    if (!svgEl) {
+      console.warn('screenToFlowPosition: SVG element not available');
+      return { x: 0, y: 0 };
+    }
+
+    const svgRect = svgEl.getBoundingClientRect();
+
+    return {
+      x: (screenPosition.x - svgRect.left - viewport.x) / viewport.zoom,
+      y: (screenPosition.y - svgRect.top - viewport.y) / viewport.zoom
+    };
+  }
+
+  /**
+   * Convert flow coordinates to screen coordinates.
+   * @param flowPosition - Flow coordinates
+   * @returns Screen/client coordinates
+   */
+  flowToScreenPosition(flowPosition: XYPosition): XYPosition {
+    const viewport = this.viewport();
+    const svgEl = this.el?.nativeElement;
+
+    if (!svgEl) {
+      console.warn('flowToScreenPosition: SVG element not available');
+      return { x: 0, y: 0 };
+    }
+
+    const svgRect = svgEl.getBoundingClientRect();
+
+    return {
+      x: svgRect.left + flowPosition.x * viewport.zoom + viewport.x,
+      y: svgRect.top + flowPosition.y * viewport.zoom + viewport.y
+    };
+  }
+
+  /**
+   * Alias for screenToFlowPosition.
+   * Convert screen coordinates to flow coordinates.
+   * @param position - Screen/client coordinates
+   * @returns Flow coordinates
+   */
+  project(position: XYPosition): XYPosition {
+    return this.screenToFlowPosition(position);
+  }
+
+  /**
+   * Get bounding box of nodes.
+   * @param nodes - Nodes to calculate bounds for
+   * @returns Bounding box
+   */
+  private getNodesBounds(nodes: Node[]): Bounds {
+    if (nodes.length === 0) {
+      return { x: 0, y: 0, width: 0, height: 0 };
+    }
+
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+
+    nodes.forEach(node => {
+      const x = node.position.x;
+      const y = node.position.y;
+      const width = node.width || 170;
+      const height = node.height || 60;
+
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x + width);
+      maxY = Math.max(maxY, y + height);
+    });
+
+    return {
+      x: minX,
+      y: minY,
+      width: maxX - minX,
+      height: maxY - minY
+    };
   }
 
   // --- Selection Management ---

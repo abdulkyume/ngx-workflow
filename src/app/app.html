@@ -7,8 +7,12 @@
     <input type="file" accept="application/json" (change)="importJSON($event)" />
     <button (click)="exportPNG()">Export PNG</button>
     <button (click)="exportSVG()">Export SVG</button>
-    <button (click)="fitView()">Fit View</button>
     <button (click)="clearFlow()">Clear All</button>
+    <div style="border-left: 2px solid #ccc; margin: 0 8px;"></div>
+    <button (click)="testZoomIn()">Zoom In</button>
+    <button (click)="testZoomOut()">Zoom Out</button>
+    <button (click)="testFitView()">Fit View</button>
+    <button (click)="testSetCenter()">Center</button>
   </div>
 </div>
 
