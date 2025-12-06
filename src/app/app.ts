@@ -8,6 +8,7 @@ import {
   Viewport,
   NgxWorkflowModule,
   DiagramComponent,
+  ColorMode,
 } from 'ngx-workflow';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -24,6 +25,7 @@ export class App implements OnInit {
   nodes: Node[] = [];
   edges: Edge[] = [];
   viewport: Viewport = { x: 0, y: 0, zoom: 1 };
+  currentTheme: ColorMode = 'light';
 
   constructor(private layoutService: LayoutService) { }
 
@@ -109,6 +111,13 @@ export class App implements OnInit {
   async applyElkLayout(): Promise<void> {
     const laidOutNodes = await this.layoutService.applyElkLayout(this.nodes, this.edges);
     this.nodes = laidOutNodes;
+  }
+
+  toggleTheme(): void {
+    const themes: ColorMode[] = ['light', 'dark', 'system'];
+    const currentIndex = themes.indexOf(this.currentTheme);
+    this.currentTheme = themes[(currentIndex + 1) % themes.length];
+    console.log('Theme changed to:', this.currentTheme);
   }
 
   // Viewport Helper Method Tests

@@ -14,6 +14,7 @@ export * from './lib/components/panel/panel.component';
 export * from './lib/services/diagram-state.service';
 export * from './lib/services/layout.service';
 export * from './lib/services/undo-redo.service';
+export * from './lib/services/theme.service';
 
 // Models
 export * from './lib/models/node.model';

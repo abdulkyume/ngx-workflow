@@ -1,0 +1,116 @@
+/* Global CSS Variables for Light and Dark Modes */
+
+/* Light Mode (Default) */
+:root {
+  /* Background */
+  --ngx-workflow-bg: #ffffff;
+  --ngx-workflow-bg-pattern: #f0f0f0;
+  
+  /* Nodes */
+  --ngx-workflow-node-bg: #ffffff;
+  --ngx-workflow-node-border: #d1d5db;
+  --ngx-workflow-node-color: #1f2937;
+  --ngx-workflow-node-selected-border: #3b82f6;
+  --ngx-workflow-node-shadow: rgba(0, 0, 0, 0.1);
+  
+  /* Edges */
+  --ngx-workflow-edge-stroke: #9ca3af;
+  --ngx-workflow-edge-stroke-selected: #3b82f6;
+  --ngx-workflow-edge-label-bg: #ffffff;
+  --ngx-workflow-edge-label-color: #374151;
+  
+  /* Controls */
+  --ngx-workflow-controls-bg: #ffffff;
+  --ngx-workflow-controls-border: #d1d5db;
+  --ngx-workflow-controls-color: #374151;
+  --ngx-workflow-controls-hover-bg: #f3f4f6;
+  
+  /* Minimap */
+  --ngx-workflow-minimap-bg: #f9fafb;
+  --ngx-workflow-minimap-border: #d1d5db;
+  --ngx-workflow-minimap-node: #3b82f6;
+  --ngx-workflow-minimap-viewport: rgba(59, 130, 246, 0.2);
+  
+  /* Sidebar */
+  --ngx-workflow-sidebar-bg: #ffffff;
+  --ngx-workflow-sidebar-border: #d1d5db;
+  --ngx-workflow-sidebar-color: #1f2937;
+  
+  /* Context Menu */
+  --ngx-workflow-menu-bg: #ffffff;
+  --ngx-workflow-menu-border: #d1d5db;
+  --ngx-workflow-menu-color: #374151;
+  --ngx-workflow-menu-hover-bg: #f3f4f6;
+  
+  /* Search */
+  --ngx-workflow-search-bg: #ffffff;
+  --ngx-workflow-search-border: #d1d5db;
+  --ngx-workflow-search-color: #374151;
+  
+  /* Toolbar */
+  --ngx-workflow-toolbar-bg: #ffffff;
+  --ngx-workflow-toolbar-border: #d1d5db;
+  --ngx-workflow-toolbar-shadow: rgba(0, 0, 0, 0.1);
+  
+  /* Panel */
+  --ngx-workflow-panel-bg: transparent;
+  --ngx-workflow-panel-z-index: 5;
+  --ngx-workflow-panel-offset: 10px;
+}
+
+/* Dark Mode */
+html[data-theme='dark'],
+html.dark-theme {
+  /* Background */
+  --ngx-workflow-bg: #1f2937;
+  --ngx-workflow-bg-pattern: #374151;
+  
+  /* Nodes */
+  --ngx-workflow-node-bg: #374151;
+  --ngx-workflow-node-border: #4b5563;
+  --ngx-workflow-node-color: #f9fafb;
+  --ngx-workflow-node-selected-border: #60a5fa;
+  --ngx-workflow-node-shadow: rgba(0, 0, 0, 0.3);
+  
+  /* Edges */
+  --ngx-workflow-edge-stroke: #6b7280;
+  --ngx-workflow-edge-stroke-selected: #60a5fa;
+  --ngx-workflow-edge-label-bg: #374151;
+  --ngx-workflow-edge-label-color: #f9fafb;
+  
+  /* Controls */
+  --ngx-workflow-controls-bg: #374151;
+  --ngx-workflow-controls-border: #4b5563;
+  --ngx-workflow-controls-color: #f9fafb;
+  --ngx-workflow-controls-hover-bg: #4b5563;
+  
+  /* Minimap */
+  --ngx-workflow-minimap-bg: #111827;
+  --ngx-workflow-minimap-border: #4b5563;
+  --ngx-workflow-minimap-node: #60a5fa;
+  --ngx-workflow-minimap-viewport: rgba(96, 165, 250, 0.2);
+  
+  /* Sidebar */
+  --ngx-workflow-sidebar-bg: #374151;
+  --ngx-workflow-sidebar-border: #4b5563;
+  --ngx-workflow-sidebar-color: #f9fafb;
+  
+  /* Context Menu */
+  --ngx-workflow-menu-bg: #374151;
+  --ngx-workflow-menu-border: #4b5563;
+  --ngx-workflow-menu-color: #f9fafb;
+  --ngx-workflow-menu-hover-bg: #4b5563;
+  
+  /* Search */
+  --ngx-workflow-search-bg: #374151;
+  --ngx-workflow-search-border: #4b5563;
+  --ngx-workflow-search-color: #f9fafb;
+  
+  /* Toolbar */
+  --ngx-workflow-toolbar-bg: #374151;
+  --ngx-workflow-toolbar-border: #4b5563;
+  --ngx-workflow-toolbar-shadow: rgba(0, 0, 0, 0.5);
+  
+  /* Panel */
+  --ngx-workflow-panel-bg: transparent;
+}

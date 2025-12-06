@@ -13,12 +13,17 @@
     <button (click)="testZoomOut()">Zoom Out</button>
     <button (click)="testFitView()">Fit View</button>
     <button (click)="testSetCenter()">Center</button>
+    <div style="border-left: 2px solid #ccc; margin: 0 8px;"></div>
+    <button (click)="toggleTheme()">
+      {{ currentTheme === 'light' ? '🌙' : currentTheme === 'dark' ? '☀️' : '🖥️' }} Theme
+    </button>
   </div>
 </div>
 
 <div class="flow-container">
   <ngx-workflow-diagram class="flow-diagram" [initialNodes]="nodes" [initialEdges]="edges" [initialViewport]="viewport"
-    (nodeClick)="onNodeClick($event)" (nodesChange)="onNodesChange($event)" (edgesChange)="onEdgesChange($event)">
+    [colorMode]="currentTheme" (nodeClick)="onNodeClick($event)" (nodesChange)="onNodesChange($event)"
+    (edgesChange)="onEdgesChange($event)">
 
     <!-- Node Toolbars for selected nodes -->
     <ngx-workflow-node-toolbar *ngFor="let node of selectedNodes" [nodeId]="node.id" position="top" align="center">
@@ -29,10 +34,9 @@
 
     <!-- Info Panel (top-right) -->
     <ngx-workflow-panel position="top-right">
-      <div
-        style="background: white; padding: 12px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); min-width: 150px;">
-        <h4 style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600;">Diagram Info</h4>
-        <div style="font-size: 12px; color: #666;">
+      <div class="panel-content">
+        <h4>Diagram Info</h4>
+        <div class="panel-text">
           <div>Nodes: {{ nodesCount }}</div>
           <div>Edges: {{ edgesCount }}</div>
           <div>Zoom: {{ viewport.zoom | number:'1.1-2' }}x</div>
@@ -42,15 +46,15 @@
 
     <!-- Legend Panel (bottom-left) -->
     <ngx-workflow-panel position="bottom-left">
-      <div style="background: white; padding: 12px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">
-        <h4 style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600;">Legend</h4>
-        <div style="font-size: 12px;">
-          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-            <div style="width: 16px; height: 16px; background: #3b82f6; border-radius: 3px;"></div>
+      <div class="panel-content">
+        <h4>Legend</h4>
+        <div>
+          <div class="legend-item">
+            <div class="legend-color" style="background: #3b82f6;"></div>
             <span>Default Node</span>
           </div>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <div style="width: 16px; height: 16px; background: #10b981; border-radius: 3px;"></div>
+          <div class="legend-item">
+            <div class="legend-color" style="background: #10b981;"></div>
             <span>Rounded Node</span>
           </div>
         </div>

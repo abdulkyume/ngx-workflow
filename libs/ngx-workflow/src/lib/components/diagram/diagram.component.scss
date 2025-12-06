@@ -1,11 +1,13 @@
+@import '../../styles/theme-variables.scss';
+
 /* Theme Variables */
 :host {
+  // Use global theme variables
   --ngx-workflow-primary: #3b82f6; /* Modern Blue */
   --ngx-workflow-primary-hover: #2563eb;
-  --ngx-workflow-bg: #f8fafc; /* Slate 50 */
-  --ngx-workflow-surface: #ffffff;
-  --ngx-workflow-border: #e2e8f0; /* Slate 200 */
-  --ngx-workflow-text-primary: #1e293b; /* Slate 800 */
+  --ngx-workflow-surface: var(--ngx-workflow-node-bg, #ffffff);
+  --ngx-workflow-border: var(--ngx-workflow-node-border, #e2e8f0);
+  --ngx-workflow-text-primary: var(--ngx-workflow-node-color, #1e293b);
   --ngx-workflow-text-secondary: #64748b; /* Slate 500 */
   --ngx-workflow-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --ngx-workflow-shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
@@ -20,12 +22,22 @@
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
+/* Dark Mode - Override variables when parent has dark theme */
+:host-context(html[data-theme='dark']),
+:host-context(html.dark-theme) {
+  --ngx-workflow-surface: #374151;
+  --ngx-workflow-border: #4b5563;
+  --ngx-workflow-text-primary: #f9fafb;
+  --ngx-workflow-glass-bg: rgba(55, 65, 81, 0.8);
+  --ngx-workflow-glass-border: rgba(75, 85, 99, 0.5);
+}
+
 .ngx-workflow__container {
   position: relative;
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background-color: var(--ngx-workflow-bg);
+  background-color: var(--ngx-workflow-bg, #f8fafc);
 
   /* LOD: Low - Hide text and handles */
   &[data-lod="low"] {
@@ -125,6 +137,18 @@
 
   &.dimmed {
     opacity: 0.4;
+  }
+}
+
+/* Dark mode node adjustments */
+:host-context(html[data-theme='dark']),
+:host-context(html.dark-theme) {
+  .ngx-workflow__node-rect {
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+  }
+  
+  .ngx-workflow__node:hover .ngx-workflow__node-rect {
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4));
   }
 }
 

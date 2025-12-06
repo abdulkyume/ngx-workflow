@@ -18,6 +18,7 @@ import { ContextMenuService, ContextMenuItem } from '../../services/context-menu
 import { SearchControlsComponent } from '../search-controls/search-controls.component';
 import { NodeToolbarComponent } from '../node-toolbar/node-toolbar.component';
 import { PanelComponent } from '../panel/panel.component';
+import { ThemeService, ColorMode } from '../../services/theme.service';
 
 // Helper function to get a node from the array
 function getNode(id: string, nodes: WorkflowNode[]): WorkflowNode | undefined {
@@ -88,6 +89,9 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   @Input() backgroundSize: number = 1;
   @Input() backgroundColor: string = '#81818a';
   @Input() backgroundBgColor: string = '#f0f0f0';
+
+  // Color mode (theme) configuration
+  @Input() colorMode: ColorMode = 'light';
 
   // Output events
   @Output() nodeClick = new EventEmitter<WorkflowNode>();
@@ -357,6 +361,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     private cdRef: ChangeDetectorRef,
     public diagramStateService: DiagramStateService,
     private contextMenuService: ContextMenuService,
+    private themeService: ThemeService,
     @Optional() @Inject(NGX_WORKFLOW_NODE_TYPES) public nodeTypes: Record<string, WorkflowNodeComponentType> | null
   ) {
     this.nodes$ = toObservable(this.diagramStateService.nodes);
@@ -386,6 +391,9 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     if (this.initialViewport) {
       this.diagramStateService.setViewport(this.initialViewport);
     }
+
+    // Set initial color mode
+    this.themeService.setColorMode(this.colorMode);
 
     // Subscribe to state changes and emit events
     this.subscriptions.add(
@@ -489,6 +497,11 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
       if (JSON.stringify(this.initialViewport) !== JSON.stringify(currentViewport)) {
         this.diagramStateService.setViewport(this.initialViewport);
       }
+    }
+
+    // Handle color mode changes
+    if (changes['colorMode'] && !changes['colorMode'].firstChange) {
+      this.themeService.setColorMode(this.colorMode);
     }
   }
 
