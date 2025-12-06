@@ -1,0 +1,65 @@
+.ngx-workflow__undo-redo-controls {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  display: flex;
+  gap: 8px;
+  z-index: 10;
+}
+
+.ngx-workflow__undo-redo-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: var(--ngx-workflow-glass-bg, rgba(255, 255, 255, 0.9));
+  border: 1px solid var(--ngx-workflow-border, #e2e8f0);
+  border-radius: 6px;
+  color: var(--ngx-workflow-text-primary, #1e293b);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: var(--ngx-workflow-glass-blur, blur(12px));
+  box-shadow: var(--ngx-workflow-shadow-sm, 0 1px 2px 0 rgb(0 0 0 / 0.05));
+
+  &:hover:not(:disabled) {
+    background: var(--ngx-workflow-primary, #3b82f6);
+    color: white;
+    border-color: var(--ngx-workflow-primary, #3b82f6);
+    transform: translateY(-1px);
+    box-shadow: var(--ngx-workflow-shadow-md, 0 4px 6px -1px rgb(0 0 0 / 0.1));
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  svg {
+    flex-shrink: 0;
+  }
+
+  span {
+    user-select: none;
+  }
+}
+
+/* Dark mode */
+:host-context(html[data-theme='dark']),
+:host-context(html.dark-theme) {
+  .ngx-workflow__undo-redo-button {
+    background: rgba(55, 65, 81, 0.9);
+    border-color: #4b5563;
+    color: #f9fafb;
+
+    &:hover:not(:disabled) {
+      background: #3b82f6;
+      border-color: #3b82f6;
+    }
+  }
+}

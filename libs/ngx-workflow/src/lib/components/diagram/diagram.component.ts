@@ -9,6 +9,7 @@ import { NodeComponentType as WorkflowNodeComponentType } from '../../types';
 import { getBezierPath, getStraightPath, getStepPath, getSmoothStepPath, getSelfLoopPath, getSmartEdgePath, PathFinder, getPolylineMidpoint } from '../../utils';
 import { v4 as uuidv4 } from 'uuid';
 import { ZoomControlsComponent } from '../zoom-controls/zoom-controls.component';
+import { UndoRedoControlsComponent } from '../undo-redo-controls/undo-redo-controls.component';
 import { MinimapComponent } from '../minimap/minimap.component';
 import { BackgroundComponent } from '../background/background.component';
 import { AlignmentControlsComponent } from '../alignment-controls/alignment-controls.component';
@@ -67,7 +68,7 @@ function getHandleAbsolutePosition(node: WorkflowNode, handleId: string | undefi
   styleUrls: ['./diagram.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true,
-  imports: [CommonModule, ZoomControlsComponent, MinimapComponent, BackgroundComponent, AlignmentControlsComponent, PropertiesSidebarComponent, SearchControlsComponent, ContextMenuComponent, NodeToolbarComponent, PanelComponent]
+  imports: [CommonModule, ZoomControlsComponent, UndoRedoControlsComponent, MinimapComponent, BackgroundComponent, AlignmentControlsComponent, PropertiesSidebarComponent, SearchControlsComponent, ContextMenuComponent, NodeToolbarComponent, PanelComponent]
 })
 export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   // Trigger rebuild
@@ -78,6 +79,9 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   @Input() initialEdges: Edge[] = [];
   @Input() initialViewport?: Viewport;
   @Input() showZoomControls: boolean = true;
+
+  // Input for showing/hiding undo/redo controls
+  @Input() showUndoRedoControls: boolean = true;
 
   // Input for showing/hiding minimap
   @Input() showMinimap: boolean = true;
@@ -1272,6 +1276,9 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
 
       // Validate the new connection
       if (this.isValidConnection(newEdge.source, newEdge.target)) {
+        // Save state before updating for undo/redo
+        this.diagramStateService.saveStateForUndo();
+
         // Update the edge in the state using edges.update
         this.diagramStateService.edges.update(edges =>
           edges.map(e => e.id === edgeToUpdate.id ? newEdge : e)

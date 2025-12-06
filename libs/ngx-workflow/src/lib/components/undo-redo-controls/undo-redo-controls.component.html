@@ -1,0 +1,21 @@
+<div class="ngx-workflow__undo-redo-controls">
+    <button class="ngx-workflow__undo-redo-button" [disabled]="!canUndo()" (click)="onUndo()" title="Undo (Ctrl+Z)">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M8 3L4 7L8 11" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" />
+            <path d="M4 7H12C13.1046 7 14 7.89543 14 9C14 10.1046 13.1046 11 12 11H10" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" />
+        </svg>
+        <span>Undo</span>
+    </button>
+
+    <button class="ngx-workflow__undo-redo-button" [disabled]="!canRedo()" (click)="onRedo()" title="Redo (Ctrl+Y)">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M8 3L12 7L8 11" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" />
+            <path d="M12 7H4C2.89543 7 2 7.89543 2 9C2 10.1046 2.89543 11 4 11H6" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" />
+        </svg>
+        <span>Redo</span>
+    </button>
+</div>

@@ -1,5 +1,6 @@
 export * from './lib/components/diagram/diagram.component';
 export * from './lib/components/zoom-controls/zoom-controls.component';
+export * from './lib/components/undo-redo-controls/undo-redo-controls.component';
 export * from './lib/components/minimap/minimap.component';
 export * from './lib/components/background/background.component';
 export * from './lib/components/context-menu/context-menu.component';

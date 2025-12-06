@@ -151,7 +151,7 @@ export class DiagramStateService {
   private viewportUpdates$ = new Subject<Viewport>();
 
   constructor(
-    private undoRedoService: UndoRedoService,
+    public undoRedoService: UndoRedoService,
     private autoLayoutService: AutoLayoutService
   ) {
     // Sync internal subjects to signals (for batched updates)
@@ -251,6 +251,11 @@ export class DiagramStateService {
     if (nextState) {
       this.applyState(nextState);
     }
+  }
+
+  // Public method to save current state for undo (used by components)
+  saveStateForUndo(): void {
+    this.undoRedoService.saveState(this.getCurrentState());
   }
 
   onResizeStart(node: Node): void {
