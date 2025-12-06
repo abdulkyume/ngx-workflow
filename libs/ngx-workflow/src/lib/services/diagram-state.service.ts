@@ -201,6 +201,20 @@ export class DiagramStateService {
   }
 
   /**
+   * Get a single node by ID.
+   * @param id - The node ID to find
+   * @returns The node if found, undefined otherwise
+   */
+  getNode(id: string): Node | undefined {
+    return this.nodes().find(n => n.id === id);
+  }
+
+  /**
+   * Computed signal for selected node IDs (for convenience).
+   */
+  readonly selectedNodeIds = computed(() => this.selectedNodes().map(n => n.id));
+
+  /**
    * Replace the entire diagram state (nodes, edges, viewport) with the given state.
    * Used for importing diagram JSON.
    */

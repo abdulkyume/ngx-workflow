@@ -1,0 +1,101 @@
+.ngx-workflow__node-toolbar {
+  position: fixed;
+  background: var(--ngx-workflow-node-toolbar-bg, #ffffff);
+  border: 1px solid var(--ngx-workflow-node-toolbar-border, #d1d5db);
+  border-radius: var(--ngx-workflow-node-toolbar-radius, 6px);
+  padding: var(--ngx-workflow-node-toolbar-padding, 4px);
+  box-shadow: var(--ngx-workflow-node-toolbar-shadow, 0 2px 8px rgba(0, 0, 0, 0.15));
+  display: flex;
+  gap: var(--ngx-workflow-node-toolbar-gap, 4px);
+  z-index: 5;
+  pointer-events: auto;
+  user-select: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+
+  // Position-specific layouts
+  &--top,
+  &--bottom {
+    flex-direction: row;
+  }
+
+  &--left,
+  &--right {
+    flex-direction: column;
+  }
+
+  // Buttons inside toolbar
+  button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    min-height: 28px;
+    padding: 4px 8px;
+    background: var(--ngx-workflow-node-toolbar-button-bg, #f3f4f6);
+    border: 1px solid var(--ngx-workflow-node-toolbar-button-border, #d1d5db);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ngx-workflow-node-toolbar-button-color, #374151);
+    transition: all 0.15s ease;
+    white-space: nowrap;
+
+    &:hover {
+      background: var(--ngx-workflow-node-toolbar-button-hover-bg, #e5e7eb);
+      border-color: var(--ngx-workflow-node-toolbar-button-hover-border, #9ca3af);
+    }
+
+    &:active {
+      background: var(--ngx-workflow-node-toolbar-button-active-bg, #d1d5db);
+      transform: scale(0.95);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    // Icon-only buttons
+    &:has(svg):not(:has(span)) {
+      padding: 4px;
+    }
+
+    svg {
+      width: 16px;
+      height: 16px;
+      display: block;
+    }
+  }
+
+  // Separator
+  .ngx-workflow__node-toolbar-separator {
+    width: 1px;
+    height: 20px;
+    background: var(--ngx-workflow-node-toolbar-separator, #d1d5db);
+    margin: 0 2px;
+  }
+
+  &--left .ngx-workflow__node-toolbar-separator,
+  &--right .ngx-workflow__node-toolbar-separator {
+    width: 20px;
+    height: 1px;
+    margin: 2px 0;
+  }
+}
+
+// Dark mode support
+@media (prefers-color-scheme: dark) {
+  .ngx-workflow__node-toolbar {
+    --ngx-workflow-node-toolbar-bg: #1f2937;
+    --ngx-workflow-node-toolbar-border: #374151;
+    --ngx-workflow-node-toolbar-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    --ngx-workflow-node-toolbar-button-bg: #374151;
+    --ngx-workflow-node-toolbar-button-border: #4b5563;
+    --ngx-workflow-node-toolbar-button-color: #f9fafb;
+    --ngx-workflow-node-toolbar-button-hover-bg: #4b5563;
+    --ngx-workflow-node-toolbar-button-hover-border: #6b7280;
+    --ngx-workflow-node-toolbar-button-active-bg: #6b7280;
+    --ngx-workflow-node-toolbar-separator: #4b5563;
+  }
+}

@@ -7,6 +7,7 @@ export * from './lib/ngx-workflow.module';
 // Components
 export * from './lib/components/diagram/diagram.component';
 export * from './lib/components/custom-node/rounded-rect-node.component';
+export * from './lib/components/node-toolbar/node-toolbar.component';
 
 // Services
 export * from './lib/services/diagram-state.service';

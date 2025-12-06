@@ -45,8 +45,8 @@
           <foreignObject *ngIf="editingEdgeId === edge.id" [attr.x]="getEdgeLabelPosition(edge).x - 50"
             [attr.y]="getEdgeLabelPosition(edge).y - 15" width="100" height="30">
             <input #edgeLabelInput type="text" [value]="edge.label || ''" (blur)="onEdgeLabelBlur(edge)"
-              (keydown.enter)="onEdgeLabelBlur(edge)" (input)="onEdgeLabelInput($event)" class="ngx-workflow__edge-label-input"
-              autofocus>
+              (keydown.enter)="onEdgeLabelBlur(edge)" (input)="onEdgeLabelInput($event)"
+              class="ngx-workflow__edge-label-input" autofocus>
           </foreignObject>
 
           <text *ngIf="editingEdgeId !== edge.id" [attr.x]="getEdgeLabelPosition(edge).x"
@@ -212,6 +212,9 @@
 
   <ngx-workflow-properties-sidebar [node]="selectedNodeForEditing" (close)="closeSidebar()"
     (change)="onPropertiesChange($event)"></ngx-workflow-properties-sidebar>
+
+  <!-- Node Toolbars (projected content) -->
+  <ng-content select="ngx-workflow-node-toolbar"></ng-content>
 
   <ngx-workflow-context-menu></ngx-workflow-context-menu>
 </div>

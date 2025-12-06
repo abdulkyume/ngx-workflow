@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 // Components
 import { DiagramComponent } from './components/diagram/diagram.component';
 import { RoundedRectNodeComponent } from './components/custom-node/rounded-rect-node.component';
+import { NodeToolbarComponent } from './components/node-toolbar/node-toolbar.component';
 
 // Services
 import { DiagramStateService } from './services/diagram-state.service';
@@ -21,6 +22,7 @@ import { Node } from './models';
     CommonModule,
     DiagramComponent,
     RoundedRectNodeComponent, // Import custom node component if it's standalone
+    NodeToolbarComponent, // Import node toolbar component
   ],
   declarations: [
     // Standalone components are imported, not declared.
@@ -41,6 +43,7 @@ import { Node } from './models';
   exports: [
     DiagramComponent,
     RoundedRectNodeComponent,
+    NodeToolbarComponent, // Export node toolbar component
   ],
 })
 export class NgxWorkflowModule { }

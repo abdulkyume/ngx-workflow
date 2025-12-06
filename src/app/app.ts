@@ -191,4 +191,43 @@ export class App implements OnInit {
       this.diagram.exportToSVG();
     }
   }
+
+  // Toolbar actions
+  get selectedNodes(): Node[] {
+    return this.nodes.filter(n => n.selected);
+  }
+
+  deleteNode(nodeId: string): void {
+    this.nodes = this.nodes.filter(n => n.id !== nodeId);
+    this.edges = this.edges.filter(e => e.source !== nodeId && e.target !== nodeId);
+    console.log('Deleted node:', nodeId);
+  }
+
+  duplicateNode(nodeId: string): void {
+    const node = this.nodes.find(n => n.id === nodeId);
+    if (node) {
+      const newNode: Node = {
+        ...node,
+        id: uuidv4(),
+        position: { x: node.position.x + 50, y: node.position.y + 50 },
+        data: { ...node.data, label: `${node.data?.label || 'Node'} (Copy)` },
+        selected: false
+      };
+      this.nodes = [...this.nodes, newNode];
+      console.log('Duplicated node:', nodeId);
+    }
+  }
+
+  editNodeLabel(nodeId: string): void {
+    // Trigger the same behavior as double-clicking the node (opens properties sidebar)
+    if (this.diagram) {
+      const node = this.nodes.find(n => n.id === nodeId);
+      if (node) {
+        // Programmatically trigger the double-click handler
+        this.diagram.selectedNodeForEditing = node;
+        this.diagram['cdRef'].detectChanges();
+        console.log('Opening properties sidebar for node:', nodeId);
+      }
+    }
+  }
 }

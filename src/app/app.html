@@ -14,8 +14,16 @@
 
 <div class="flow-container">
   <ngx-workflow-diagram class="flow-diagram" [initialNodes]="nodes" [initialEdges]="edges" [initialViewport]="viewport"
-    (nodeClick)="onNodeClick($event)" (nodesChange)="onNodesChange($event)"
-    (edgesChange)="onEdgesChange($event)"></ngx-workflow-diagram>
+    (nodeClick)="onNodeClick($event)" (nodesChange)="onNodesChange($event)" (edgesChange)="onEdgesChange($event)">
+
+    <!-- Node Toolbars for selected nodes -->
+    <ngx-workflow-node-toolbar *ngFor="let node of selectedNodes" [nodeId]="node.id" position="top" align="center">
+      <button (click)="deleteNode(node.id)" title="Delete Node">🗑️</button>
+      <button (click)="duplicateNode(node.id)" title="Duplicate Node">📋</button>
+      <button (click)="editNodeLabel(node.id)" title="Edit Properties">✏️</button>
+    </ngx-workflow-node-toolbar>
+
+  </ngx-workflow-diagram>
 </div>
 
 <div class="footer">

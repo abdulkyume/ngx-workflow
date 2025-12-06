@@ -1,0 +1,8 @@
+<div *ngIf="shouldShow()" #toolbarContent class="ngx-workflow__node-toolbar"
+    [class.ngx-workflow__node-toolbar--top]="position === 'top'"
+    [class.ngx-workflow__node-toolbar--bottom]="position === 'bottom'"
+    [class.ngx-workflow__node-toolbar--left]="position === 'left'"
+    [class.ngx-workflow__node-toolbar--right]="position === 'right'" [style.left.px]="toolbarPosition().x"
+    [style.top.px]="toolbarPosition().y">
+    <ng-content></ng-content>
+</div>
