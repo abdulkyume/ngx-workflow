@@ -2012,11 +2012,21 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
 
       // Clipboard Operations
       if (event.key === 'c') {
-        // Handled by onCopyKeyPress
+        // Ctrl+C: Copy
+        event.preventDefault();
+        this.diagramStateService.copy();
       } else if (event.key === 'v') {
-        // Handled by onPasteKeyPress
+        // Ctrl+V: Paste
+        event.preventDefault();
+        this.diagramStateService.paste();
       } else if (event.key === 'x') {
-        // Handled by onCutKeyPress
+        // Ctrl+X: Cut
+        event.preventDefault();
+        this.diagramStateService.cut();
+      } else if (event.key === 'd') {
+        // Ctrl+D: Duplicate
+        event.preventDefault();
+        this.diagramStateService.duplicate();
       }
     }
   }
