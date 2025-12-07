@@ -16,6 +16,7 @@ export * from './lib/services/undo-redo.service';
 export * from './lib/services/export.service';
 export * from './lib/services/context-menu.service';
 export * from './lib/services/auto-save.service';
+export * from './lib/services/search.service';
 
 // Models, Types, Tokens
 export * from './lib/models';

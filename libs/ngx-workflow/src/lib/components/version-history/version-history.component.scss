@@ -1,3 +1,21 @@
+// Dark theme CSS variable overrides
+:host-context(html[data-theme='dark']),
+:host-context(html.dark-theme) {
+  --ngx-workflow-panel-bg: rgba(31, 41, 55, 0.95);
+  --ngx-workflow-border-color: rgba(255, 255, 255, 0.1);
+  --ngx-workflow-text-primary: #f9fafb;
+  --ngx-workflow-text-secondary: #9ca3af;
+  --ngx-workflow-text-tertiary: #6b7280;
+  --ngx-workflow-card-bg: rgba(50, 50, 50, 0.5);
+  --ngx-workflow-card-bg-hover: rgba(60, 60, 60, 0.7);
+  --ngx-workflow-input-bg: rgba(50, 50, 50, 0.9);
+  --ngx-workflow-secondary-bg: rgba(255, 255, 255, 0.1);
+  --ngx-workflow-secondary-bg-hover: rgba(255, 255, 255, 0.15);
+  --ngx-workflow-action-hover-bg: rgba(255, 255, 255, 0.1);
+  --ngx-workflow-scrollbar-thumb: rgba(255, 255, 255, 0.2);
+  --ngx-workflow-scrollbar-thumb-hover: rgba(255, 255, 255, 0.3);
+}
+
 :host {
   display: block;
   height: 100%;
@@ -13,13 +31,6 @@
   border-left: 1px solid var(--ngx-workflow-border-color, rgba(0, 0, 0, 0.1));
   box-shadow: -2px 0 10px rgba(0, 0, 0, 0.05);
   overflow: hidden;
-
-  // Dark mode support
-  @media (prefers-color-scheme: dark) {
-    background: var(--ngx-workflow-panel-bg, rgba(30, 30, 30, 0.8));
-    border-left-color: var(--ngx-workflow-border-color, rgba(255, 255, 255, 0.1));
-    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.3);
-  }
 }
 
 // Header
@@ -29,10 +40,6 @@
   justify-content: space-between;
   padding: 16px;
   border-bottom: 1px solid var(--ngx-workflow-border-color, rgba(0, 0, 0, 0.1));
-
-  @media (prefers-color-scheme: dark) {
-    border-bottom-color: var(--ngx-workflow-border-color, rgba(255, 255, 255, 0.1));
-  }
 }
 
 .version-history-title {
@@ -40,20 +47,12 @@
   font-size: 16px;
   font-weight: 600;
   color: var(--ngx-workflow-text-primary, #1a1a1a);
-
-  @media (prefers-color-scheme: dark) {
-    color: var(--ngx-workflow-text-primary, #ffffff);
-  }
 }
 
 // Save Version Section
 .save-version-section {
   padding: 12px 16px;
   border-bottom: 1px solid var(--ngx-workflow-border-color, rgba(0, 0, 0, 0.1));
-
-  @media (prefers-color-scheme: dark) {
-    border-bottom-color: var(--ngx-workflow-border-color, rgba(255, 255, 255, 0.1));
-  }
 }
 
 .btn-save-toggle {
@@ -88,12 +87,6 @@
     border-color: var(--ngx-workflow-primary-color, #3b82f6);
     box-shadow: 0 0 0 3px var(--ngx-workflow-primary-color-alpha, rgba(59, 130, 246, 0.1));
   }
-
-  @media (prefers-color-scheme: dark) {
-    background: var(--ngx-workflow-input-bg, rgba(50, 50, 50, 0.9));
-    color: var(--ngx-workflow-text-primary, #ffffff);
-    border-color: var(--ngx-workflow-border-color, rgba(255, 255, 255, 0.2));
-  }
 }
 
 .save-actions {
@@ -122,14 +115,6 @@
     &:hover {
       background: var(--ngx-workflow-scrollbar-thumb-hover, rgba(0, 0, 0, 0.3));
     }
-
-    @media (prefers-color-scheme: dark) {
-      background: var(--ngx-workflow-scrollbar-thumb, rgba(255, 255, 255, 0.2));
-
-      &:hover {
-        background: var(--ngx-workflow-scrollbar-thumb-hover, rgba(255, 255, 255, 0.3));
-      }
-    }
   }
 }
 
@@ -146,10 +131,6 @@
   svg {
     margin-bottom: 16px;
     opacity: 0.5;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    color: var(--ngx-workflow-text-secondary, #9ca3af);
   }
 }
 
@@ -183,17 +164,6 @@
     border-color: var(--ngx-workflow-border-color-hover, rgba(0, 0, 0, 0.15));
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   }
-
-  @media (prefers-color-scheme: dark) {
-    background: var(--ngx-workflow-card-bg, rgba(50, 50, 50, 0.5));
-    border-color: var(--ngx-workflow-border-color, rgba(255, 255, 255, 0.1));
-
-    &:hover {
-      background: var(--ngx-workflow-card-bg-hover, rgba(60, 60, 60, 0.7));
-      border-color: var(--ngx-workflow-border-color-hover, rgba(255, 255, 255, 0.15));
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-    }
-  }
 }
 
 .version-info {
@@ -206,10 +176,6 @@
   font-weight: 600;
   color: var(--ngx-workflow-text-primary, #1a1a1a);
   margin-bottom: 4px;
-
-  @media (prefers-color-scheme: dark) {
-    color: var(--ngx-workflow-text-primary, #ffffff);
-  }
 }
 
 .version-description {
@@ -219,10 +185,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-
-  @media (prefers-color-scheme: dark) {
-    color: var(--ngx-workflow-text-secondary, #9ca3af);
-  }
 }
 
 .version-meta {
@@ -230,10 +192,6 @@
   gap: 12px;
   font-size: 11px;
   color: var(--ngx-workflow-text-tertiary, #9ca3af);
-
-  @media (prefers-color-scheme: dark) {
-    color: var(--ngx-workflow-text-tertiary, #6b7280);
-  }
 }
 
 .meta-item {
@@ -256,10 +214,6 @@
 .version-footer {
   padding: 12px 16px;
   border-top: 1px solid var(--ngx-workflow-border-color, rgba(0, 0, 0, 0.1));
-
-  @media (prefers-color-scheme: dark) {
-    border-top-color: var(--ngx-workflow-border-color, rgba(255, 255, 255, 0.1));
-  }
 }
 
 .btn-clear-all {
@@ -310,15 +264,6 @@
   &:hover:not(:disabled) {
     background: var(--ngx-workflow-secondary-bg-hover, rgba(0, 0, 0, 0.1));
   }
-
-  @media (prefers-color-scheme: dark) {
-    background: var(--ngx-workflow-secondary-bg, rgba(255, 255, 255, 0.1));
-    color: var(--ngx-workflow-text-primary, #ffffff);
-
-    &:hover:not(:disabled) {
-      background: var(--ngx-workflow-secondary-bg-hover, rgba(255, 255, 255, 0.15));
-    }
-  }
 }
 
 .btn-danger {
@@ -361,15 +306,6 @@
   &.btn-delete:hover {
     color: var(--ngx-workflow-danger-color, #ef4444);
   }
-
-  @media (prefers-color-scheme: dark) {
-    color: var(--ngx-workflow-text-secondary, #9ca3af);
-
-    &:hover:not(:disabled) {
-      background: var(--ngx-workflow-action-hover-bg, rgba(255, 255, 255, 0.1));
-      color: var(--ngx-workflow-text-primary, #ffffff);
-    }
-  }
 }
 
 .btn-icon {
@@ -383,14 +319,5 @@
   &:hover:not(:disabled) {
     background: var(--ngx-workflow-action-hover-bg, rgba(0, 0, 0, 0.05));
     color: var(--ngx-workflow-text-primary, #1a1a1a);
-  }
-
-  @media (prefers-color-scheme: dark) {
-    color: var(--ngx-workflow-text-secondary, #9ca3af);
-
-    &:hover:not(:disabled) {
-      background: var(--ngx-workflow-action-hover-bg, rgba(255, 255, 255, 0.1));
-      color: var(--ngx-workflow-text-primary, #ffffff);
-    }
   }
 }

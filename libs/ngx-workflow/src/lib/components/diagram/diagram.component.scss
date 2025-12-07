@@ -503,3 +503,10 @@ foreignObject {
   stroke-dasharray: 5 5;
   pointer-events: none;
 }
+
+// Search highlighting styles
+.node-search-match .ngx-workflow__node-rect { stroke: var(--ngx-workflow-primary-color, #3b82f6); stroke-width: 2px; filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.6)); }
+.node-search-current .ngx-workflow__node-rect { stroke: var(--ngx-workflow-primary-color, #3b82f6); stroke-width: 3px; filter: drop-shadow(0 0 12px rgba(59, 130, 246, 0.8)); animation: pulse-glow 1.5s ease-in-out infinite; }
+.node-search-dimmed { opacity: 0.3; transition: opacity 0.3s ease; }
+@keyframes pulse-glow { 0%, 100% { filter: drop-shadow(0 0 12px rgba(59, 130, 246, 0.8)); } 50% { filter: drop-shadow(0 0 16px rgba(59, 130, 246, 1)); } }
+

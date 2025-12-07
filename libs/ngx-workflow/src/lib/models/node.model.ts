@@ -34,4 +34,5 @@ export interface Node<T = any> {
   label?: string;
   highlighted?: boolean;
   dimmed?: boolean;
+  searchHighlight?: 'match' | 'current';  // Search highlighting state
 }

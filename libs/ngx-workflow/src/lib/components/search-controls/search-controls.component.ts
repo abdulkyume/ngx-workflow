@@ -1,71 +1,101 @@
-import { Component, inject, computed, signal } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { DiagramStateService } from '../../services/diagram-state.service';
+import { FormsModule } from '@angular/forms';
+import { SearchService, SearchState } from '../../services/search.service';
+import { Node } from '../../models';
+import { Subscription } from 'rxjs';
 
 @Component({
     selector: 'ngx-workflow-search-controls',
     standalone: true,
-    imports: [CommonModule],
+    imports: [CommonModule, FormsModule],
     templateUrl: './search-controls.component.html',
     styleUrls: ['./search-controls.component.scss']
 })
-export class SearchControlsComponent {
-    private state = inject(DiagramStateService);
+export class SearchControlsComponent implements OnInit, OnDestroy {
+    @Input() nodes: Node[] = [];
+    @Output() resultSelected = new EventEmitter<Node>();
+    @Output() close = new EventEmitter<void>();
+    @Output() searchResults = new EventEmitter<Node[]>();
 
-    // Computed signal for matching nodes (only highlighted ones)
-    results = computed(() => {
-        const nodes = this.state.viewNodes();
-        return nodes.filter(n => n.highlighted);
-    });
+    searchQuery: string = '';
+    searchState: SearchState = {
+        query: '',
+        results: [],
+        currentIndex: -1,
+        totalResults: 0
+    };
 
-    currentResultIndex = signal(0);
+    private subscription?: Subscription;
 
-    onSearch(event: Event) {
-        const input = event.target as HTMLInputElement;
-        this.state.searchQuery.set(input.value);
-        this.currentResultIndex.set(0); // Reset index on new search
+    constructor(private searchService: SearchService) { }
+
+    ngOnInit(): void {
+        // Subscribe to search state changes
+        this.subscription = this.searchService.state$.subscribe(state => {
+            this.searchState = state;
+
+            // Emit all search results for highlighting
+            this.searchResults.emit(state.results);
+
+            // Emit current result when it changes
+            if (state.currentIndex >= 0 && state.results[state.currentIndex]) {
+                this.resultSelected.emit(state.results[state.currentIndex]);
+            }
+        });
     }
 
-    onFilterChange(event: Event) {
-        const select = event.target as HTMLSelectElement;
-        const value = select.value === 'all' ? null : select.value;
-        this.state.filterType.set(value);
-        this.currentResultIndex.set(0);
+    ngOnDestroy(): void {
+        this.subscription?.unsubscribe();
+        this.searchService.clearSearch();
     }
 
-    nextResult() {
-        const results = this.results();
-        if (results.length === 0) return;
-
-        const nextIndex = (this.currentResultIndex() + 1) % results.length;
-        this.currentResultIndex.set(nextIndex);
-        this.focusCurrentResult();
+    onSearchChange(): void {
+        this.searchService.search(this.searchQuery, this.nodes);
     }
 
-    prevResult() {
-        const results = this.results();
-        if (results.length === 0) return;
-
-        const prevIndex = (this.currentResultIndex() - 1 + results.length) % results.length;
-        this.currentResultIndex.set(prevIndex);
-        this.focusCurrentResult();
+    onClear(): void {
+        this.searchQuery = '';
+        this.searchService.clearSearch();
     }
 
-    focusCurrentResult() {
-        const results = this.results();
-        const index = this.currentResultIndex();
-        if (results[index]) {
-            this.state.focusNode(results[index].id);
+    onNext(): void {
+        const result = this.searchService.nextResult();
+        if (result) {
+            this.resultSelected.emit(result);
         }
     }
 
-    onEnter() {
-        this.nextResult();
+    onPrevious(): void {
+        const result = this.searchService.previousResult();
+        if (result) {
+            this.resultSelected.emit(result);
+        }
     }
 
-    get uniqueTypes() {
-        const nodes = this.state.nodes();
-        const types = new Set(nodes.map(n => n.type || 'default'));
-        return Array.from(types);
+    onClose(): void {
+        this.onClear();
+        this.close.emit();
+    }
+
+    onKeyDown(event: KeyboardEvent): void {
+        if (event.key === 'Enter') {
+            if (event.shiftKey) {
+                this.onPrevious();
+            } else {
+                this.onNext();
+            }
+            event.preventDefault();
+        } else if (event.key === 'Escape') {
+            this.onClose();
+            event.preventDefault();
+        }
+    }
+
+    get resultText(): string {
+        if (this.searchState.totalResults === 0) {
+            return this.searchQuery ? 'No results' : '';
+        }
+        return `${this.searchState.currentIndex + 1} of ${this.searchState.totalResults}`;
     }
 }

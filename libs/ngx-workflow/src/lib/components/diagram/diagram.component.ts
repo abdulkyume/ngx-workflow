@@ -2351,4 +2351,50 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   clearVersionHistory(): void {
     this.autoSaveService.clearHistory();
   }
+
+  // --- Search Methods ---
+
+  /**
+   * Handle search results - update node highlighting
+   */
+  onSearchResults(results: WorkflowNode[]): void {
+    const resultIds = new Set(results.map(n => n.id));
+    const currentNodes = this.nodes();
+
+    const updatedNodes = currentNodes.map(node => ({
+      ...node,
+      searchHighlight: resultIds.has(node.id) ? ('match' as const) : undefined
+    }));
+
+    this.diagramStateService.nodes.set(updatedNodes);
+  }
+
+  /**
+   * Handle search result selection - pan/zoom to the selected node
+   */
+  onSearchResultSelected(node: WorkflowNode): void {
+    if (!node) return;
+
+    // Center the viewport on the selected node
+    const nodeX = node.position.x + (node.width || this.defaultNodeWidth) / 2;
+    const nodeY = node.position.y + (node.height || this.defaultNodeHeight) / 2;
+
+    this.diagramStateService.setCenter(nodeX, nodeY);
+
+    // Optionally highlight the node briefly
+    // You could add a temporary highlight effect here
+  }
+
+  /**
+   * Handle search close
+   */
+  onSearchClose(): void {
+    // Clear search highlighting
+    const currentNodes = this.nodes();
+    const updatedNodes = currentNodes.map(n => ({
+      ...n,
+      searchHighlight: undefined
+    }));
+    this.diagramStateService.nodes.set(updatedNodes);
+  }
 }

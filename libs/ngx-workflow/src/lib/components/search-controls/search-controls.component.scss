@@ -1,196 +1,142 @@
+:host {
+  display: block;
+}
+
 .ngx-workflow-search-controls {
   position: absolute;
-  top: 20px;
-  left: 20px;
-  z-index: 10;
+  top: 16px;
+  left: 16px;
+  z-index: 100;
+}
+
+.search-container {
   display: flex;
-  gap: 12px;
   align-items: center;
-  font-family: 'Inter', sans-serif;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  min-width: 300px;
+  transition: all 0.2s ease;
 
-  .search-input-wrapper {
-    position: relative;
-    display: flex;
-    align-items: center;
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    transition: all 0.2s ease;
-
-    &:focus-within {
-      background: rgba(255, 255, 255, 0.9);
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-      border-color: var(--ngx-workflow-primary, #3b82f6);
-    }
-
-    .search-icon {
-      position: absolute;
-      left: 10px;
-      color: #64748b;
-      pointer-events: none;
-    }
-
-    .search-input {
-      height: 36px;
-      padding: 0 12px 0 34px;
-      border: none;
-      background: transparent;
-      color: #1e293b;
-      font-size: 14px;
-      outline: none;
-      width: 200px;
-      transition: width 0.2s ease;
-
-      &::placeholder {
-        color: #94a3b8;
-      }
-
-      &:focus {
-        width: 240px;
-      }
-    }
-
-    .result-nav {
-      display: flex;
-      align-items: center;
-      padding-right: 6px;
-      border-left: 1px solid rgba(0,0,0,0.1);
-      margin-left: 4px;
-
-      .result-count {
-        font-size: 11px;
-        color: #64748b;
-        margin: 0 8px;
-        white-space: nowrap;
-        font-feature-settings: "tnum";
-        font-variant-numeric: tabular-nums;
-      }
-
-      .nav-buttons {
-        display: flex;
-        gap: 2px;
-      }
-
-      .nav-btn {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 20px;
-        height: 20px;
-        border: none;
-        background: transparent;
-        border-radius: 4px;
-        color: #64748b;
-        cursor: pointer;
-        padding: 0;
-
-        &:hover {
-          background: rgba(0,0,0,0.05);
-          color: #1e293b;
-        }
-
-        &:active {
-          background: rgba(0,0,0,0.1);
-        }
-      }
-    }
-  }
-
-  .filter-wrapper {
-    .filter-select {
-      height: 36px;
-      padding: 0 12px;
-      border-radius: 8px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      background: rgba(255, 255, 255, 0.7);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-      color: #1e293b;
-      font-size: 14px;
-      outline: none;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      appearance: none; /* Remove default arrow */
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 8px center;
-      padding-right: 32px;
-
-      &:focus {
-        border-color: var(--ngx-workflow-primary, #3b82f6);
-        background-color: rgba(255, 255, 255, 0.9);
-      }
-
-      &:hover {
-        background-color: rgba(255, 255, 255, 0.8);
-      }
-    }
+  &:focus-within {
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+    border-color: #3b82f6;
   }
 }
 
-/* Dark Mode */
+.search-icon {
+  flex-shrink: 0;
+  color: #6b7280;
+}
+
+.search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 14px;
+  color: #1a1a1a;
+  padding: 4px 8px;
+
+  &::placeholder {
+    color: #9ca3af;
+  }
+}
+
+.result-counter {
+  flex-shrink: 0;
+  padding: 0 8px;
+  border-left: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.result-text {
+  font-size: 12px;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.nav-buttons {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.btn-nav,
+.btn-clear,
+.btn-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #6b7280;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.05);
+    color: #1a1a1a;
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
+.btn-close {
+  margin-left: 4px;
+  border-left: 1px solid rgba(0, 0, 0, 0.1);
+  padding-left: 8px;
+}
+
+// Dark theme support
 :host-context(html[data-theme='dark']),
 :host-context(html.dark-theme) {
-  .ngx-workflow-search-controls {
-    .search-input-wrapper {
-      background: rgba(55, 65, 81, 0.7);
-      border-color: rgba(75, 85, 99, 0.3);
+  .search-container {
+    background: rgba(31, 41, 55, 0.95);
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
 
-      &:focus-within {
-        background: rgba(55, 65, 81, 0.9);
-      }
+  .search-icon {
+    color: #9ca3af;
+  }
 
-      .search-icon {
-        color: #9ca3af;
-      }
+  .search-input {
+    color: #f9fafb;
 
-      .search-input {
-        color: #f9fafb;
-
-        &::placeholder {
-          color: #6b7280;
-        }
-      }
-
-      .result-nav {
-        border-left-color: rgba(255, 255, 255, 0.1);
-
-        .result-count {
-          color: #9ca3af;
-        }
-
-        .nav-btn {
-          color: #9ca3af;
-
-          &:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: #f9fafb;
-          }
-
-          &:active {
-            background: rgba(255, 255, 255, 0.15);
-          }
-        }
-      }
+    &::placeholder {
+      color: #6b7280;
     }
+  }
 
-    .filter-wrapper .filter-select {
-      background: rgba(55, 65, 81, 0.7);
-      border-color: rgba(75, 85, 99, 0.3);
+  .result-counter {
+    border-left-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .result-text {
+    color: #9ca3af;
+  }
+
+  .btn-nav,
+  .btn-clear,
+  .btn-close {
+    color: #9ca3af;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.1);
       color: #f9fafb;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-
-      &:focus {
-        background-color: rgba(55, 65, 81, 0.9);
-      }
-
-      &:hover {
-        background-color: rgba(55, 65, 81, 0.8);
-      }
     }
+  }
+
+  .btn-close {
+    border-left-color: rgba(255, 255, 255, 0.1);
   }
 }
