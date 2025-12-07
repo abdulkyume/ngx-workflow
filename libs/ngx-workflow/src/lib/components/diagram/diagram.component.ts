@@ -689,7 +689,6 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
 
   @HostListener('window:pointermove', ['$event'])
   onWindowPointerMove(event: PointerEvent): void {
-    console.log('Pointer move called, isSpacePanning:', this.isSpacePanning);
     if (this.isSpacePanning) {
       const dx = event.clientX - this.panStartPosition.x;
       const dy = event.clientY - this.panStartPosition.y;
@@ -759,12 +758,10 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
 
     // If space is pressed, start panning
     if (this.isSpacePressed) {
-      console.log('Starting space panning!');
       this.isSpacePanning = true;
       this.panStartPosition = { x: event.clientX, y: event.clientY };
       this.viewportStartPosition = { ...this.viewport() };
       this.svgRef.nativeElement.style.cursor = 'grabbing';
-      console.log('Panning started, cursor set to grabbing');
       event.preventDefault();
       return;
     }
@@ -1957,12 +1954,10 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
 
     // Handle Space key for panning
     if (event.code === 'Space' && !this.isSpacePressed) {
-      console.log('Space key pressed!', this.isSpacePressed);
       this.isSpacePressed = true;
       event.preventDefault();
       // Change cursor to grab
       this.svgRef.nativeElement.style.cursor = 'grab';
-      console.log('Cursor set to grab');
       return; // Don't process other keys when space is pressed
     }
 
