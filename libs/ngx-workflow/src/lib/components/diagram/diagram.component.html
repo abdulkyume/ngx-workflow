@@ -33,7 +33,8 @@
       <!-- Edges -->
       <g *ngFor="let edge of filteredEdges(); trackBy: trackByEdgeId" [class.selected]="edge.selected"
         [class.animated]="edge.animated" [class.hidden]="edge.hidden" class="ngx-workflow__edge"
-        (click)="onEdgeClick($event, edge)" (dblclick)="onEdgeDoubleClick($event, edge)">
+        (click)="onEdgeClick($event, edge)" (dblclick)="onEdgeDoubleClick($event, edge)"
+        (mouseenter)="onEdgeMouseEnter($event, edge)" (mouseleave)="onEdgeMouseLeave($event, edge)">
         <!-- Edge path with markers -->
         <path [attr.d]="getEdgePath(edge)" class="ngx-workflow__edge-path" [style]="edge.style"
           [attr.marker-start]="getMarkerUrl(edge.markerStart)" [attr.marker-end]="getMarkerUrl(edge.markerEnd)">
@@ -86,13 +87,14 @@
         [attr.height]="getSelectionBox().height" />
 
       <!-- Nodes -->
-      <g *ngFor="let node of filteredNodes(); trackBy: trackByNodeId" class="ngx-workflow__node" [ngClass]="{
+      <g *ngFor="let node of sortedNodes(); trackBy: trackByNodeId" class="ngx-workflow__node" [ngClass]="{
            'node-search-match': node.searchHighlight === 'match',
            'node-search-current': node.searchHighlight === 'current'
          }" [attr.aria-label]="node.label" [attr.data-id]="node.id" [class.selected]="node.selected"
         [class.dragging]="node.dragging" [class.dimmed]="node.dimmed" [class.highlighted]="node.highlighted"
         [attr.transform]="'translate(' + node.position.x + ',' + node.position.y + ')'"
-        (dblclick)="onNodeDoubleClick($event, node)">
+        (dblclick)="onNodeDoubleClick($event, node)" (mouseenter)="onNodeMouseEnter($event, node)"
+        (mouseleave)="onNodeMouseLeave($event, node)" (mousemove)="onNodeMouseMove($event, node)">
 
         <!-- Node outline and background (visual + dragging) -->
         <rect [attr.width]="node.width || defaultNodeWidth" [attr.height]="node.height || defaultNodeHeight" rx="3"
@@ -104,14 +106,6 @@
           class="ngx-workflow__node-label">
           {{ node.label }}
         </text>
-
-        <!-- Hit area -->
-        <circle [attr.cx]="(node.width || defaultNodeWidth) / 2" cy="-10" r="20" fill="transparent"
-          pointer-events="all"></circle>
-        <!-- Visual -->
-        <circle [attr.cx]="(node.width || defaultNodeWidth) / 2" [attr.cy]="0" r="6"
-          class="ngx-workflow__handle-circle">
-        </circle>
 
         <!-- Top Handle -->
         <g class="ngx-workflow__handle ngx-workflow__handle--source ngx-workflow__handle--target"

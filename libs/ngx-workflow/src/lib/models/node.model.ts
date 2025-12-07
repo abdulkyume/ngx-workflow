@@ -35,4 +35,5 @@ export interface Node<T = any> {
   highlighted?: boolean;
   dimmed?: boolean;
   searchHighlight?: 'match' | 'current';  // Search highlighting state
+  zIndex?: number; // Stacking order (higher = on top)
 }

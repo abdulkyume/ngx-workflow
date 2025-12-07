@@ -108,6 +108,9 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   @Input() snapToGrid: boolean = false;
   @Input() showGrid: boolean = false;
 
+  // Z-index configuration
+  @Input() zIndexMode: 'default' | 'layered' = 'default';
+
   // Export controls configuration
   @Input() showExportControls: boolean = false;
 
@@ -133,6 +136,18 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   @Output() edgesChange = new EventEmitter<Edge[]>();
   @Output() nodeDoubleClick = new EventEmitter<WorkflowNode>();
   @Output() contextMenu = new EventEmitter<{ type: 'node' | 'edge' | 'canvas'; item?: WorkflowNode | Edge; event: MouseEvent }>();
+
+  // Granular interaction events
+  @Output() nodeMouseEnter = new EventEmitter<WorkflowNode>();
+  @Output() nodeMouseLeave = new EventEmitter<WorkflowNode>();
+  @Output() nodeMouseMove = new EventEmitter<{ node: WorkflowNode; event: MouseEvent }>();
+  @Output() edgeMouseEnter = new EventEmitter<Edge>();
+  @Output() edgeMouseLeave = new EventEmitter<Edge>();
+  @Output() paneClick = new EventEmitter<{ event: MouseEvent; position: XYPosition }>();
+  @Output() paneScroll = new EventEmitter<WheelEvent>();
+  @Output() connectStart = new EventEmitter<{ nodeId: string; handleId?: string }>();
+  @Output() connectEnd = new EventEmitter<{ nodeId: string; handleId?: string }>();
+  @Output() connectionDrop = new EventEmitter<{ position: XYPosition; event: PointerEvent; sourceNodeId: string; sourceHandleId?: string }>();
 
   // Connection validation callback
   @Input() validateConnection?: (connection: {
@@ -164,6 +179,9 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   tempEdges!: WritableSignal<TempEdge[]>;
   alignmentGuides!: Signal<AlignmentGuide[]>;
   selectionBox!: Signal<any>;
+
+  // Computed signal for z-index sorted nodes
+  sortedNodes!: Signal<WorkflowNode[]>;
 
   // Expose Math to the template
   Math = Math;
@@ -276,6 +294,26 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     this.selectedNodeForEditing = node;
     this.nodeDoubleClick.emit(node);
     this.cdRef.detectChanges();
+  }
+
+  onNodeMouseEnter(event: MouseEvent, node: WorkflowNode): void {
+    this.nodeMouseEnter.emit(node);
+  }
+
+  onNodeMouseLeave(event: MouseEvent, node: WorkflowNode): void {
+    this.nodeMouseLeave.emit(node);
+  }
+
+  onNodeMouseMove(event: MouseEvent, node: WorkflowNode): void {
+    this.nodeMouseMove.emit({ node, event });
+  }
+
+  onEdgeMouseEnter(event: MouseEvent, edge: Edge): void {
+    this.edgeMouseEnter.emit(edge);
+  }
+
+  onEdgeMouseLeave(event: MouseEvent, edge: Edge): void {
+    this.edgeMouseLeave.emit(edge);
   }
 
   onDiagramDoubleClick(event: MouseEvent): void {
@@ -458,6 +496,15 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     this.filteredEdges = this.diagramStateService.visibleEdges; // Use visibleEdges for rendering
     this.tempEdges = this.diagramStateService.tempEdges;
     this.alignmentGuides = this.diagramStateService.alignmentGuides;
+
+    // Initialize sortedNodes computed signal for z-index handling
+    this.sortedNodes = computed(() => {
+      const nodes = this.filteredNodes();
+      if (this.zIndexMode === 'layered') {
+        return [...nodes].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+      }
+      return nodes;
+    });
 
     // Set grid configuration
     this.diagramStateService.setGridConfig(this.gridSize, this.snapToGrid);
@@ -774,6 +821,10 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
 
   onWheel(event: WheelEvent): void {
     event.preventDefault();
+
+    // Emit paneScroll event
+    this.paneScroll.emit(event);
+
     this.ngZone.runOutsideAngular(() => {
       const svgRect = this.svgRef.nativeElement.getBoundingClientRect();
       const clientX = event.clientX;
@@ -867,6 +918,9 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     const canvasX = (event.clientX - svgRect.left - viewport.x) / viewport.zoom;
     const canvasY = (event.clientY - svgRect.top - viewport.y) / viewport.zoom;
 
+    // Emit paneClick event
+    this.paneClick.emit({ event, position: { x: canvasX, y: canvasY } });
+
     this.isBoxSelecting = true;
     this.selectionBoxStart = { x: canvasX, y: canvasY };
     this.selectionBoxEnd = { x: canvasX, y: canvasY };
@@ -941,6 +995,9 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
 
     this.connectingSourceNodeId = nodeId;
     this.connectingSourceHandleId = handleId;
+
+    // Emit connectStart event
+    this.connectStart.emit({ nodeId, handleId });
 
     const previewEdgeId = `preview-${uuidv4()}`;
     this.currentPreviewEdgeId = previewEdgeId;
@@ -1056,15 +1113,46 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
         };
         console.log('finishConnecting: adding edge', newEdge);
         this.diagramStateService.addEdge(newEdge);
+
+        // Emit connectEnd event for successful connection
+        this.connectEnd.emit({
+          nodeId: targetId,
+          handleId: this.currentTargetHandle.handleId
+        });
       } else {
         console.log('finishConnecting: invalid connection');
         // Visual feedback for invalid connection: flash source node
-        const sourceNodeEl = this.el.nativeElement.querySelector(`[data-nodeid="${sourceId}"]`);
+        const sourceNodeEl = this.el.nativeElement.querySelector(`[data-nodeid=\"${sourceId}\"]`);
         if (sourceNodeEl) {
           this.renderer.addClass(sourceNodeEl, 'invalid-connection');
           setTimeout(() => this.renderer.removeClass(sourceNodeEl, 'invalid-connection'), 1000);
         }
+
+        // Emit connectEnd with source node (connection cancelled)
+        this.connectEnd.emit({
+          nodeId: sourceId,
+          handleId: this.connectingSourceHandleId
+        });
       }
+    } else if (this.connectingSourceNodeId) {
+      // Connection was dropped on canvas (no valid target)
+      const svgRect = this.svgRef.nativeElement.getBoundingClientRect();
+      const viewport = this.viewport();
+      const canvasX = (event.clientX - svgRect.left - viewport.x) / viewport.zoom;
+      const canvasY = (event.clientY - svgRect.top - viewport.y) / viewport.zoom;
+
+      this.connectionDrop.emit({
+        position: { x: canvasX, y: canvasY },
+        event: event,
+        sourceNodeId: this.connectingSourceNodeId,
+        sourceHandleId: this.connectingSourceHandleId
+      });
+
+      // Also emit connectEnd 
+      this.connectEnd.emit({
+        nodeId: this.connectingSourceNodeId,
+        handleId: this.connectingSourceHandleId
+      });
     }
 
     this.currentPreviewEdgeId = null;
