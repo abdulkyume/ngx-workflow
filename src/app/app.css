@@ -71,10 +71,11 @@ body.dark-mode {
 .flow-container {
   height: calc(100vh - 100px); /* Adjust based on header/footer height */
   width: 100%;
+  display: flex;
 }
 
 .flow-diagram {
-  width: 100%;
+  flex: 1;
   height: 100%;
   border: 1px solid #ccc;
 }

@@ -10,11 +10,12 @@ import {
   DiagramComponent,
   ColorMode,
 } from 'ngx-workflow';
+import { VersionHistoryComponent } from '../../libs/ngx-workflow/src/lib/components/version-history/version-history.component';
 import { v4 as uuidv4 } from 'uuid';
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, NgxWorkflowModule],
+  imports: [CommonModule, NgxWorkflowModule, VersionHistoryComponent],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })

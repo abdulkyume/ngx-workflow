@@ -56,11 +56,9 @@ export class AutoSaveService {
                 id: uuidv4(),
                 timestamp: Date.now(),
                 state,
-                metadata: {
-                    nodeCount: state.nodes.length,
-                    edgeCount: state.edges.length,
-                    description
-                }
+                description,
+                nodeCount: state.nodes.length,
+                edgeCount: state.edges.length
             };
 
             const history = this.getHistory();

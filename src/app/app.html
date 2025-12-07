@@ -21,10 +21,10 @@
 </div>
 
 <div class="flow-container">
-  <ngx-workflow-diagram class="flow-diagram" [initialNodes]="nodes" [initialEdges]="edges" [initialViewport]="viewport"
-    [colorMode]="currentTheme" [edgeReconnectable]="true" [showExportControls]="true" [showLayoutControls]="true"
-    [showMinimap]="true" (nodeClick)="onNodeClick($event)" (nodesChange)="onNodesChange($event)"
-    (edgesChange)="onEdgesChange($event)">
+  <ngx-workflow-diagram #diagram class="flow-diagram" [initialNodes]="nodes" [initialEdges]="edges"
+    [initialViewport]="viewport" [colorMode]="currentTheme" [edgeReconnectable]="true" [showExportControls]="true"
+    [showLayoutControls]="true" [showMinimap]="true" [autoSave]="true" [autoSaveInterval]="1000" [maxVersions]="10"
+    (nodeClick)="onNodeClick($event)" (nodesChange)="onNodesChange($event)" (edgesChange)="onEdgesChange($event)">
 
     <!-- Node Toolbars for selected nodes -->
     <ngx-workflow-node-toolbar *ngFor="let node of selectedNodes" [nodeId]="node.id" position="top" align="center">
@@ -63,6 +63,9 @@
     </ngx-workflow-panel>
 
   </ngx-workflow-diagram>
+
+  <!-- Version History Sidebar -->
+  <ngx-workflow-version-history [diagram]="diagram"></ngx-workflow-version-history>
 </div>
 
 <div class="footer">

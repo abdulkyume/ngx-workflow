@@ -4,9 +4,7 @@ export interface VersionSnapshot {
     id: string;
     timestamp: number;
     state: DiagramState;
-    metadata: {
-        nodeCount: number;
-        edgeCount: number;
-        description?: string;
-    };
+    description?: string;
+    nodeCount: number;
+    edgeCount: number;
 }
