@@ -3,7 +3,8 @@ import { toObservable } from '@angular/core/rxjs-interop';
 import { CommonModule, NgComponentOutlet } from '@angular/common';
 import { DiagramStateService } from '../../services/diagram-state.service';
 import { Viewport, XYPosition, Node as WorkflowNode, Edge, TempEdge, DiagramState, AlignmentGuide } from '../../models';
-import { Subscription, Observable } from 'rxjs';
+import { Subscription, Observable, combineLatest } from 'rxjs';
+import { debounceTime, skip } from 'rxjs/operators';
 import { NGX_WORKFLOW_NODE_TYPES } from '../../injection-tokens';
 import { NodeComponentType as WorkflowNodeComponentType } from '../../types';
 import { getBezierPath, getStraightPath, getStepPath, getSmoothStepPath, getSelfLoopPath, getSmartEdgePath, PathFinder, getPolylineMidpoint } from '../../utils';
@@ -24,6 +25,7 @@ import { ThemeService, ColorMode } from '../../services/theme.service';
 import { ExportService } from '../../services/export.service';
 import { ExportControlsComponent } from '../export-controls/export-controls.component';
 import { LayoutControlsComponent } from '../layout-controls/layout-controls.component';
+import { AutoSaveService } from '../../services/auto-save.service';
 
 // Helper function to get a node from the array
 function getNode(id: string, nodes: WorkflowNode[]): WorkflowNode | undefined {
@@ -111,6 +113,11 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
 
   // Layout controls configuration
   @Input() showLayoutControls: boolean = false;
+
+  // Auto-save configuration
+  @Input() autoSave: boolean = false;
+  @Input() autoSaveInterval: number = 1000; // milliseconds
+  @Input() maxVersions: number = 10;
 
   // Auto-panning configuration
   @Input() autoPanOnNodeDrag: boolean = true;
@@ -432,6 +439,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     private contextMenuService: ContextMenuService,
     private themeService: ThemeService,
     private exportService: ExportService,
+    private autoSaveService: AutoSaveService,
     @Optional() @Inject(NGX_WORKFLOW_NODE_TYPES) public nodeTypes: Record<string, WorkflowNodeComponentType> | null
   ) {
     this.nodes$ = toObservable(this.diagramStateService.nodes);
@@ -514,6 +522,31 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
         this.onPointerLeave(event);
       });
     });
+
+    // Auto-save: Load saved state if enabled
+    if (this.autoSave) {
+      const savedState = this.autoSaveService.loadCurrentState();
+      if (savedState) {
+        this.setDiagramState(savedState);
+      }
+    }
+
+    // Auto-save: Watch for changes and save
+    if (this.autoSave) {
+      this.subscriptions.add(
+        combineLatest([
+          toObservable(this.nodes),
+          toObservable(this.edges),
+          toObservable(this.viewport)
+        ]).pipe(
+          debounceTime(this.autoSaveInterval),
+          skip(1) // Skip initial emission
+        ).subscribe(() => {
+          const state = this.getDiagramState();
+          this.autoSaveService.queueSave(state);
+        })
+      );
+    }
   }
 
   ngOnDestroy(): void {
@@ -2281,5 +2314,41 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
       nodeY + nodeHeight < box.y ||
       nodeY > box.y + box.height
     );
+  }
+
+  // --- Auto-Save & Version History Public Methods ---
+
+  /**
+   * Manually save current state as a version
+   * @param description Optional description for the version
+   */
+  saveVersion(description?: string): void {
+    const state = this.getDiagramState();
+    this.autoSaveService.saveVersion(state, description);
+  }
+
+  /**
+   * Restore a specific version by ID
+   * @param versionId The ID of the version to restore
+   */
+  restoreVersion(versionId: string): void {
+    const state = this.autoSaveService.restoreVersion(versionId);
+    if (state) {
+      this.setDiagramState(state);
+    }
+  }
+
+  /**
+   * Get all saved versions
+   */
+  getVersionHistory() {
+    return this.autoSaveService.getHistory();
+  }
+
+  /**
+   * Clear all version history
+   */
+  clearVersionHistory(): void {
+    this.autoSaveService.clearHistory();
   }
 }

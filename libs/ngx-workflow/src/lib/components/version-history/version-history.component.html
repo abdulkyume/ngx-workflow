@@ -1,0 +1,96 @@
+<div class="ngx-workflow-version-history" *ngIf="visible">
+    <!-- Header -->
+    <div class="version-history-header">
+        <h3 class="version-history-title">Version History</h3>
+        <button class="btn-icon btn-refresh" (click)="refresh()" title="Refresh">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path
+                    d="M13.65 2.35C12.2 0.9 10.21 0 8 0 3.58 0 0.01 3.58 0.01 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L9 7h7V0l-2.35 2.35z"
+                    fill="currentColor" />
+            </svg>
+        </button>
+    </div>
+
+    <!-- Save Version Section -->
+    <div class="save-version-section">
+        <button class="btn-primary btn-save-toggle" (click)="toggleSaveInput()" *ngIf="!showSaveInput">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M8 0C3.58 0 0 3.58 0 8s3.58 8 8 8 8-3.58 8-8-3.58-8-8-8zm4 9H9v3H7V9H4V7h3V4h2v3h3v2z"
+                    fill="currentColor" />
+            </svg>
+            Save Current Version
+        </button>
+
+        <div class="save-input-container" *ngIf="showSaveInput">
+            <input type="text" class="version-description-input" [(ngModel)]="newVersionDescription"
+                placeholder="Description (optional)" (keyup.enter)="saveVersion()" (keyup.escape)="toggleSaveInput()">
+            <div class="save-actions">
+                <button class="btn-primary btn-sm" (click)="saveVersion()">Save</button>
+                <button class="btn-secondary btn-sm" (click)="toggleSaveInput()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Version List -->
+    <div class="version-list">
+        <div class="empty-state" *ngIf="versions.length === 0">
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                <path
+                    d="M38 6H10c-2.21 0-4 1.79-4 4v28c0 2.21 1.79 4 4 4h28c2.21 0 4-1.79 4-4V10c0-2.21-1.79-4-4-4zM24 34c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm2-8h-4V14h4v12z"
+                    fill="currentColor" opacity="0.3" />
+            </svg>
+            <p class="empty-message">No versions saved yet</p>
+            <p class="empty-hint">Enable auto-save or manually save versions</p>
+        </div>
+
+        <div class="version-item" *ngFor="let version of versions">
+            <div class="version-info">
+                <div class="version-timestamp" [title]="formatFullDate(version.timestamp)">
+                    {{ formatTimestamp(version.timestamp) }}
+                </div>
+                <div class="version-description" *ngIf="version.description">
+                    {{ version.description }}
+                </div>
+                <div class="version-meta">
+                    <span class="meta-item">
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                            <rect x="2" y="2" width="8" height="8" rx="1" stroke="currentColor" stroke-width="1.5" />
+                        </svg>
+                        {{ version.nodeCount }} nodes
+                    </span>
+                    <span class="meta-item">
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                            <path d="M2 6h8M6 2l4 4-4 4" stroke="currentColor" stroke-width="1.5"
+                                stroke-linecap="round" />
+                        </svg>
+                        {{ version.edgeCount }} edges
+                    </span>
+                </div>
+            </div>
+            <div class="version-actions">
+                <button class="btn-action btn-restore" (click)="restoreVersion(version.id)"
+                    title="Restore this version">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <path
+                            d="M7 1v4L5 3M7 1C3.686 1 1 3.686 1 7s2.686 6 6 6 6-2.686 6-6c0-1.657-.672-3.157-1.757-4.243"
+                            stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                    </svg>
+                </button>
+                <button class="btn-action btn-delete" (click)="deleteVersion(version.id)" title="Delete this version">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <path
+                            d="M2 4h10M5 4V2.5A1.5 1.5 0 0 1 6.5 1h1A1.5 1.5 0 0 1 9 2.5V4m1.5 0v8.5a1 1 0 0 1-1 1h-5a1 1 0 0 1-1-1V4"
+                            stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Clear All Button -->
+    <div class="version-footer" *ngIf="versions.length > 0">
+        <button class="btn-danger btn-clear-all" (click)="clearAll()">
+            Clear All History
+        </button>
+    </div>
+</div>

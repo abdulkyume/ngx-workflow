@@ -1,0 +1,396 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.ngx-workflow-version-history {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 320px;
+  background: var(--ngx-workflow-panel-bg, rgba(255, 255, 255, 0.7));
+  backdrop-filter: blur(10px);
+  border-left: 1px solid var(--ngx-workflow-border-color, rgba(0, 0, 0, 0.1));
+  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+
+  // Dark mode support
+  @media (prefers-color-scheme: dark) {
+    background: var(--ngx-workflow-panel-bg, rgba(30, 30, 30, 0.8));
+    border-left-color: var(--ngx-workflow-border-color, rgba(255, 255, 255, 0.1));
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.3);
+  }
+}
+
+// Header
+.version-history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border-bottom: 1px solid var(--ngx-workflow-border-color, rgba(0, 0, 0, 0.1));
+
+  @media (prefers-color-scheme: dark) {
+    border-bottom-color: var(--ngx-workflow-border-color, rgba(255, 255, 255, 0.1));
+  }
+}
+
+.version-history-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ngx-workflow-text-primary, #1a1a1a);
+
+  @media (prefers-color-scheme: dark) {
+    color: var(--ngx-workflow-text-primary, #ffffff);
+  }
+}
+
+// Save Version Section
+.save-version-section {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--ngx-workflow-border-color, rgba(0, 0, 0, 0.1));
+
+  @media (prefers-color-scheme: dark) {
+    border-bottom-color: var(--ngx-workflow-border-color, rgba(255, 255, 255, 0.1));
+  }
+}
+
+.btn-save-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.save-input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.version-description-input {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 14px;
+  border: 1px solid var(--ngx-workflow-border-color, rgba(0, 0, 0, 0.2));
+  border-radius: 6px;
+  background: var(--ngx-workflow-input-bg, rgba(255, 255, 255, 0.9));
+  color: var(--ngx-workflow-text-primary, #1a1a1a);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+
+  &:focus {
+    border-color: var(--ngx-workflow-primary-color, #3b82f6);
+    box-shadow: 0 0 0 3px var(--ngx-workflow-primary-color-alpha, rgba(59, 130, 246, 0.1));
+  }
+
+  @media (prefers-color-scheme: dark) {
+    background: var(--ngx-workflow-input-bg, rgba(50, 50, 50, 0.9));
+    color: var(--ngx-workflow-text-primary, #ffffff);
+    border-color: var(--ngx-workflow-border-color, rgba(255, 255, 255, 0.2));
+  }
+}
+
+.save-actions {
+  display: flex;
+  gap: 8px;
+}
+
+// Version List
+.version-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--ngx-workflow-scrollbar-thumb, rgba(0, 0, 0, 0.2));
+    border-radius: 3px;
+
+    &:hover {
+      background: var(--ngx-workflow-scrollbar-thumb-hover, rgba(0, 0, 0, 0.3));
+    }
+
+    @media (prefers-color-scheme: dark) {
+      background: var(--ngx-workflow-scrollbar-thumb, rgba(255, 255, 255, 0.2));
+
+      &:hover {
+        background: var(--ngx-workflow-scrollbar-thumb-hover, rgba(255, 255, 255, 0.3));
+      }
+    }
+  }
+}
+
+// Empty State
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--ngx-workflow-text-secondary, #6b7280);
+
+  svg {
+    margin-bottom: 16px;
+    opacity: 0.5;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    color: var(--ngx-workflow-text-secondary, #9ca3af);
+  }
+}
+
+.empty-message {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.empty-hint {
+  margin: 0;
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+// Version Item
+.version-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  margin-bottom: 8px;
+  background: var(--ngx-workflow-card-bg, rgba(255, 255, 255, 0.5));
+  border: 1px solid var(--ngx-workflow-border-color, rgba(0, 0, 0, 0.1));
+  border-radius: 8px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: var(--ngx-workflow-card-bg-hover, rgba(255, 255, 255, 0.7));
+    border-color: var(--ngx-workflow-border-color-hover, rgba(0, 0, 0, 0.15));
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    background: var(--ngx-workflow-card-bg, rgba(50, 50, 50, 0.5));
+    border-color: var(--ngx-workflow-border-color, rgba(255, 255, 255, 0.1));
+
+    &:hover {
+      background: var(--ngx-workflow-card-bg-hover, rgba(60, 60, 60, 0.7));
+      border-color: var(--ngx-workflow-border-color-hover, rgba(255, 255, 255, 0.15));
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+  }
+}
+
+.version-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.version-timestamp {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ngx-workflow-text-primary, #1a1a1a);
+  margin-bottom: 4px;
+
+  @media (prefers-color-scheme: dark) {
+    color: var(--ngx-workflow-text-primary, #ffffff);
+  }
+}
+
+.version-description {
+  font-size: 12px;
+  color: var(--ngx-workflow-text-secondary, #6b7280);
+  margin-bottom: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  @media (prefers-color-scheme: dark) {
+    color: var(--ngx-workflow-text-secondary, #9ca3af);
+  }
+}
+
+.version-meta {
+  display: flex;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--ngx-workflow-text-tertiary, #9ca3af);
+
+  @media (prefers-color-scheme: dark) {
+    color: var(--ngx-workflow-text-tertiary, #6b7280);
+  }
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  svg {
+    opacity: 0.6;
+  }
+}
+
+.version-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+// Footer
+.version-footer {
+  padding: 12px 16px;
+  border-top: 1px solid var(--ngx-workflow-border-color, rgba(0, 0, 0, 0.1));
+
+  @media (prefers-color-scheme: dark) {
+    border-top-color: var(--ngx-workflow-border-color, rgba(255, 255, 255, 0.1));
+  }
+}
+
+.btn-clear-all {
+  width: 100%;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+// Buttons
+.btn-primary,
+.btn-secondary,
+.btn-danger,
+.btn-action,
+.btn-icon {
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  outline: none;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.btn-primary {
+  background: var(--ngx-workflow-primary-color, #3b82f6);
+  color: white;
+
+  &:hover:not(:disabled) {
+    background: var(--ngx-workflow-primary-color-hover, #2563eb);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+}
+
+.btn-secondary {
+  background: var(--ngx-workflow-secondary-bg, rgba(0, 0, 0, 0.05));
+  color: var(--ngx-workflow-text-primary, #1a1a1a);
+
+  &:hover:not(:disabled) {
+    background: var(--ngx-workflow-secondary-bg-hover, rgba(0, 0, 0, 0.1));
+  }
+
+  @media (prefers-color-scheme: dark) {
+    background: var(--ngx-workflow-secondary-bg, rgba(255, 255, 255, 0.1));
+    color: var(--ngx-workflow-text-primary, #ffffff);
+
+    &:hover:not(:disabled) {
+      background: var(--ngx-workflow-secondary-bg-hover, rgba(255, 255, 255, 0.15));
+    }
+  }
+}
+
+.btn-danger {
+  background: var(--ngx-workflow-danger-color, #ef4444);
+  color: white;
+
+  &:hover:not(:disabled) {
+    background: var(--ngx-workflow-danger-color-hover, #dc2626);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.btn-action {
+  padding: 6px;
+  background: transparent;
+  color: var(--ngx-workflow-text-secondary, #6b7280);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover:not(:disabled) {
+    background: var(--ngx-workflow-action-hover-bg, rgba(0, 0, 0, 0.05));
+    color: var(--ngx-workflow-text-primary, #1a1a1a);
+  }
+
+  &.btn-restore:hover {
+    color: var(--ngx-workflow-success-color, #10b981);
+  }
+
+  &.btn-delete:hover {
+    color: var(--ngx-workflow-danger-color, #ef4444);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    color: var(--ngx-workflow-text-secondary, #9ca3af);
+
+    &:hover:not(:disabled) {
+      background: var(--ngx-workflow-action-hover-bg, rgba(255, 255, 255, 0.1));
+      color: var(--ngx-workflow-text-primary, #ffffff);
+    }
+  }
+}
+
+.btn-icon {
+  padding: 6px;
+  background: transparent;
+  color: var(--ngx-workflow-text-secondary, #6b7280);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover:not(:disabled) {
+    background: var(--ngx-workflow-action-hover-bg, rgba(0, 0, 0, 0.05));
+    color: var(--ngx-workflow-text-primary, #1a1a1a);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    color: var(--ngx-workflow-text-secondary, #9ca3af);
+
+    &:hover:not(:disabled) {
+      background: var(--ngx-workflow-action-hover-bg, rgba(255, 255, 255, 0.1));
+      color: var(--ngx-workflow-text-primary, #ffffff);
+    }
+  }
+}
