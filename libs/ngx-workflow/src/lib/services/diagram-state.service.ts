@@ -1019,12 +1019,13 @@ export class DiagramStateService {
 
     this.nodes.update(nodes => nodes.map(node => {
       if (nodeIds.includes(node.id)) {
+        const newPosition = {
+          x: node.position.x + dx,
+          y: node.position.y + dy
+        };
         return {
           ...node,
-          position: {
-            x: node.position.x + dx,
-            y: node.position.y + dy
-          }
+          position: this.snapPosition(newPosition)
         };
       }
       return node;
@@ -1041,11 +1042,12 @@ export class DiagramStateService {
     let snappedY = newPosition.y;
     const guides: AlignmentGuide[] = [];
     const SNAP_DISTANCE = 5;
-    const GRID_SIZE = 20;
 
-    // 1. Snap to Grid (lower priority)
-    snappedX = Math.round(snappedX / GRID_SIZE) * GRID_SIZE;
-    snappedY = Math.round(snappedY / GRID_SIZE) * GRID_SIZE;
+    // 1. Snap to Grid (lower priority) - use configurable grid settings
+    if (this.snapToGrid && this.gridSize > 0) {
+      snappedX = Math.round(snappedX / this.gridSize) * this.gridSize;
+      snappedY = Math.round(snappedY / this.gridSize) * this.gridSize;
+    }
 
     // 2. Snap to Nodes (higher priority)
     // Only snap if dragging a single node (for simplicity for now)
@@ -1311,6 +1313,26 @@ export class DiagramStateService {
       node.position.y > box.y + box.height ||
       node.position.y + nodeHeight < box.y
     );
+  }
+
+  // --- Grid Configuration ---
+  private gridSize: number = 20;
+  private snapToGrid: boolean = false;
+
+  setGridConfig(gridSize: number, snapToGrid: boolean): void {
+    this.gridSize = gridSize;
+    this.snapToGrid = snapToGrid;
+  }
+
+  private snapPosition(position: XYPosition): XYPosition {
+    if (!this.snapToGrid || this.gridSize <= 0) {
+      return position;
+    }
+
+    return {
+      x: Math.round(position.x / this.gridSize) * this.gridSize,
+      y: Math.round(position.y / this.gridSize) * this.gridSize
+    };
   }
 
   selectAllNodes(): void {

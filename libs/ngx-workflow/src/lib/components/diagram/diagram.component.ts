@@ -200,7 +200,11 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   private autoPanInterval: number | null = null;
   private autoPanDirection = { x: 0, y: 0 };
 
-
+  // Space + Drag Panning
+  private isSpacePressed = false;
+  private isSpacePanning = false;
+  private panStartPosition: XYPosition = { x: 0, y: 0 };
+  private viewportStartPosition: Viewport = { x: 0, y: 0, zoom: 1 };
 
   private updatePathFinder(nodes: WorkflowNode[]): void {
     this.pathCache.clear();
@@ -433,6 +437,9 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     this.filteredEdges = this.diagramStateService.visibleEdges; // Use visibleEdges for rendering
     this.tempEdges = this.diagramStateService.tempEdges;
     this.alignmentGuides = this.diagramStateService.alignmentGuides;
+
+    // Set grid configuration
+    this.diagramStateService.setGridConfig(this.gridSize, this.snapToGrid);
 
     if (this.initialNodes.length > 0) {
       this.initialNodes.forEach(node => this.diagramStateService.addNode(node));
@@ -670,6 +677,46 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     this.diagramStateService.moveNodesByDelta(selectedNodes.map(n => n.id), dx, dy);
   }
 
+  @HostListener('window:keyup', ['$event'])
+  onKeyUp(event: KeyboardEvent): void {
+    // Handle Space key release
+    if (event.code === 'Space') {
+      this.isSpacePressed = false;
+      this.isSpacePanning = false;
+      this.svgRef.nativeElement.style.cursor = '';
+    }
+  }
+
+  @HostListener('window:pointermove', ['$event'])
+  onWindowPointerMove(event: PointerEvent): void {
+    console.log('Pointer move called, isSpacePanning:', this.isSpacePanning);
+    if (this.isSpacePanning) {
+      const dx = event.clientX - this.panStartPosition.x;
+      const dy = event.clientY - this.panStartPosition.y;
+
+      const newViewport = {
+        ...this.viewportStartPosition,
+        x: this.viewportStartPosition.x + dx,
+        y: this.viewportStartPosition.y + dy
+      };
+
+      this.diagramStateService.setViewport(newViewport);
+      event.preventDefault();
+    }
+  }
+
+  @HostListener('window:pointerup', ['$event'])
+  onWindowPointerUp(event: PointerEvent): void {
+    if (this.isSpacePanning) {
+      this.isSpacePanning = false;
+      if (this.isSpacePressed) {
+        this.svgRef.nativeElement.style.cursor = 'grab';
+      } else {
+        this.svgRef.nativeElement.style.cursor = '';
+      }
+    }
+  }
+
   toggleGroup(event: Event, node: WorkflowNode): void {
     event.stopPropagation();
     this.diagramStateService.toggleGroup(node.id);
@@ -709,6 +756,18 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   onPointerDown(event: PointerEvent): void {
     // Check if right click (button 2) - ignore as it's handled by context menu
     if (event.button === 2) return;
+
+    // If space is pressed, start panning
+    if (this.isSpacePressed) {
+      console.log('Starting space panning!');
+      this.isSpacePanning = true;
+      this.panStartPosition = { x: event.clientX, y: event.clientY };
+      this.viewportStartPosition = { ...this.viewport() };
+      this.svgRef.nativeElement.style.cursor = 'grabbing';
+      console.log('Panning started, cursor set to grabbing');
+      event.preventDefault();
+      return;
+    }
 
     const target = event.target as HTMLElement;
     const handleElement = target.closest('.ngx-workflow__handle') as HTMLElement;
@@ -1894,6 +1953,17 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     // Ignore if focus is on an input or textarea
     if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
       return;
+    }
+
+    // Handle Space key for panning
+    if (event.code === 'Space' && !this.isSpacePressed) {
+      console.log('Space key pressed!', this.isSpacePressed);
+      this.isSpacePressed = true;
+      event.preventDefault();
+      // Change cursor to grab
+      this.svgRef.nativeElement.style.cursor = 'grab';
+      console.log('Cursor set to grab');
+      return; // Don't process other keys when space is pressed
     }
 
     // Delete or Backspace to remove selected elements
