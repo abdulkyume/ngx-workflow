@@ -1,29 +1,55 @@
 .ngx-workflow__minimap {
   position: absolute;
   bottom: 20px;
-  right: 20px;
+  right: 80px; // Position to the left of zoom controls (60px width + 20px gap)
   width: 200px;
   height: 150px;
-  background-color: #fff;
-  border: 1px solid #e2e2e2;
-  border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: var(--ngx-workflow-glass-bg, rgba(255, 255, 255, 0.9));
+  border: 1.5px solid var(--ngx-workflow-border, #e2e8f0);
+  border-radius: 8px;
+  box-shadow: var(--ngx-workflow-shadow-lg, 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1));
+  backdrop-filter: var(--ngx-workflow-glass-blur, blur(12px));
   overflow: hidden;
-  z-index: 5;
+  z-index: 1000;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  }
 }
 
 .ngx-workflow__minimap-svg {
   width: 100%;
   height: 100%;
   display: block;
+  cursor: pointer;
 }
 
 .ngx-workflow__minimap-node {
+  fill: var(--ngx-workflow-primary, #3b82f6);
+  fill-opacity: 0.6;
   stroke: none;
+  transition: fill-opacity 0.2s ease;
 }
 
 .ngx-workflow__minimap-viewport {
-  fill: rgba(0, 0, 255, 0.1);
-  stroke: rgb(0, 0, 255);
-  stroke-width: 1px;
+  fill: var(--ngx-workflow-primary, #3b82f6);
+  fill-opacity: 0.1;
+  stroke: var(--ngx-workflow-primary, #3b82f6);
+  stroke-width: 2px;
+  cursor: move;
+  transition: fill-opacity 0.2s ease;
+  
+  &:hover {
+    fill-opacity: 0.15;
+  }
+}
+
+// Dark mode
+:host-context(html[data-theme='dark']),
+:host-context(html.dark-theme) {
+  .ngx-workflow__minimap {
+    background: rgba(55, 65, 81, 0.9);
+    border-color: #4b5563;
+  }
 }

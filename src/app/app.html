@@ -23,7 +23,8 @@
 <div class="flow-container">
   <ngx-workflow-diagram class="flow-diagram" [initialNodes]="nodes" [initialEdges]="edges" [initialViewport]="viewport"
     [colorMode]="currentTheme" [edgeReconnectable]="true" [showExportControls]="true" [showLayoutControls]="true"
-    (nodeClick)="onNodeClick($event)" (nodesChange)="onNodesChange($event)" (edgesChange)="onEdgesChange($event)">
+    [showMinimap]="true" (nodeClick)="onNodeClick($event)" (nodesChange)="onNodesChange($event)"
+    (edgesChange)="onEdgesChange($event)">
 
     <!-- Node Toolbars for selected nodes -->
     <ngx-workflow-node-toolbar *ngFor="let node of selectedNodes" [nodeId]="node.id" position="top" align="center">
