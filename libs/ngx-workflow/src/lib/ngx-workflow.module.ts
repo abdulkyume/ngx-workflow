@@ -6,6 +6,7 @@ import { DiagramComponent } from './components/diagram/diagram.component';
 import { RoundedRectNodeComponent } from './components/custom-node/rounded-rect-node.component';
 import { NodeToolbarComponent } from './components/node-toolbar/node-toolbar.component';
 import { PanelComponent } from './components/panel/panel.component';
+import { VersionHistoryComponent } from './components/version-history/version-history.component';
 
 // Services
 import { DiagramStateService } from './services/diagram-state.service';
@@ -25,6 +26,7 @@ import { Node } from './models';
     RoundedRectNodeComponent, // Import custom node component if it's standalone
     NodeToolbarComponent, // Import node toolbar component
     PanelComponent, // Import panel component
+    VersionHistoryComponent, // Import version history component
   ],
   declarations: [
     // Standalone components are imported, not declared.
@@ -47,6 +49,7 @@ import { Node } from './models';
     RoundedRectNodeComponent,
     NodeToolbarComponent, // Export node toolbar component
     PanelComponent, // Export panel component
+    VersionHistoryComponent, // Export version history component
   ],
 })
 export class NgxWorkflowModule { }

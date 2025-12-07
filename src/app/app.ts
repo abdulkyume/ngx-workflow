@@ -10,12 +10,11 @@ import {
   DiagramComponent,
   ColorMode,
 } from 'ngx-workflow';
-import { VersionHistoryComponent } from '../../libs/ngx-workflow/src/lib/components/version-history/version-history.component';
 import { v4 as uuidv4 } from 'uuid';
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, NgxWorkflowModule, VersionHistoryComponent],
+  imports: [CommonModule, NgxWorkflowModule],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
@@ -228,9 +227,8 @@ export class App implements OnInit {
   }
 
   exportSVG(): void {
-    if (this.diagram) {
-      this.diagram.exportToSVG();
-    }
+    // TODO: Re-implement SVG export
+    console.log('SVG export not yet implemented');
   }
 
   // Toolbar actions
@@ -266,7 +264,6 @@ export class App implements OnInit {
       if (node) {
         // Programmatically trigger the double-click handler
         this.diagram.selectedNodeForEditing = node;
-        this.diagram['cdRef'].detectChanges();
         console.log('Opening properties sidebar for node:', nodeId);
       }
     }
