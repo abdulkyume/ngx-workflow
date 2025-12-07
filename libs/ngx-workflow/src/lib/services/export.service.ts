@@ -1,5 +1,11 @@
 import { Injectable } from '@angular/core';
 
+export interface ExportOptions {
+    backgroundColor?: string;
+    quality?: number;  // 0-1 for PNG
+    scale?: number;    // Resolution multiplier (1x, 2x, 3x)
+}
+
 @Injectable({
     providedIn: 'root'
 })
@@ -11,31 +17,42 @@ export class ExportService {
     async exportToPNG(
         svgElement: SVGSVGElement,
         filename: string = 'diagram.png',
-        backgroundColor: string = '#ffffff'
+        options: ExportOptions = {}
     ): Promise<void> {
         try {
+            const {
+                backgroundColor = '#ffffff',
+                quality = 0.92,
+                scale = 2
+            } = options;
+
             // Get SVG bounding box
             const bbox = svgElement.getBBox();
             const padding = 20;
 
-            // Create canvas
+            // Create canvas with scale multiplier
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             if (!ctx) throw new Error('Could not get canvas context');
 
-            // Set canvas size with padding
-            canvas.width = bbox.width + padding * 2;
-            canvas.height = bbox.height + padding * 2;
+            // Set canvas size with padding and scale
+            const width = (bbox.width + padding * 2) * scale;
+            const height = (bbox.height + padding * 2) * scale;
+            canvas.width = width;
+            canvas.height = height;
+
+            // Scale context for high-DPI rendering
+            ctx.scale(scale, scale);
 
             // Fill background
             ctx.fillStyle = backgroundColor;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillRect(0, 0, width / scale, height / scale);
 
             // Clone SVG and adjust viewBox
             const svgClone = svgElement.cloneNode(true) as SVGSVGElement;
             svgClone.setAttribute('viewBox', `${bbox.x - padding} ${bbox.y - padding} ${bbox.width + padding * 2} ${bbox.height + padding * 2}`);
-            svgClone.setAttribute('width', String(canvas.width));
-            svgClone.setAttribute('height', String(canvas.height));
+            svgClone.setAttribute('width', String(bbox.width + padding * 2));
+            svgClone.setAttribute('height', String(bbox.height + padding * 2));
 
             // Convert SVG to data URL
             const svgData = new XMLSerializer().serializeToString(svgClone);
@@ -57,7 +74,7 @@ export class ExportService {
                 img.src = url;
             });
 
-            // Download
+            // Download with quality setting
             canvas.toBlob(blob => {
                 if (blob) {
                     const link = document.createElement('a');
@@ -66,7 +83,7 @@ export class ExportService {
                     link.click();
                     URL.revokeObjectURL(link.href);
                 }
-            }, 'image/png');
+            }, 'image/png', quality);
 
         } catch (error) {
             console.error('Error exporting to PNG:', error);
@@ -117,9 +134,15 @@ export class ExportService {
      */
     async copyToClipboard(
         svgElement: SVGSVGElement,
-        backgroundColor: string = '#ffffff'
+        options: ExportOptions = {}
     ): Promise<void> {
         try {
+            const {
+                backgroundColor = '#ffffff',
+                quality = 0.92,
+                scale = 2
+            } = options;
+
             // Check if clipboard API is available
             if (!navigator.clipboard || !navigator.clipboard.write) {
                 throw new Error('Clipboard API not supported in this browser');
@@ -129,24 +152,29 @@ export class ExportService {
             const bbox = svgElement.getBBox();
             const padding = 20;
 
-            // Create canvas
+            // Create canvas with scale multiplier
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             if (!ctx) throw new Error('Could not get canvas context');
 
-            // Set canvas size
-            canvas.width = bbox.width + padding * 2;
-            canvas.height = bbox.height + padding * 2;
+            // Set canvas size with padding and scale
+            const width = (bbox.width + padding * 2) * scale;
+            const height = (bbox.height + padding * 2) * scale;
+            canvas.width = width;
+            canvas.height = height;
+
+            // Scale context for high-DPI rendering
+            ctx.scale(scale, scale);
 
             // Fill background
             ctx.fillStyle = backgroundColor;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillRect(0, 0, width / scale, height / scale);
 
             // Clone SVG and adjust viewBox
             const svgClone = svgElement.cloneNode(true) as SVGSVGElement;
             svgClone.setAttribute('viewBox', `${bbox.x - padding} ${bbox.y - padding} ${bbox.width + padding * 2} ${bbox.height + padding * 2}`);
-            svgClone.setAttribute('width', String(canvas.width));
-            svgClone.setAttribute('height', String(canvas.height));
+            svgClone.setAttribute('width', String(bbox.width + padding * 2));
+            svgClone.setAttribute('height', String(bbox.height + padding * 2));
 
             // Convert SVG to data URL
             const svgData = new XMLSerializer().serializeToString(svgClone);
@@ -168,7 +196,7 @@ export class ExportService {
                 img.src = url;
             });
 
-            // Convert canvas to blob and copy to clipboard
+            // Convert canvas to blob and copy to clipboard with quality
             canvas.toBlob(async blob => {
                 if (blob) {
                     try {
@@ -180,7 +208,7 @@ export class ExportService {
                         throw err;
                     }
                 }
-            }, 'image/png');
+            }, 'image/png', quality);
 
         } catch (error) {
             console.error('Error copying to clipboard:', error);
