@@ -1993,6 +1993,23 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
         this.diagramStateService.redo();
       }
 
+      // Export Shortcuts (Ctrl+Shift+...)
+      if (event.shiftKey) {
+        if (event.key === 'E') {
+          // Ctrl+Shift+E: Export as PNG
+          event.preventDefault();
+          this.exportToPNG();
+        } else if (event.key === 'S') {
+          // Ctrl+Shift+S: Export as SVG
+          event.preventDefault();
+          this.exportToSVG();
+        } else if (event.key === 'C') {
+          // Ctrl+Shift+C: Copy to clipboard
+          event.preventDefault();
+          this.copyToClipboard();
+        }
+      }
+
       // Clipboard Operations
       if (event.key === 'c') {
         // Handled by onCopyKeyPress
