@@ -9,14 +9,26 @@ A powerful, highly customizable Angular library for building interactive node-ba
 
 ## 🚀 Features
 
-- **Native Angular**: Built from the ground up for Angular, using Signals and OnPush change detection.
-- **Interactive**: Drag & drop nodes, zoom & pan canvas, connect edges.
-- **Customizable**: Fully custom node and edge templates.
-- **Rich UI**: Built-in minimap, background patterns, controls, and alignment tools.
-- **Layouts**: Automatic layout support via Dagre and ELK.
-- **History**: Robust Undo/Redo history stack.
-- **Export**: Export to JSON, PNG, or SVG.
-- **Theming**: Extensive CSS variables for easy styling.
+### Core Features
+- **Native Angular**: Built from the ground up for Angular, using Signals and OnPush change detection
+- **Interactive**: Drag & drop nodes, zoom & pan canvas, connect edges
+- **Customizable**: Fully custom node and edge templates
+- **Rich UI**: Built-in minimap, background patterns, controls, and alignment tools
+- **Layouts**: Automatic layout support via Dagre and ELK
+- **History**: Robust Undo/Redo history stack with Ctrl+Z/Ctrl+Shift+Z
+- **Theming**: Extensive CSS variables for easy styling with dark mode support
+
+### Advanced Features
+- **Snap-to-Grid**: Configurable grid snapping for precise node placement
+- **Space Panning**: Professional canvas panning with Space + Drag
+- **Export Controls**: Built-in UI for PNG, SVG, and clipboard export
+- **Export Options**: Customizable quality, scale, and background for exports
+- **Clipboard Operations**: Full copy/paste/cut support with Ctrl+C/V/X
+- **Connection Validation**: Prevent invalid connections with custom validators
+- **Alignment Guides**: Visual guides for node alignment during dragging
+- **Search & Filter**: Built-in search and type filtering
+- **Node Grouping**: Create and manage node groups
+- **Edge Reconnection**: Drag edge endpoints to reconnect
 
 ## 📦 Installation
 
@@ -117,6 +129,10 @@ The main component for rendering the workflow.
 | `backgroundBgColor` | `string` | `'#f0f0f0'` | Background color of the canvas itself. |
 | `connectionValidator` | `(source: string, target: string) => boolean` | `undefined` | Custom function to validate connections. Return `false` to prevent connection. |
 | `nodesResizable` | `boolean` | `true` | Global toggle to enable/disable node resizing. |
+| `snapToGrid` | `boolean` | `false` | Enable snap-to-grid for node positioning. |
+| `gridSize` | `number` | `20` | Grid size in pixels for snap-to-grid. |
+| `showExportControls` | `boolean` | `false` | Show export controls UI (PNG, SVG, Clipboard). |
+| `colorMode` | `'light' \| 'dark'` | `'light'` | Color theme mode. |
 
 #### Outputs
 
@@ -238,19 +254,41 @@ You can create your own node types by creating an Angular component and register
 
 ## ⌨️ Keyboard Shortcuts
 
+### Navigation & Selection
+| Shortcut | Action |
+|----------|--------|
+| `Space` + `Drag` | Pan canvas |
+| `Shift` + `Drag` | Lasso selection |
+| `Ctrl` + `Click` | Multi-select |
+| `Mouse Wheel` | Zoom in/out |
+
+### Editing
 | Shortcut | Action |
 |----------|--------|
 | `Delete` / `Backspace` | Delete selected nodes/edges |
 | `Ctrl` + `Z` | Undo |
-| `Ctrl` + `Shift` + `Z` | Redo |
-| `Shift` + `Drag` | Lasso Selection |
-| `Ctrl` + `Click` | Multi-select |
-| `Ctrl` + `C` | Copy |
-| `Ctrl` + `V` | Paste |
-| `Ctrl` + `X` | Cut |
-| `Ctrl` + `D` | Duplicate |
-| `Ctrl` + `G` | Group Selected Nodes |
-| `Ctrl` + `Shift` + `G` | Ungroup Selected Group |
+| `Ctrl` + `Shift` + `Z` / `Ctrl` + `Y` | Redo |
+
+### Clipboard Operations
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl` + `C` | Copy selected nodes |
+| `Ctrl` + `V` | Paste copied nodes |
+| `Ctrl` + `X` | Cut selected nodes |
+| `Ctrl` + `D` | Duplicate selected nodes |
+
+### Export
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl` + `Shift` + `E` | Export as PNG |
+| `Ctrl` + `Shift` + `S` | Export as SVG |
+| `Ctrl` + `Shift` + `C` | Copy to clipboard |
+
+### Grouping
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl` + `G` | Group selected nodes |
+| `Ctrl` + `Shift` + `G` | Ungroup selected group |
 
 ## 🤝 Contributing
 
