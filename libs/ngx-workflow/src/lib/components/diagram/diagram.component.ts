@@ -199,6 +199,11 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   private startResizePosition: XYPosition = { x: 0, y: 0 };
   private startNodeDimensions: { width: number; height: number; x: number; y: number } = { width: 0, height: 0, x: 0, y: 0 };
 
+  // Selection box (rubber band)
+  isBoxSelecting = false;
+  selectionBoxStart: XYPosition = { x: 0, y: 0 };
+  selectionBoxEnd: XYPosition = { x: 0, y: 0 };
+
   // Edge Updating
   private isUpdatingEdge = false;
   private updatingEdge: Edge | null = null;
@@ -817,12 +822,21 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
       return;
     }
 
-    // Canvas interactions
-    if (event.shiftKey) {
-      this.startSelecting(event);
-    } else {
-      this.startPanning(event);
+    // Clicking on empty canvas - start box selection
+    // If Ctrl key is NOT pressed, clear selection
+    if (!event.ctrlKey && !event.metaKey) {
+      this.diagramStateService.clearSelection();
     }
+
+    // Start box selection
+    const svgRect = this.svgRef.nativeElement.getBoundingClientRect();
+    const viewport = this.viewport();
+    const canvasX = (event.clientX - svgRect.left - viewport.x) / viewport.zoom;
+    const canvasY = (event.clientY - svgRect.top - viewport.y) / viewport.zoom;
+
+    this.isBoxSelecting = true;
+    this.selectionBoxStart = { x: canvasX, y: canvasY };
+    this.selectionBoxEnd = { x: canvasX, y: canvasY };
   }
 
 
@@ -837,6 +851,8 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
       this.updateConnection(event);
     } else if (this.isDraggingNode) {
       this.dragNode(event);
+    } else if (this.isBoxSelecting) {
+      this.updateBoxSelection(event);
     } else if (this.isPanning) {
       this.pan(event);
     } else if (this.isSelecting) {
@@ -853,6 +869,8 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
       this.finishConnecting(event);
     } else if (this.isDraggingNode) {
       this.stopDraggingNode(event);
+    } else if (this.isBoxSelecting) {
+      this.stopBoxSelection(event);
     } else if (this.isPanning) {
       this.stopPanning(event);
     } else if (this.isSelecting) {
@@ -2207,5 +2225,61 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
 
     // Continue animation
     this.autoPanInterval = window.requestAnimationFrame(() => this.autoPan());
+  }
+
+  // --- Box Selection Logic ---
+
+  private updateBoxSelection(event: PointerEvent): void {
+    const svgRect = this.svgRef.nativeElement.getBoundingClientRect();
+    const viewport = this.viewport();
+
+    // Convert screen coordinates to canvas coordinates
+    const canvasX = (event.clientX - svgRect.left - viewport.x) / viewport.zoom;
+    const canvasY = (event.clientY - svgRect.top - viewport.y) / viewport.zoom;
+
+    this.selectionBoxEnd = { x: canvasX, y: canvasY };
+
+    // Update selected nodes in real-time
+    this.selectNodesInBox();
+  }
+
+  private selectNodesInBox(): void {
+    const box = this.getSelectionBox();
+    const nodes = this.nodes();
+
+    const nodesInBox = nodes.filter(node => this.isNodeInSelectionBox(node, box));
+    const nodeIds = nodesInBox.map(n => n.id);
+
+    if (nodeIds.length > 0) {
+      this.diagramStateService.selectNodes(nodeIds, true); // Add to selection
+    }
+  }
+
+  getSelectionBox(): { x: number; y: number; width: number; height: number } {
+    const x = Math.min(this.selectionBoxStart.x, this.selectionBoxEnd.x);
+    const y = Math.min(this.selectionBoxStart.y, this.selectionBoxEnd.y);
+    const width = Math.abs(this.selectionBoxEnd.x - this.selectionBoxStart.x);
+    const height = Math.abs(this.selectionBoxEnd.y - this.selectionBoxStart.y);
+    return { x, y, width, height };
+  }
+
+  private stopBoxSelection(event: PointerEvent): void {
+    this.isBoxSelecting = false;
+    // Final selection is already applied by selectNodesInBox
+  }
+
+  private isNodeInSelectionBox(node: WorkflowNode, box: { x: number; y: number; width: number; height: number }): boolean {
+    const nodeX = node.position.x;
+    const nodeY = node.position.y;
+    const nodeWidth = node.width || this.defaultNodeWidth;
+    const nodeHeight = node.height || this.defaultNodeHeight;
+
+    // Check if node rectangle intersects with selection box
+    return !(
+      nodeX + nodeWidth < box.x ||
+      nodeX > box.x + box.width ||
+      nodeY + nodeHeight < box.y ||
+      nodeY > box.y + box.height
+    );
   }
 }

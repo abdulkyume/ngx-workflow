@@ -80,6 +80,11 @@
         <path [attr.d]="getEdgePath(tempEdge, true)" class="ngx-workflow__edge-path" [style]="tempEdge.style"></path>
       </g>
 
+      <!-- Selection Box (Rubber Band) -->
+      <rect *ngIf="isBoxSelecting" class="ngx-workflow__selection-box" [attr.x]="getSelectionBox().x"
+        [attr.y]="getSelectionBox().y" [attr.width]="getSelectionBox().width"
+        [attr.height]="getSelectionBox().height" />
+
       <!-- Nodes -->
       <g *ngFor="let node of filteredNodes(); trackBy: trackByNodeId" class="ngx-workflow__node"
         [attr.aria-label]="node.label" [attr.data-id]="node.id" [class.selected]="node.selected"

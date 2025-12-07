@@ -488,7 +488,18 @@ foreignObject {
     cursor: s-resize;
   }
 
+
   &[data-handle='w'] {
     cursor: w-resize;
   }
+}
+
+/* --- Selection Box (Rubber Band) --- */
+.ngx-workflow__selection-box {
+  fill: var(--ngx-workflow-primary, #3b82f6);
+  fill-opacity: 0.1;
+  stroke: var(--ngx-workflow-primary, #3b82f6);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 5;
+  pointer-events: none;
 }
