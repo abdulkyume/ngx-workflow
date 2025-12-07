@@ -990,6 +990,58 @@ export class DiagramStateService {
     );
   }
 
+  // --- Z-Index Management ---
+
+  /**
+   * Bring node to front (highest z-index).
+   * @param nodeId - ID of the node to bring to front
+   */
+  bringToFront(nodeId: string): void {
+    const nodes = this.nodes();
+    const maxZ = Math.max(...nodes.map(n => n.zIndex || 0), 0);
+    this.updateNode(nodeId, { zIndex: maxZ + 1 });
+  }
+
+  /**
+   * Send node to back (lowest z-index).
+   * @param nodeId - ID of the node to send to back
+   */
+  sendToBack(nodeId: string): void {
+    const nodes = this.nodes();
+    const minZ = Math.min(...nodes.map(n => n.zIndex || 0), 0);
+    this.updateNode(nodeId, { zIndex: minZ - 1 });
+  }
+
+  /**
+   * Raise node one layer (increase z-index by 1).
+   * @param nodeId - ID of the node to raise
+   */
+  raiseLayer(nodeId: string): void {
+    const node = this.nodes().find(n => n.id === nodeId);
+    if (!node) return;
+    this.updateNode(nodeId, { zIndex: (node.zIndex || 0) + 1 });
+  }
+
+  /**
+   * Lower node one layer (decrease z-index by 1).
+   * @param nodeId - ID of the node to lower
+   */
+  lowerLayer(nodeId: string): void {
+    const node = this.nodes().find(n => n.id === nodeId);
+    if (!node) return;
+    this.updateNode(nodeId, { zIndex: (node.zIndex || 0) - 1 });
+  }
+
+  /**
+   * Set explicit z-index for a node.
+   * @param nodeId - ID of the node
+   * @param zIndex - Z-index value
+   */
+  setNodeZIndex(nodeId: string, zIndex: number): void {
+    this.updateNode(nodeId, { zIndex });
+  }
+
+
   resizeNode(id: string, width: number, height: number, position?: XYPosition): void {
     this.nodes.update((nodes) =>
       nodes.map((n) => {
