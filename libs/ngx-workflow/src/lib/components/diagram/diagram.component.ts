@@ -195,7 +195,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   // Resizing
   private isResizing = false;
   private resizingNode: WorkflowNode | null = null;
-  private resizeHandle: 'nw' | 'ne' | 'sw' | 'se' | null = null;
+  private resizeHandle: 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | null = null;
   private startResizePosition: XYPosition = { x: 0, y: 0 };
   private startNodeDimensions: { width: number; height: number; x: number; y: number } = { width: 0, height: 0, x: 0, y: 0 };
 
@@ -783,7 +783,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     if (resizeHandle && nodeElement) {
       const nodeId = nodeElement.dataset['id'];
       const node = this.nodes().find(n => n.id === nodeId);
-      const handle = resizeHandle.dataset['handle'] as 'nw' | 'ne' | 'sw' | 'se';
+      const handle = resizeHandle.dataset['handle'] as 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w';
       if (node && handle) {
         this.startResizing(event, node, handle);
         return;
@@ -1177,7 +1177,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
 
   // --- Resizing Logic ---
 
-  private startResizing(event: PointerEvent, node: WorkflowNode, handle: 'nw' | 'ne' | 'sw' | 'se'): void {
+  private startResizing(event: PointerEvent, node: WorkflowNode, handle: 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w'): void {
     event.stopPropagation();
     this.isResizing = true;
     this.resizingNode = node;
@@ -1232,6 +1232,52 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
           newX = this.startNodeDimensions.x + deltaX;
           newY = this.startNodeDimensions.y + deltaY;
           break;
+        case 'n': // North - resize from top edge
+          newHeight = this.startNodeDimensions.height - deltaY;
+          newY = this.startNodeDimensions.y + deltaY;
+          break;
+        case 's': // South - resize from bottom edge
+          newHeight = this.startNodeDimensions.height + deltaY;
+          break;
+        case 'e': // East - resize from right edge
+          newWidth = this.startNodeDimensions.width + deltaX;
+          break;
+        case 'w': // West - resize from left edge
+          newWidth = this.startNodeDimensions.width - deltaX;
+          newX = this.startNodeDimensions.x + deltaX;
+          break;
+      }
+
+      // Apply aspect ratio locking if Shift key is pressed
+      if (event.shiftKey && resizingNode.lockAspectRatio !== false) {
+        const aspectRatio = this.startNodeDimensions.width / this.startNodeDimensions.height;
+
+        // For corner handles, maintain aspect ratio
+        if (['nw', 'ne', 'se', 'sw'].includes(resizeHandle)) {
+          // Use the larger dimension change to maintain aspect ratio
+          const widthChange = Math.abs(newWidth - this.startNodeDimensions.width);
+          const heightChange = Math.abs(newHeight - this.startNodeDimensions.height);
+
+          if (widthChange > heightChange) {
+            newHeight = newWidth / aspectRatio;
+            if (resizeHandle === 'nw' || resizeHandle === 'ne') {
+              newY = this.startNodeDimensions.y + this.startNodeDimensions.height - newHeight;
+            }
+          } else {
+            newWidth = newHeight * aspectRatio;
+            if (resizeHandle === 'nw' || resizeHandle === 'sw') {
+              newX = this.startNodeDimensions.x + this.startNodeDimensions.width - newWidth;
+            }
+          }
+        }
+        // For edge handles, adjust the other dimension
+        else if (resizeHandle === 'n' || resizeHandle === 's') {
+          newWidth = newHeight * aspectRatio;
+          newX = this.startNodeDimensions.x + (this.startNodeDimensions.width - newWidth) / 2;
+        } else if (resizeHandle === 'e' || resizeHandle === 'w') {
+          newHeight = newWidth / aspectRatio;
+          newY = this.startNodeDimensions.y + (this.startNodeDimensions.height - newHeight) / 2;
+        }
       }
 
       // Apply constraints

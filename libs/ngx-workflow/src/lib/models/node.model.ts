@@ -25,6 +25,7 @@ export interface Node<T = any> {
   minHeight?: number;
   maxWidth?: number;
   maxHeight?: number;
+  lockAspectRatio?: boolean; // If true, maintains aspect ratio during resize (also with Shift key)
   class?: string;
   style?: Record<string, string>;
   parentId?: string;

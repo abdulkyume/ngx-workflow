@@ -475,4 +475,20 @@ foreignObject {
   &[data-handle='se'] {
     cursor: se-resize;
   }
+
+  &[data-handle='n'] {
+    cursor: n-resize;
+  }
+
+  &[data-handle='e'] {
+    cursor: e-resize;
+  }
+
+  &[data-handle='s'] {
+    cursor: s-resize;
+  }
+
+  &[data-handle='w'] {
+    cursor: w-resize;
+  }
 }

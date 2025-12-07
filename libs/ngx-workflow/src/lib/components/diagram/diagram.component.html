@@ -159,17 +159,21 @@
         <!-- Resize Handles -->
         <g *ngIf="node.selected && (node.resizable !== false) && nodesResizable">
           <!-- NW Handle -->
-          <rect class="ngx-workflow__resize-handle" data-handle="nw" [attr.x]="-5" [attr.y]="-5" width="10" height="10">
+          <rect class="ngx-workflow__resize-handle ngx-workflow__resize-handle-nw" data-handle="nw" [attr.x]="-5"
+            [attr.y]="-5" width="10" height="10">
           </rect>
           <!-- NE Handle -->
-          <rect class="ngx-workflow__resize-handle" data-handle="ne" [attr.x]="(node.width || defaultNodeWidth) - 5"
-            [attr.y]="-5" width="10" height="10"></rect>
+          <rect class="ngx-workflow__resize-handle ngx-workflow__resize-handle-ne" data-handle="ne"
+            [attr.x]="(node.width || defaultNodeWidth) - 5" [attr.y]="-5" width="10" height="10"></rect>
           <!-- SW Handle -->
-          <rect class="ngx-workflow__resize-handle" data-handle="sw" [attr.x]="-5"
+          <rect class="ngx-workflow__resize-handle ngx-workflow__resize-handle-sw" data-handle="sw" [attr.x]="-5"
             [attr.y]="(node.height || defaultNodeHeight) - 5" width="10" height="10"></rect>
           <!-- SE Handle -->
-          <rect class="ngx-workflow__resize-handle" data-handle="se" [attr.x]="(node.width || defaultNodeWidth) - 5"
-            [attr.y]="(node.height || defaultNodeHeight) - 5" width="10" height="10"></rect>
+          <rect class="ngx-workflow__resize-handle ngx-workflow__resize-handle-se" data-handle="se"
+            [attr.x]="(node.width || defaultNodeWidth) - 5" [attr.y]="(node.height || defaultNodeHeight) - 5" width="10"
+            height="10"></rect>
+
+
         </g>
 
         <!-- Group Node Template -->
