@@ -22,7 +22,7 @@
 
 <div class="flow-container">
   <ngx-workflow-diagram class="flow-diagram" [initialNodes]="nodes" [initialEdges]="edges" [initialViewport]="viewport"
-    [colorMode]="currentTheme" [edgeReconnectable]="true" (nodeClick)="onNodeClick($event)"
+    [colorMode]="currentTheme" [edgeReconnectable]="true" [showExportControls]="true" (nodeClick)="onNodeClick($event)"
     (nodesChange)="onNodesChange($event)" (edgesChange)="onEdgesChange($event)">
 
     <!-- Node Toolbars for selected nodes -->

@@ -22,6 +22,7 @@ import { NodeToolbarComponent } from '../node-toolbar/node-toolbar.component';
 import { PanelComponent } from '../panel/panel.component';
 import { ThemeService, ColorMode } from '../../services/theme.service';
 import { ExportService } from '../../services/export.service';
+import { ExportControlsComponent } from '../export-controls/export-controls.component';
 
 // Helper function to get a node from the array
 function getNode(id: string, nodes: WorkflowNode[]): WorkflowNode | undefined {
@@ -70,7 +71,7 @@ function getHandleAbsolutePosition(node: WorkflowNode, handleId: string | undefi
   styleUrls: ['./diagram.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true,
-  imports: [CommonModule, ZoomControlsComponent, UndoRedoControlsComponent, MinimapComponent, BackgroundComponent, GridOverlayComponent, AlignmentControlsComponent, PropertiesSidebarComponent, SearchControlsComponent, ContextMenuComponent, NodeToolbarComponent, PanelComponent]
+  imports: [CommonModule, ZoomControlsComponent, UndoRedoControlsComponent, MinimapComponent, BackgroundComponent, GridOverlayComponent, AlignmentControlsComponent, PropertiesSidebarComponent, SearchControlsComponent, ContextMenuComponent, NodeToolbarComponent, PanelComponent, ExportControlsComponent]
 })
 export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   // Trigger rebuild
@@ -103,6 +104,9 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   @Input() gridSize: number = 20;
   @Input() snapToGrid: boolean = false;
   @Input() showGrid: boolean = false;
+
+  // Export controls configuration
+  @Input() showExportControls: boolean = false;
 
   // Auto-panning configuration
   @Input() autoPanOnNodeDrag: boolean = true;
@@ -1817,6 +1821,13 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
 
       img.src = url;
     });
+  }
+
+  /**
+   * Copies the diagram to the clipboard as a PNG image.
+   */
+  async copyToClipboard(): Promise<void> {
+    await this.exportService.copyToClipboard(this.svgRef.nativeElement);
   }
 
   /**

@@ -213,6 +213,9 @@
     (zoomIn)="onZoomChange(viewport().zoom + 0.1)" (zoomOut)="onZoomChange(viewport().zoom - 0.1)"
     (fitView)="onZoomChange(1)" (resetZoom)="onZoomChange(1)"></ngx-workflow-zoom-controls>
 
+  <ngx-workflow-export-controls *ngIf="showExportControls" (exportPNG)="exportToPNG()" (exportSVG)="exportToSVG()"
+    (copyClipboard)="copyToClipboard()"></ngx-workflow-export-controls>
+
   <ngx-workflow-alignment-controls></ngx-workflow-alignment-controls>
 
   <ngx-workflow-minimap *ngIf="showMinimap"></ngx-workflow-minimap>

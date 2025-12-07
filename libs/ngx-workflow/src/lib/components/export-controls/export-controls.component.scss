@@ -1,0 +1,68 @@
+.ngx-workflow__export-controls {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 8px;
+  z-index: 10;
+}
+
+.ngx-workflow__export-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: var(--ngx-workflow-controls-bg, white);
+  border: 1px solid var(--ngx-workflow-controls-border, #e5e7eb);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--ngx-workflow-controls-text, #374151);
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+
+  &:hover {
+    background: var(--ngx-workflow-controls-hover-bg, #f3f4f6);
+    border-color: var(--ngx-workflow-controls-hover-border, #d1d5db);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+  }
+
+  svg {
+    flex-shrink: 0;
+  }
+
+  span {
+    font-weight: 500;
+    white-space: nowrap;
+  }
+}
+
+// Dark mode
+[data-theme='dark'] {
+  .ngx-workflow__export-button {
+    background: var(--ngx-workflow-controls-bg-dark, #1f2937);
+    border-color: var(--ngx-workflow-controls-border-dark, #374151);
+    color: var(--ngx-workflow-controls-text-dark, #f3f4f6);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+
+    &:hover {
+      background: var(--ngx-workflow-controls-hover-bg-dark, #374151);
+      border-color: var(--ngx-workflow-controls-hover-border-dark, #4b5563);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+    }
+
+    &:focus {
+      box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.3);
+    }
+  }
+}
