@@ -1,0 +1,69 @@
+.layout-controls {
+  position: absolute;
+  top: 10px;
+  left: 420px; // Offset to avoid search controls and dropdown
+  display: flex;
+  gap: 4px;
+  background: var(--ngx-workflow-controls-bg, #ffffff);
+  border: 1px solid var(--ngx-workflow-controls-border, #e2e8f0);
+  border-radius: 6px;
+  padding: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+}
+
+.layout-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--ngx-workflow-controls-color, #64748b);
+  transition: all 0.2s ease;
+  padding: 0;
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  &:hover {
+    background: var(--ngx-workflow-controls-hover-bg, #f1f5f9);
+    color: var(--ngx-workflow-primary, #3b82f6);
+  }
+
+  &:active {
+    background: var(--ngx-workflow-controls-active-bg, #e2e8f0);
+    transform: scale(0.95);
+  }
+
+  &:focus {
+    outline: 2px solid var(--ngx-workflow-primary, #3b82f6);
+    outline-offset: 2px;
+  }
+}
+
+// Dark mode support
+:host-context([data-color-mode='dark']) {
+  .layout-controls {
+    background: var(--ngx-workflow-controls-bg-dark, #1e293b);
+    border-color: var(--ngx-workflow-controls-border-dark, #334155);
+  }
+
+  .layout-btn {
+    color: var(--ngx-workflow-controls-color-dark, #94a3b8);
+
+    &:hover {
+      background: var(--ngx-workflow-controls-hover-bg-dark, #334155);
+      color: var(--ngx-workflow-primary-dark, #60a5fa);
+    }
+
+    &:active {
+      background: var(--ngx-workflow-controls-active-bg-dark, #475569);
+    }
+  }
+}

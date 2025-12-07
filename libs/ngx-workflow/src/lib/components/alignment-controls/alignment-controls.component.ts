@@ -27,6 +27,6 @@ export class AlignmentControlsComponent {
     }
 
     autoLayout(direction: 'TB' | 'LR'): void {
-        this.diagramStateService.applyLayout(direction);
+        this.diagramStateService.applyLayout('auto', { direction });
     }
 }

@@ -12,7 +12,8 @@ import { Observable, Subject, animationFrameScheduler } from 'rxjs';
 import { throttleTime } from 'rxjs/operators';
 import { v4 as uuidv4 } from 'uuid';
 import { UndoRedoService } from './undo-redo.service';
-import { AutoLayoutService } from './auto-layout.service'; // Import UndoRedoService and DiagramState
+import { AutoLayoutService } from './auto-layout.service';
+import { LayoutService } from './layout.service';
 
 export interface Connection {
   source: string;
@@ -152,7 +153,8 @@ export class DiagramStateService {
 
   constructor(
     public undoRedoService: UndoRedoService,
-    private autoLayoutService: AutoLayoutService
+    private autoLayoutService: AutoLayoutService,
+    private layoutService: LayoutService
   ) {
     // Sync internal subjects to signals (for batched updates)
     this.nodeUpdates$
@@ -1240,13 +1242,29 @@ export class DiagramStateService {
     this.viewport.update(v => ({ ...v, zoom }));
   }
 
-  applyLayout(direction: 'TB' | 'LR'): void {
+  applyLayout(algorithm: 'auto' | 'force' | 'hierarchical' | 'circular' = 'auto', options?: any): void {
     const currentNodes = this.nodes();
     const currentEdges = this.edges();
 
     this.undoRedoService.saveState(this.getCurrentState());
 
-    const newNodes = this.autoLayoutService.calculateLayout(currentNodes, currentEdges, direction);
+    let newNodes: Node[];
+
+    switch (algorithm) {
+      case 'force':
+        newNodes = this.layoutService.calculateForceDirected(currentNodes, currentEdges, options);
+        break;
+      case 'hierarchical':
+        newNodes = this.layoutService.calculateHierarchical(currentNodes, currentEdges, options);
+        break;
+      case 'circular':
+        newNodes = this.layoutService.calculateCircular(currentNodes, currentEdges, options);
+        break;
+      case 'auto':
+      default:
+        newNodes = this.autoLayoutService.calculateLayout(currentNodes, currentEdges, options?.direction || 'TB');
+        break;
+    }
 
     this.nodes.set(newNodes);
   }

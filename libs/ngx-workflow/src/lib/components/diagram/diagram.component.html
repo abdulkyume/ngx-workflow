@@ -216,6 +216,9 @@
   <ngx-workflow-export-controls *ngIf="showExportControls" (exportPNG)="exportToPNG()" (exportSVG)="exportToSVG()"
     (copyClipboard)="copyToClipboard()"></ngx-workflow-export-controls>
 
+  <ngx-workflow-layout-controls *ngIf="showLayoutControls"
+    (applyLayout)="onApplyLayout($event)"></ngx-workflow-layout-controls>
+
   <ngx-workflow-alignment-controls></ngx-workflow-alignment-controls>
 
   <ngx-workflow-minimap *ngIf="showMinimap"></ngx-workflow-minimap>
