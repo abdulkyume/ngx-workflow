@@ -149,6 +149,9 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   @Output() connectEnd = new EventEmitter<{ nodeId: string; handleId?: string }>();
   @Output() connectionDrop = new EventEmitter<{ position: XYPosition; event: PointerEvent; sourceNodeId: string; sourceHandleId?: string }>();
 
+  // Deletion control event
+  @Output() beforeDelete = new EventEmitter<{ nodes: WorkflowNode[]; edges: Edge[]; cancel: () => void }>();
+
   // Connection validation callback
   @Input() validateConnection?: (connection: {
     source: string;
@@ -673,9 +676,45 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     return edge.id;
   }
 
+  /**
+   * Delete selected elements with beforeDelete hook support.
+   * Emits beforeDelete event which allows users to cancel the deletion.
+   */
+  deleteSelectedElements(): void {
+    const nodesToDelete = this.diagramStateService.selectedNodes();
+    const edgesToDelete = this.diagramStateService.selectedEdges();
+
+    // If nothing selected, do nothing
+    if (nodesToDelete.length === 0 && edgesToDelete.length === 0) {
+      return;
+    }
+
+    // If beforeDelete event has listeners, emit it and allow cancellation
+    if (this.beforeDelete.observed) {
+      let cancelled = false;
+      const cancel = () => { cancelled = true; };
+
+      this.beforeDelete.emit({
+        nodes: nodesToDelete,
+        edges: edgesToDelete,
+        cancel
+      });
+
+      // Use setTimeout to allow synchronous cancellation
+      setTimeout(() => {
+        if (!cancelled) {
+          this.diagramStateService.deleteSelectedElements();
+        }
+      }, 0);
+    } else {
+      // No listeners, proceed with deletion immediately
+      this.diagramStateService.deleteSelectedElements();
+    }
+  }
+
   @HostListener('window:keydown.delete', ['$event'])
   onDeleteKeyPress(event: any): void {
-    this.diagramStateService.deleteSelectedElements();
+    this.deleteSelectedElements();
   }
 
   @HostListener('window:keydown.control.z', ['$event'])
