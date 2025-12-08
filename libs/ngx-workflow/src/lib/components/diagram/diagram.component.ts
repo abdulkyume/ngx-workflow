@@ -381,6 +381,31 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
         },
         shortcut: 'Ctrl+D'
       });
+
+      // Z-index operations (only in layered mode)
+      if (this.zIndexMode === 'layered') {
+        actions.push({
+          label: 'Bring to Front',
+          action: () => this.diagramStateService.bringToFront(node.id),
+          shortcut: 'Ctrl+]'
+        });
+        actions.push({
+          label: 'Send to Back',
+          action: () => this.diagramStateService.sendToBack(node.id),
+          shortcut: 'Ctrl+['
+        });
+        actions.push({
+          label: 'Raise Layer',
+          action: () => this.diagramStateService.raiseLayer(node.id),
+          shortcut: 'Ctrl+Shift+]'
+        });
+        actions.push({
+          label: 'Lower Layer',
+          action: () => this.diagramStateService.lowerLayer(node.id),
+          shortcut: 'Ctrl+Shift+['
+        });
+      }
+
       actions.push({
         label: 'Delete',
         action: () => this.diagramStateService.removeNode(node.id),
