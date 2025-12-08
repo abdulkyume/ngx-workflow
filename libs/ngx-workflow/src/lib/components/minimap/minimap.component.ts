@@ -14,6 +14,7 @@ import { Node, Viewport } from '../../models';
 export class MinimapComponent {
   @Input() nodeColor: string = '#e2e2e2';
   @Input() nodeClass: string = '';
+  @Input() showNodeColors: boolean = true;
 
   // Initialize signals from service
   nodes: Signal<Node[]>;
@@ -83,6 +84,22 @@ export class MinimapComponent {
       width: maxX - minX,
       height: maxY - minY
     };
+  }
+
+  /**
+   * Get the fill color for a node in the minimap
+   */
+  getNodeFill(node: Node): string {
+    if (!this.showNodeColors) return this.nodeColor;
+    // Use node's custom color if available
+    return node.data?.nodeColor || node.style?.['backgroundColor'] || this.nodeColor;
+  }
+
+  /**
+   * Check if a node is selected
+   */
+  isNodeSelected(node: Node): boolean {
+    return node.selected || false;
   }
 
   onMinimapClick(event: MouseEvent) {

@@ -1,8 +1,8 @@
 <div class="ngx-workflow__minimap">
   <svg [attr.viewBox]="viewBox()" class="ngx-workflow__minimap-svg" (click)="onMinimapClick($event)">
     <rect *ngFor="let node of nodes()" [attr.x]="node.position.x" [attr.y]="node.position.y"
-      [attr.width]="node.width || 170" [attr.height]="node.height || 60" [attr.fill]="nodeColor" [class]="nodeClass"
-      class="ngx-workflow__minimap-node" />
+      [attr.width]="node.width || 170" [attr.height]="node.height || 60" [attr.fill]="getNodeFill(node)"
+      [class]="nodeClass" [class.selected]="isNodeSelected(node)" class="ngx-workflow__minimap-node" />
     <rect class="ngx-workflow__minimap-viewport" [attr.x]="viewportIndicator().x" [attr.y]="viewportIndicator().y"
       [attr.width]="viewportIndicator().width" [attr.height]="viewportIndicator().height"
       (mousedown)="onViewportMouseDown($event)" style="cursor: move" />

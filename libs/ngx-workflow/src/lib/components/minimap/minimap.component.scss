@@ -28,8 +28,21 @@
 .ngx-workflow__minimap-node {
   fill: var(--ngx-workflow-primary, #3b82f6);
   fill-opacity: 0.6;
-  stroke: none;
-  transition: fill-opacity 0.2s ease;
+  stroke: rgba(0, 0, 0, 0.1);
+  stroke-width: 0.5;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    fill-opacity: 0.8;
+    stroke-width: 1;
+  }
+  
+  &.selected {
+    stroke: var(--ngx-workflow-primary, #3b82f6);
+    stroke-width: 2;
+    fill-opacity: 1;
+    filter: drop-shadow(0 0 3px rgba(59, 130, 246, 0.5));
+  }
 }
 
 .ngx-workflow__minimap-viewport {
@@ -38,11 +51,24 @@
   stroke: var(--ngx-workflow-primary, #3b82f6);
   stroke-width: 2px;
   cursor: move;
-  transition: fill-opacity 0.2s ease;
+  transition: all 0.2s ease;
   
   &:hover {
     fill-opacity: 0.15;
+    stroke-width: 3px;
   }
+}
+
+// Pulse animation for viewport when minimap is hovered
+.ngx-workflow__minimap:hover {
+  .ngx-workflow__minimap-viewport {
+    animation: pulse 2s ease-in-out infinite;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
 }
 
 // Dark mode
