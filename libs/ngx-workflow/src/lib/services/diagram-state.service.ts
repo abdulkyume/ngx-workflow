@@ -622,10 +622,6 @@ export class DiagramStateService {
     this.edges.update((currentEdges) => currentEdges.map((edge) => ({ ...edge, selected: false })));
   }
 
-  selectAll(): void {
-    this.nodes.update((currentNodes) => currentNodes.map((node) => ({ ...node, selected: true })));
-  }
-
   multiSelect(nodeId: string): void {
     this.nodes.update((currentNodes) =>
       currentNodes.map((node) => ({
@@ -656,123 +652,6 @@ export class DiagramStateService {
     // Clear selection after deletion
     this.clearSelection();
     console.log('Selected elements deleted. Nodes:', nodesToDelete, 'Edges:', edgesToDelete);
-  }
-
-  // --- Alignment & Distribution ---
-
-  alignNodes(alignment: 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom'): void {
-    const selectedNodes = this.selectedNodes();
-    if (selectedNodes.length < 2) return;
-
-    this.undoRedoService.saveState(this.getCurrentState());
-
-    let targetValue: number;
-
-    switch (alignment) {
-      case 'left':
-        targetValue = Math.min(...selectedNodes.map((n) => n.position.x));
-        break;
-      case 'center': {
-        const minX = Math.min(...selectedNodes.map((n) => n.position.x));
-        const maxX = Math.max(...selectedNodes.map((n) => n.position.x + (n.width || 170)));
-        targetValue = minX + (maxX - minX) / 2;
-        break;
-      }
-      case 'right':
-        targetValue = Math.max(...selectedNodes.map((n) => n.position.x + (n.width || 170)));
-        break;
-      case 'top':
-        targetValue = Math.min(...selectedNodes.map((n) => n.position.y));
-        break;
-      case 'middle': {
-        const minY = Math.min(...selectedNodes.map((n) => n.position.y));
-        const maxY = Math.max(...selectedNodes.map((n) => n.position.y + (n.height || 60)));
-        targetValue = minY + (maxY - minY) / 2;
-        break;
-      }
-      case 'bottom':
-        targetValue = Math.max(...selectedNodes.map((n) => n.position.y + (n.height || 60)));
-        break;
-    }
-
-    this.nodes.update((currentNodes) =>
-      currentNodes.map((node) => {
-        if (!node.selected) return node;
-
-        const newPos = { ...node.position };
-        const width = node.width || 170;
-        const height = node.height || 60;
-
-        switch (alignment) {
-          case 'left':
-            newPos.x = targetValue;
-            break;
-          case 'center':
-            newPos.x = targetValue - width / 2;
-            break;
-          case 'right':
-            newPos.x = targetValue - width;
-            break;
-          case 'top':
-            newPos.y = targetValue;
-            break;
-          case 'middle':
-            newPos.y = targetValue - height / 2;
-            break;
-          case 'bottom':
-            newPos.y = targetValue - height;
-            break;
-        }
-        return { ...node, position: newPos };
-      })
-    );
-  }
-
-  distributeNodes(distribution: 'horizontal' | 'vertical'): void {
-    const selectedNodes = this.selectedNodes();
-    if (selectedNodes.length < 3) return;
-
-    this.undoRedoService.saveState(this.getCurrentState());
-
-    // Sort nodes by position
-    const sortedNodes = [...selectedNodes].sort((a, b) => {
-      return distribution === 'horizontal' ? a.position.x - b.position.x : a.position.y - b.position.y;
-    });
-
-    const firstNode = sortedNodes[0];
-    const lastNode = sortedNodes[sortedNodes.length - 1];
-
-    if (distribution === 'horizontal') {
-      const totalSpan = lastNode.position.x - firstNode.position.x;
-      const step = totalSpan / (sortedNodes.length - 1);
-
-      this.nodes.update(nodes => nodes.map(node => {
-        const index = sortedNodes.findIndex(n => n.id === node.id);
-        if (index === -1) return node;
-        return {
-          ...node,
-          position: {
-            ...node.position,
-            x: firstNode.position.x + (step * index)
-          }
-        };
-      }));
-    } else {
-      const totalSpan = lastNode.position.y - firstNode.position.y;
-      const step = totalSpan / (sortedNodes.length - 1);
-
-      this.nodes.update(nodes => nodes.map(node => {
-        const index = sortedNodes.findIndex(n => n.id === node.id);
-        if (index === -1) return node;
-        return {
-          ...node,
-          position: {
-            ...node.position,
-            y: firstNode.position.y + (step * index)
-          }
-        };
-      }));
-    }
   }
 
   // --- Internal batching methods for components to use ---
@@ -1031,6 +910,138 @@ export class DiagramStateService {
     if (!node) return;
     this.updateNode(nodeId, { zIndex: (node.zIndex || 0) - 1 });
   }
+
+  // ==================== Batch Operations ====================
+
+  /**
+   * Select all nodes in the diagram
+   */
+  selectAll(): void {
+    const allNodeIds = this.nodes().map(n => n.id);
+    this.selectNodes(allNodeIds);
+  }
+
+  /**
+   * Deselect all nodes and edges
+   */
+  deselectAll(): void {
+    this.clearSelection();
+  }
+
+  /**
+   * Delete all nodes and edges from the diagram
+   */
+  deleteAll(): void {
+    this.undoRedoService.saveState(this.getCurrentState());
+    this.nodes.set([]);
+    this.edges.set([]);
+  }
+
+  /**
+   * Align selected nodes
+   * @param alignment - Alignment type: 'left', 'right', 'center', 'top', 'bottom', 'middle'
+   */
+  alignNodes(alignment: 'left' | 'right' | 'center' | 'top' | 'bottom' | 'middle'): void {
+    const selected = this.selectedNodes();
+    if (selected.length < 2) return;
+
+    this.undoRedoService.saveState(this.getCurrentState());
+
+    // Calculate positions with widths and heights
+    const positions = selected.map(n => ({
+      id: n.id,
+      x: n.position.x,
+      y: n.position.y,
+      width: n.width || 150,
+      height: n.height || 40
+    }));
+
+    let targetValue: number;
+
+    switch (alignment) {
+      case 'left':
+        targetValue = Math.min(...positions.map(p => p.x));
+        selected.forEach(node => this.updateNode(node.id, { position: { x: targetValue, y: node.position.y } }));
+        break;
+      case 'right':
+        targetValue = Math.max(...positions.map(p => p.x + p.width));
+        selected.forEach((node, i) => {
+          const width = positions[i].width;
+          this.updateNode(node.id, { position: { x: targetValue - width, y: node.position.y } });
+        });
+        break;
+      case 'center':
+        const avgX = positions.reduce((sum, p) => sum + p.x + p.width / 2, 0) / positions.length;
+        selected.forEach((node, i) => {
+          const width = positions[i].width;
+          this.updateNode(node.id, { position: { x: avgX - width / 2, y: node.position.y } });
+        });
+        break;
+      case 'top':
+        targetValue = Math.min(...positions.map(p => p.y));
+        selected.forEach(node => this.updateNode(node.id, { position: { x: node.position.x, y: targetValue } }));
+        break;
+      case 'bottom':
+        targetValue = Math.max(...positions.map(p => p.y + p.height));
+        selected.forEach((node, i) => {
+          const height = positions[i].height;
+          this.updateNode(node.id, { position: { x: node.position.x, y: targetValue - height } });
+        });
+        break;
+      case 'middle':
+        const avgY = positions.reduce((sum, p) => sum + p.y + p.height / 2, 0) / positions.length;
+        selected.forEach((node, i) => {
+          const height = positions[i].height;
+          this.updateNode(node.id, { position: { x: node.position.x, y: avgY - height / 2 } });
+        });
+        break;
+    }
+  }
+
+  /**
+   * Distribute selected nodes evenly along an axis
+   * @param axis - 'horizontal' or 'vertical'
+   */
+  distributeNodes(axis: 'horizontal' | 'vertical'): void {
+    const selected = this.selectedNodes();
+    if (selected.length < 3) return; // Need at least 3 nodes to distribute
+
+    this.undoRedoService.saveState(this.getCurrentState());
+
+    // Sort nodes by position
+    const sorted = [...selected].sort((a, b) => {
+      return axis === 'horizontal'
+        ? a.position.x - b.position.x
+        : a.position.y - b.position.y;
+    });
+
+    const first = sorted[0];
+    const last = sorted[sorted.length - 1];
+
+    if (axis === 'horizontal') {
+      const totalWidth = last.position.x - first.position.x;
+      const spacing = totalWidth / (sorted.length - 1);
+
+      sorted.forEach((node, i) => {
+        if (i === 0 || i === sorted.length - 1) return; // Keep first and last positions
+        const newX = first.position.x + spacing * i;
+        this.updateNode(node.id, { position: { x: newX, y: node.position.y } });
+      });
+    } else {
+      const totalHeight = last.position.y - first.position.y;
+      const spacing = totalHeight / (sorted.length - 1);
+
+      sorted.forEach((node, i) => {
+        if (i === 0 || i === sorted.length - 1) return; // Keep first and last positions
+        const newY = first.position.y + spacing * i;
+        this.updateNode(node.id, { position: { x: node.position.x, y: newY } });
+      });
+    }
+  }
+
+  // ==================== End Batch Operations ====================
+
+  // Existing methods continue below...
 
   /**
    * Set explicit z-index for a node.

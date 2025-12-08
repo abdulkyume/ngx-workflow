@@ -920,7 +920,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   onSelectAllKeyPress(event: any): void {
     if (this.isInputActive(event)) return;
     event.preventDefault();
-    this.diagramStateService.selectAllNodes();
+    this.diagramStateService.selectAll();
   }
 
   @HostListener('window:keydown.arrowup', ['$event'])
