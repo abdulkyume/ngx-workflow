@@ -131,6 +131,10 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   // Connection validation configuration
   @Input() maxConnectionsPerHandle?: number; // Global limit for connections per handle
 
+  // Collision detection
+  @Input() preventNodeOverlap: boolean = false;
+  @Input() nodeSpacing: number = 10;
+
   // Output events
   @Output() nodeClick = new EventEmitter<WorkflowNode>();
   @Output() edgeClick = new EventEmitter<Edge>();
@@ -224,6 +228,9 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   private startNodePosition: XYPosition = { x: 0, y: 0 };
   private startNodePositions: Map<string, XYPosition> = new Map(); // Initial positions for multi-drag
   private startPointerPosition: XYPosition = { x: 0, y: 0 };
+
+  // Collision detection
+  collidingNodeIds: string[] = [];
 
   // Connection (Handle)
   private isConnecting = false;
@@ -556,6 +563,49 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
 
     return connectionCount < limit;
   }
+
+  // ==================== Collision Detection ====================
+
+  /**
+   * Check if two nodes overlap using AABB (Axis-Aligned Bounding Box) collision detection
+   */
+  private checkNodeCollision(node1: WorkflowNode, node2: WorkflowNode, spacing: number = 0): boolean {
+    const x1 = node1.position.x - spacing;
+    const y1 = node1.position.y - spacing;
+    const w1 = (node1.width || 150) + spacing * 2;
+    const h1 = (node1.height || 40) + spacing * 2;
+
+    const x2 = node2.position.x;
+    const y2 = node2.position.y;
+    const w2 = node2.width || 150;
+    const h2 = node2.height || 40;
+
+    return !(x1 + w1 < x2 || x2 + w2 < x1 || y1 + h1 < y2 || y2 + h2 < y1);
+  }
+
+  /**
+   * Get all nodes that would collide with the given node at a position
+   */
+  private getCollidingNodes(nodeId: string, position: XYPosition): WorkflowNode[] {
+    const node = this.nodes().find(n => n.id === nodeId);
+    if (!node) return [];
+
+    const testNode = { ...node, position };
+
+    return this.nodes().filter(n =>
+      n.id !== nodeId &&
+      this.checkNodeCollision(testNode, n, this.nodeSpacing)
+    );
+  }
+
+  /**
+   * Check if a node is currently colliding
+   */
+  isNodeColliding(nodeId: string): boolean {
+    return this.collidingNodeIds.includes(nodeId);
+  }
+
+  // ==================== End Collision Detection ====================
 
   constructor(
     public el: ElementRef<HTMLElement>, // Host element

@@ -138,6 +138,18 @@
   &.dimmed {
     opacity: 0.4;
   }
+
+  &.colliding .ngx-workflow__node-rect {
+    stroke: #ef4444 !important; // Red 500
+    stroke-width: 3px;
+    animation: shake 0.3s ease-in-out;
+  }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
 }
 
 /* Dark mode node adjustments */
