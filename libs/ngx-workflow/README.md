@@ -18,6 +18,21 @@ A powerful, highly customizable Angular library for building interactive node-ba
 - **Export**: Export to JSON, PNG, or SVG.
 - **Theming**: Extensive CSS variables for easy styling.
 
+## ✨ New Features (Latest Release)
+
+We've added **8 powerful new features** to enhance your workflow experience:
+
+1. **Before Delete Hook** - Control deletion with cancellable events
+2. **Z-Index Layer Management** - Keyboard shortcuts + context menu for node stacking
+3. **Connection Limits** - Restrict connections per handle (global or per-handle)
+4. **Edge Label Components** - Use custom Angular components for rich edge labels
+5. **Batch Operations** - `selectAll()`, `alignNodes()`, `distributeNodes()` methods
+6. **Mini-Map Enhancements** - Node colors, selection highlighting, pulse animations
+7. **Node Collision Detection** - Visual feedback when nodes overlap during drag
+8. **Bug Fixes** - Edge interaction & injection context improvements
+
+📖 **[View complete feature documentation →](./FEATURES.md)**
+
 ## 📦 Installation
 
 ```bash
@@ -241,8 +256,13 @@ You can create your own node types by creating an Angular component and register
 | Shortcut | Action |
 |----------|--------|
 | `Delete` / `Backspace` | Delete selected nodes/edges |
+| `Ctrl/Cmd` + `A` | Select all nodes |
 | `Ctrl` + `Z` | Undo |
 | `Ctrl` + `Shift` + `Z` | Redo |
+| `Ctrl/Cmd` + `]` | Bring to front (z-index) |
+| `Ctrl/Cmd` + `[` | Send to back (z-index) |
+| `Ctrl/Cmd` + `Shift` + `]` | Raise layer |
+| `Ctrl/Cmd` + `Shift` + `[` | Lower layer |
 | `Shift` + `Drag` | Lasso Selection |
 | `Ctrl` + `Click` | Multi-select |
 | `Ctrl` + `C` | Copy |
