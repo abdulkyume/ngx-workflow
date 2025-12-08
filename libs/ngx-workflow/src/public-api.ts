@@ -8,6 +8,9 @@ export * from './lib/ngx-workflow.module';
 export * from './lib/components/diagram/diagram.component';
 export * from './lib/components/custom-node/rounded-rect-node.component';
 export * from './lib/components/node-toolbar/node-toolbar.component';
+export * from './lib/components/undo-redo-controls/undo-redo-controls.component';
+export * from './lib/components/version-history/version-history.component';
+export * from './lib/components/zoom-controls/zoom-controls.component';
 export * from './lib/components/panel/panel.component';
 
 // Services
