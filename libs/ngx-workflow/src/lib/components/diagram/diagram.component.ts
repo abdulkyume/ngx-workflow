@@ -783,6 +783,50 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     }
   }
 
+  @HostListener('window:keydown.control.]', ['$event'])
+  @HostListener('window:keydown.meta.]', ['$event'])
+  onBringToFrontKeyPress(event: any): void {
+    if (this.isInputActive(event)) return;
+    event.preventDefault();
+    const selectedNodes = this.diagramStateService.selectedNodes();
+    selectedNodes.forEach(node => {
+      this.diagramStateService.bringToFront(node.id);
+    });
+  }
+
+  @HostListener('window:keydown.control.[', ['$event'])
+  @HostListener('window:keydown.meta.[', ['$event'])
+  onSendToBackKeyPress(event: any): void {
+    if (this.isInputActive(event)) return;
+    event.preventDefault();
+    const selectedNodes = this.diagramStateService.selectedNodes();
+    selectedNodes.forEach(node => {
+      this.diagramStateService.sendToBack(node.id);
+    });
+  }
+
+  @HostListener('window:keydown.control.shift.]', ['$event'])
+  @HostListener('window:keydown.meta.shift.]', ['$event'])
+  onRaiseLayerKeyPress(event: any): void {
+    if (this.isInputActive(event)) return;
+    event.preventDefault();
+    const selectedNodes = this.diagramStateService.selectedNodes();
+    selectedNodes.forEach(node => {
+      this.diagramStateService.raiseLayer(node.id);
+    });
+  }
+
+  @HostListener('window:keydown.control.shift.[', ['$event'])
+  @HostListener('window:keydown.meta.shift.[', ['$event'])
+  onLowerLayerKeyPress(event: any): void {
+    if (this.isInputActive(event)) return;
+    event.preventDefault();
+    const selectedNodes = this.diagramStateService.selectedNodes();
+    selectedNodes.forEach(node => {
+      this.diagramStateService.lowerLayer(node.id);
+    });
+  }
+
   @HostListener('window:keydown.control.a', ['$event'])
   @HostListener('window:keydown.meta.a', ['$event'])
   onSelectAllKeyPress(event: any): void {
