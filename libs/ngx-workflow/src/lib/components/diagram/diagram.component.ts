@@ -128,6 +128,9 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   @Input() autoPanSpeed: number = 15; // pixels per frame
   @Input() autoPanEdgeThreshold: number = 50; // pixels from edge
 
+  // Connection validation configuration
+  @Input() maxConnectionsPerHandle?: number; // Global limit for connections per handle
+
   // Output events
   @Output() nodeClick = new EventEmitter<WorkflowNode>();
   @Output() edgeClick = new EventEmitter<Edge>();
@@ -483,17 +486,67 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   private resizeObserver!: ResizeObserver;
 
   // Helper to check if a connection is allowed
-  private isValidConnection(sourceId: string, targetId: string): boolean {
+  private isValidConnection(
+    sourceId: string,
+    targetId: string,
+    sourceHandleId?: string,
+    targetHandleId?: string
+  ): boolean {
     // Prevent duplicate edges between same source and target
     const existing = this.edges().some(e => e.source === sourceId && e.target === targetId);
     if (existing) {
       return false;
     }
+
+    // Check max connections limit
+    if (!this.checkConnectionLimits(sourceId, sourceHandleId, 'source')) {
+      return false;
+    }
+    if (!this.checkConnectionLimits(targetId, targetHandleId, 'target')) {
+      return false;
+    }
+
     // Use custom validator if provided
     if (this.connectionValidator) {
       return this.connectionValidator(sourceId, targetId);
     }
     return true;
+  }
+
+  /**
+   * Check if a handle has reached its maximum connection limit.
+   * Supports both global and per-handle configuration.
+   */
+  private checkConnectionLimits(
+    nodeId: string,
+    handleId: string | undefined,
+    type: 'source' | 'target'
+  ): boolean {
+    const node = this.nodes().find(n => n.id === nodeId);
+    if (!node) return true;
+
+    // Get per-handle limit from node data
+    const handleConfig = node.data?.handleConfig?.[handleId || ''];
+    const handleLimit = handleConfig?.maxConnections;
+
+    // Determine effective limit (per-handle overrides global)
+    const limit = handleLimit !== undefined
+      ? handleLimit
+      : this.maxConnectionsPerHandle;
+
+    // If no limit set, allow connection
+    if (limit === undefined) return true;
+
+    // Count existing connections for this handle
+    const connectionCount = this.edges().filter(edge => {
+      if (type === 'source') {
+        return edge.source === nodeId && edge.sourceHandle === handleId;
+      } else {
+        return edge.target === nodeId && edge.targetHandle === handleId;
+      }
+    }).length;
+
+    return connectionCount < limit;
   }
 
   constructor(
@@ -1173,7 +1226,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
 
         // Allow connecting to any handle on a different node OR same node (self-loop)
         // console.log('updateConnection: handle found', targetNodeId, this.connectingSourceNodeId);
-        if (targetNodeId && this.isValidConnection(this.connectingSourceNodeId!, targetNodeId)) {
+        if (targetNodeId && this.isValidConnection(this.connectingSourceNodeId!, targetNodeId, this.connectingSourceHandleId, targetHandleId)) {
           this.currentTargetHandle = { nodeId: targetNodeId, handleId: targetHandleId, type: 'target' };
 
           // We need to find the handle element to highlight it
@@ -1210,7 +1263,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
       const targetId = this.currentTargetHandle.nodeId;
       console.log('finishConnecting: attempting connection', { sourceId, targetId });
 
-      if (this.isValidConnection(sourceId, targetId)) {
+      if (this.isValidConnection(sourceId, targetId, this.connectingSourceHandleId, this.currentTargetHandle.handleId)) {
         const newEdge: Edge = {
           id: uuidv4(),
           source: sourceId,
