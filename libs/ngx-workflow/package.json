@@ -1,6 +1,6 @@
 {
   "name": "ngx-workflow",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A powerful Angular library for building interactive node-based editors, flow charts, and diagrams with Signals",
   "peerDependencies": {
     "@angular/common": ">=17.0.0",
