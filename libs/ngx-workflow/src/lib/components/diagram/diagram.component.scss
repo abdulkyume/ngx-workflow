@@ -247,6 +247,20 @@ foreignObject {
   }
 }
 
+/* Custom edge label component container */
+.edge-label-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  
+  // Don't block edge clicks, but allow clicks on content
+  > * {
+    pointer-events: all; // Components inside are interactive
+  }
+}
+
 /* --- Handles --- */
 .ngx-workflow__handle {
   opacity: 1; /* Always visible */

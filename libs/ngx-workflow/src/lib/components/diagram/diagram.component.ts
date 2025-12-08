@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, ElementRef, OnInit, Renderer2, NgZone, OnDestroy, HostListener, WritableSignal, Inject, Optional, computed, ViewChild, Input, Output, EventEmitter, OnChanges, SimpleChanges, Signal, ChangeDetectorRef, TemplateRef } from '@angular/core';
+import { Component, ChangeDetectionStrategy, ElementRef, OnInit, Renderer2, NgZone, OnDestroy, HostListener, WritableSignal, Inject, Optional, computed, ViewChild, ContentChild, Input, Output, EventEmitter, OnChanges, SimpleChanges, Signal, ChangeDetectorRef, TemplateRef } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { CommonModule, NgComponentOutlet } from '@angular/common';
 import { DiagramStateService } from '../../services/diagram-state.service';
@@ -166,6 +166,9 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   // Custom edge template
   @Input() edgeTemplate?: TemplateRef<any>;
 
+  // Custom edge label template
+  @ContentChild('edgeLabelTemplate', { read: TemplateRef }) edgeLabelTemplate?: TemplateRef<any>;
+
   // Edge reconnection feature
   @Input() edgeReconnectable: boolean = false;
 
@@ -203,6 +206,12 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   private isPanning = false;
   private lastPanPosition: XYPosition = { x: 0, y: 0 };
   private subscriptions = new Subscription();
+
+  // Observable versions of signals for auto-save (initialized in constructor)
+  private nodes$!: Observable<WorkflowNode[]>;
+  private edges$!: Observable<Edge[]>;
+  private viewport$!: Observable<Viewport>;
+
   // Lasso selection properties
   isSelecting = false;
   selectionStart: XYPosition = { x: 0, y: 0 };
@@ -482,7 +491,6 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   // Input for node resizing (global toggle)
   @Input() nodesResizable: boolean = true;
 
-  private nodes$: Observable<WorkflowNode[]>;
   private resizeObserver!: ResizeObserver;
 
   // Helper to check if a connection is allowed
@@ -562,6 +570,8 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     @Optional() @Inject(NGX_WORKFLOW_NODE_TYPES) public nodeTypes: Record<string, WorkflowNodeComponentType> | null
   ) {
     this.nodes$ = toObservable(this.diagramStateService.nodes);
+    this.edges$ = toObservable(this.diagramStateService.edges);
+    this.viewport$ = toObservable(this.diagramStateService.viewport);
   }
 
   get nodeTypeKeys(): string[] {
@@ -663,9 +673,9 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     if (this.autoSave) {
       this.subscriptions.add(
         combineLatest([
-          toObservable(this.nodes),
-          toObservable(this.edges),
-          toObservable(this.viewport)
+          this.nodes$,
+          this.edges$,
+          this.viewport$
         ]).pipe(
           debounceTime(this.autoSaveInterval),
           skip(1) // Skip initial emission

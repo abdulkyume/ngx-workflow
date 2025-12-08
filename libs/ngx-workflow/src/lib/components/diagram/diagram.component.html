@@ -43,7 +43,8 @@
         <path [attr.d]="getEdgePath(edge)" class="ngx-workflow__edge-hitbox"></path>
 
         <!-- Edge label -->
-        <g *ngIf="edge.label || editingEdgeId === edge.id" class="ngx-workflow__edge-label">
+        <g *ngIf="edge.label || edge.data?.labelContent || editingEdgeId === edge.id" class="ngx-workflow__edge-label">
+          <!-- Editing mode (input field) -->
           <foreignObject *ngIf="editingEdgeId === edge.id" [attr.x]="getEdgeLabelPosition(edge).x - 50"
             [attr.y]="getEdgeLabelPosition(edge).y - 15" width="100" height="30">
             <input #edgeLabelInput type="text" [value]="edge.label || ''" (blur)="onEdgeLabelBlur(edge)"
@@ -51,9 +52,20 @@
               class="ngx-workflow__edge-label-input" autofocus>
           </foreignObject>
 
-          <text *ngIf="editingEdgeId !== edge.id" [attr.x]="getEdgeLabelPosition(edge).x"
-            [attr.y]="getEdgeLabelPosition(edge).y" text-anchor="middle" dominant-baseline="middle"
-            class="ngx-workflow__edge-label-text" [style]="edge.labelStyle">
+          <!-- Custom template mode (Angular component) -->
+          <foreignObject *ngIf="editingEdgeId !== edge.id && edgeLabelTemplate"
+            [attr.x]="getEdgeLabelPosition(edge).x - 75" [attr.y]="getEdgeLabelPosition(edge).y - 20" width="150"
+            height="40" style="pointer-events: none;">
+            <div xmlns="http://www.w3.org/1999/xhtml" class="edge-label-content">
+              <ng-container *ngTemplateOutlet="edgeLabelTemplate; context: { $implicit: edge, edge: edge }">
+              </ng-container>
+            </div>
+          </foreignObject>
+
+          <!-- Fallback to text mode -->
+          <text *ngIf="editingEdgeId !== edge.id && !edgeLabelTemplate && edge.label"
+            [attr.x]="getEdgeLabelPosition(edge).x" [attr.y]="getEdgeLabelPosition(edge).y" text-anchor="middle"
+            dominant-baseline="middle" class="ngx-workflow__edge-label-text" [style]="edge.labelStyle">
             <!-- Label background -->
             <tspan *ngIf="edge.labelBgStyle" class="ngx-workflow__edge-label-bg" [style]="edge.labelBgStyle"></tspan>
             {{ edge.label }}
