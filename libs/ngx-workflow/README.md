@@ -41,11 +41,7 @@ npm install ngx-workflow
 
 ## 🏁 Quick Start
 
-You can use `ngx-workflow` in two ways: **Standalone Component** (recommended for Angular 14+) or **NgModule**.
-
-### Option 1: Standalone Component (Recommended)
-
-Import `NgxWorkflowModule` directly into your standalone component's `imports` array.
+### Standalone Component (Recommended)
 
 ```typescript
 import { Component } from '@angular/core';
@@ -60,183 +56,362 @@ import { NgxWorkflowModule, Node, Edge } from 'ngx-workflow';
       <ngx-workflow-diagram
         [initialNodes]="nodes"
         [initialEdges]="edges"
+        [zIndexMode]="'layered'"
+        [preventNodeOverlap]="true"
         (nodeClick)="onNodeClick($event)"
-        (connect)="onConnect($event)"
-      ></ngx-workflow-diagram>
+        (beforeDelete)="onBeforeDelete($event)">
+        
+        <ngx-workflow-minimap [showNodeColors]="true">
+        </ngx-workflow-minimap>
+      </ngx-workflow-diagram>
     </div>
   `
 })
 export class AppComponent {
   nodes: Node[] = [
-    { id: '1', position: { x: 100, y: 100 }, label: 'Start', type: 'default' },
-    { id: '2', position: { x: 300, y: 100 }, label: 'End', type: 'default' }
+    { id: '1', position: { x: 100, y: 100 }, label: 'Start' },
+    { id: '2', position: { x: 300, y: 100 }, label: 'End' }
   ];
 
   edges: Edge[] = [
-    { id: 'e1-2', source: '1', target: '2', sourceHandle: 'right', targetHandle: 'left' }
+    { id: 'e1-2', source: '1', target: '2' }
   ];
 
   onNodeClick(node: Node) {
     console.log('Clicked:', node);
   }
 
-  onConnect(connection: any) {
-    console.log('Connected:', connection);
+  onBeforeDelete(event: any) {
+    if (!confirm('Delete selected items?')) {
+      event.cancel();
+    }
   }
 }
 ```
 
-### Option 2: NgModule (Modular Approach)
+---
 
-If you are using NgModules, import `NgxWorkflowModule` in your module.
+## 📖 Complete API Reference
 
-```typescript
-import { NgModule } from '@angular/core';
-import { BrowserModule } from '@angular/platform-browser';
-import { NgxWorkflowModule } from 'ngx-workflow';
-import { AppComponent } from './app.component';
+### `<ngx-workflow-diagram>` Inputs
 
-@NgModule({
-  declarations: [AppComponent],
-  imports: [
-    BrowserModule,
-    NgxWorkflowModule // Import the module here
-  ],
-  bootstrap: [AppComponent]
-})
-export class AppModule { }
-```
+#### Core Configuration
 
-Then use it in your component template just like in the standalone example.
+| Input | Type | Default | Description |
+|-------|------|---------|-------------|
+| `initialNodes` | `Node[]` | `[]` | Initial nodes array |
+| `initialEdges` | `Edge[]` | `[]` | Initial edges array |
+| `initialViewport` | `Viewport` | `undefined` | Initial viewport `{ x, y, zoom }` |
 
-## 📖 API Reference
+#### Display Options
 
-### `<ngx-workflow-diagram>`
+| Input | Type | Default | Description |
+|-------|------|---------|-------------|
+| `showZoomControls` | `boolean` | `true` | Show zoom controls (bottom-left) |
+| `showMinimap` | `boolean` | `true` | Show minimap (bottom-right) |
+| `showBackground` | `boolean` | `true` | Show background pattern |
+| `showGrid` | `boolean` | `false` | Show grid overlay |
+| `showExportControls` | `boolean` | `false` | Show export controls |
+| `showLayoutControls` | `boolean` | `false` | Show layout controls |
 
-The main component for rendering the workflow.
+#### Background Configuration
 
-#### Inputs
+| Input | Type | Default | Description |
+|-------|------|---------|-------------|
+| `backgroundVariant` | `'dots' \| 'lines' \| 'cross'` | `'dots'` | Background pattern style |
+| `backgroundGap` | `number` | `20` | Gap between pattern elements |
+| `backgroundSize` | `number` | `1` | Size of pattern elements |
+| `backgroundColor` | `string` | `'#81818a'` | Pattern color |
+| `backgroundBgColor` | `string` | `'#f0f0f0'` | Canvas background color |
 
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `initialNodes` | `Node[]` | `[]` | Initial array of nodes to display. |
-| `initialEdges` | `Edge[]` | `[]` | Initial array of edges to display. |
-| `initialViewport` | `Viewport` | `undefined` | Initial viewport state `{ x, y, zoom }`. |
-| `showZoomControls` | `boolean` | `true` | Whether to show the zoom control buttons (bottom-left). |
-| `showMinimap` | `boolean` | `true` | Whether to show the minimap (bottom-right). |
-| `showBackground` | `boolean` | `true` | Whether to show the background pattern. |
-| `backgroundVariant` | `'dots' \| 'lines' \| 'cross'` | `'dots'` | The pattern style of the background. |
-| `backgroundGap` | `number` | `20` | Gap between background pattern elements. |
-| `backgroundSize` | `number` | `1` | Size of background pattern elements. |
-| `backgroundColor` | `string` | `'#81818a'` | Color of the background pattern dots/lines. |
-| `backgroundBgColor` | `string` | `'#f0f0f0'` | Background color of the canvas itself. |
-| `connectionValidator` | `(source: string, target: string) => boolean` | `undefined` | Custom function to validate connections. Return `false` to prevent connection. |
-| `nodesResizable` | `boolean` | `true` | Global toggle to enable/disable node resizing. |
+#### Grid Configuration
 
-#### Outputs
+| Input | Type | Default | Description |
+|-------|------|---------|-------------|
+| `gridSize` | `number` | `20` | Grid cell size in pixels |
+| `snapToGrid` | `boolean` | `false` | Snap nodes to grid |
 
-| Name | Type | Description |
-|------|------|-------------|
-| `nodeClick` | `EventEmitter<Node>` | Emitted when a node is clicked. |
-| `edgeClick` | `EventEmitter<Edge>` | Emitted when an edge is clicked. |
-| `connect` | `EventEmitter<Connection>` | Emitted when a new connection is created. |
-| `nodesChange` | `EventEmitter<Node[]>` | Emitted when the nodes array changes (move, add, delete). |
-| `edgesChange` | `EventEmitter<Edge[]>` | Emitted when the edges array changes. |
-| `nodeDoubleClick` | `EventEmitter<Node>` | Emitted when a node is double-clicked. |
+#### Node & Edge Behavior
 
-### Interfaces
+| Input | Type | Default | Description |
+|-------|------|---------|-------------|
+| `nodesResizable` | `boolean` | `true` | Global toggle for node resizing |
+| `nodeDraggable` | `boolean` | `true` | Can nodes be dragged |
+| `edgeReconnectable` | `boolean` | `false` | Can edges be reconnected |
+| `validateConnection` | `Function` | `undefined` | Custom connection validation |
+| `maxConnectionsPerHandle` | `number` | `undefined` | Global connection limit per handle |
 
-#### `Node`
+#### Z-Index & Layer Management
+
+| Input | Type | Default | Description |
+|-------|------|---------|-------------|
+| `zIndexMode` | `'default' \| 'layered'` | `'default'` | Enable z-index layer management |
+
+#### Collision Detection
+
+| Input | Type | Default | Description |
+|-------|------|---------|-------------|
+| `preventNodeOverlap` | `boolean` | `false` | Enable collision detection |
+| `nodeSpacing` | `number` | `10` | Minimum spacing between nodes (px) |
+
+#### Auto-Panning
+
+| Input | Type | Default | Description |
+|-------|------|---------|-------------|
+| `autoPanOnNodeDrag` | `boolean` | `true` | Auto-pan when dragging near edge |
+| `autoPanOnConnect` | `boolean` | `true` | Auto-pan when connecting near edge |
+| `autoPanSpeed` | `number` | `15` | Pan speed (pixels per frame) |
+| `autoPanEdgeThreshold` | `number` | `50` | Distance from edge to trigger (px) |
+
+#### Auto-Save
+
+| Input | Type | Default | Description |
+|-------|------|---------|-------------|
+| `autoSave` | `boolean` | `false` | Enable auto-save |
+| `autoSaveInterval` | `number` | `1000` | Auto-save interval (milliseconds) |
+| `maxVersions` | `number` | `10` | Maximum saved versions |
+
+---
+
+### `<ngx-workflow-diagram>` Outputs
+
+#### Basic Events
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `nodeClick` | `EventEmitter<Node>` | Node clicked |
+| `nodeDoubleClick` | `EventEmitter<Node>` | Node double-clicked |
+| `edgeClick` | `EventEmitter<Edge>` | Edge clicked |
+| `connect` | `EventEmitter<Connection>` | New connection created |
+| `nodesChange` | `EventEmitter<Node[]>` | Nodes array changed |
+| `edgesChange` | `EventEmitter<Edge[]>` | Edges array changed |
+
+#### Mouse Interaction Events
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `nodeMouseEnter` | `EventEmitter<Node>` | Mouse entered node |
+| `nodeMouseLeave` | `EventEmitter<Node>` | Mouse left node |
+| `nodeMouseMove` | `EventEmitter<{node, event}>` | Mouse moved over node |
+| `edgeMouseEnter` | `EventEmitter<Edge>` | Mouse entered edge |
+| `edgeMouseLeave` | `EventEmitter<Edge>` | Mouse left edge |
+
+#### Canvas Events
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `paneClick` | `EventEmitter<{event, position}>` | Empty canvas clicked |
+| `paneScroll` | `EventEmitter<WheelEvent>` | Canvas scrolled/zoomed |
+| `contextMenu` | `EventEmitter<{type, item, event}>` | Right-click context menu |
+
+#### Connection Events
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `connectStart` | `EventEmitter<{nodeId, handleId}>` | Connection drag started |
+| `connectEnd` | `EventEmitter<{nodeId, handleId}>` | Connection drag ended |
+| `connectionDrop` | `EventEmitter<{position, event, sourceNodeId, sourceHandleId}>` | Connection dropped |
+
+#### Control Events
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `beforeDelete` | `EventEmitter<{nodes, edges, cancel}>` | Before deletion (cancellable) |
+
+---
+
+## 🎯 Interfaces
+
+### `Node`
 
 ```typescript
 interface Node {
   id: string;              // Unique identifier
-  position: { x: number; y: number }; // Position on canvas
-  label?: string;          // Default label
-  data?: any;              // Custom data passed to your custom node component
-  type?: string;           // 'default', 'group', or your custom type
-  width?: number;          // Width in pixels (default: 170)
-  height?: number;         // Height in pixels (default: 60)
-  draggable?: boolean;     // Is the node draggable? (default: true)
-  selectable?: boolean;    // Is the node selectable? (default: true)
-  connectable?: boolean;   // Can edges be connected? (default: true)
-  resizable?: boolean;     // Is this specific node resizable? (default: true)
-  class?: string;          // Custom CSS class
-  style?: object;          // Custom inline styles
+  position: XYPosition;    // { x: number, y: number }
+  label?: string;          // Display label
+  type?: string;           // 'default', 'group', or custom
+  data?: any;              // Custom data for your components
+  width?: number;          // Width in pixels (default: 150)
+  height?: number;         // Height in pixels (default: 40)
+  zIndex?: number;         // Stacking order (when zIndexMode='layered')
+  draggable?: boolean;     // Can be dragged (default: true)
+  selectable?: boolean;    // Can be selected (default: true)
+  connectable?: boolean;   // Can connect edges (default: true)
+  resizable?: boolean;     // Can be resized (default: true)
+  selected?: boolean;      // Currently selected
+  className?: string;      // Custom CSS class
+  style?: CSSStyleDeclaration; // Inline styles
+  parentId?: string;       // Parent node ID (for grouping)
 }
 ```
 
-#### `Edge`
+### `Edge`
 
 ```typescript
 interface Edge {
-  id: string;
-  source: string;          // ID of source node
-  target: string;          // ID of target node
-  sourceHandle?: string;   // ID of source handle (optional)
-  targetHandle?: string;   // ID of target handle (optional)
-  label?: string;          // Label text displayed on the edge
-  type?: 'bezier' | 'straight' | 'step'; // Path type (default: 'bezier')
-  animated?: boolean;      // Show animation (dashed moving line)?
-  markerEnd?: 'arrow' | 'arrowclosed'; // Arrowhead type
-  style?: object;          // SVG styles (stroke, stroke-width, etc.)
+  id: string;              // Unique identifier
+  source: string;          // Source node ID
+  target: string;          // Target node ID
+  sourceHandle?: string;   // Source handle ID
+  targetHandle?: string;   // Target handle ID
+  label?: string;          // Label text
+  type?: 'bezier' | 'straight' | 'step'; // Path type
+  animated?: boolean;      // Animated dashed line
+  markerEnd?: 'arrow' | 'arrowclosed';   // Arrow type
+  selected?: boolean;      // Currently selected
+  style?: CSSStyleDeclaration; // SVG styles
+  data?: any;              // Custom data
 }
 ```
 
+### `Viewport`
+
+```typescript
+interface Viewport {
+  x: number;    // Pan X offset
+  y: number;    // Pan Y offset
+  zoom: number; // Zoom level (1 = 100%)
+}
+```
+
+### `Connection`
+
+```typescript
+interface Connection {
+  source: string;          // Source node ID
+  sourceHandle?: string;   // Source handle ID
+  target: string;          // Target node ID
+  targetHandle?: string;   // Target handle ID
+}
+```
+
+---
+
+## ⌨️ Keyboard Shortcuts
+
+### Selection & Navigation
+
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl/Cmd + A` | Select all nodes |
+| `Ctrl/Cmd + Click` | Multi-select nodes |
+| `Shift + Drag` | Lasso selection |
+| `Escape` | Clear selection |
+
+### Editing
+
+| Shortcut | Action |
+|----------|--------|
+| `Delete / Backspace` | Delete selected |
+| `Ctrl/Cmd + C` | Copy |
+| `Ctrl/Cmd + V` | Paste |
+| `Ctrl/Cmd + X` | Cut |
+| `Ctrl/Cmd + D` | Duplicate |
+
+### History
+
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl/Cmd + Z` | Undo |
+| `Ctrl/Cmd + Shift + Z` | Redo |
+
+### Z-Index (Layer Management)
+
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl/Cmd + ]` | Bring to front |
+| `Ctrl/Cmd + [` | Send to back |
+| `Ctrl/Cmd + Shift + ]` | Raise layer |
+| `Ctrl/Cmd + Shift + [` | Lower layer |
+
+### Grouping
+
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl/Cmd + G` | Group selected nodes |
+| `Ctrl/Cmd + Shift + G` | Ungroup |
+
+---
+
 ## 🎨 Customization
 
-### Custom Nodes
-You can create your own node types by creating an Angular component and registering it.
+### Custom Node Components
 
-1. **Create the Component**:
-   It should accept an input `node`.
+Create custom node types:
 
-   ```typescript
-   @Component({
-     selector: 'app-custom-node',
-     template: `
-       <div class="custom-node">
-         <div class="header">{{ node.data.title }}</div>
-         <div class="content">{{ node.data.content }}</div>
-         <!-- Add handles -->
-         <ngx-workflow-handle type="source" position="right"></ngx-workflow-handle>
-         <ngx-workflow-handle type="target" position="left"></ngx-workflow-handle>
-       </div>
-     `,
-     styles: [`
-       .custom-node { border: 1px solid #333; background: white; border-radius: 4px; }
-       .header { background: #eee; padding: 4px; border-bottom: 1px solid #333; }
-       .content { padding: 8px; }
-     `]
-   })
-   export class CustomNodeComponent {
-     @Input() node!: Node;
-   }
-   ```
+```typescript
+@Component({
+  selector: 'app-custom-node',
+  template: `
+    <div class="custom-node">
+      <h3>{{ node.data.title }}</h3>
+      <p>{{ node.data.description }}</p>
+      <ngx-workflow-handle type="source" position="right">
+      </ngx-workflow-handle>
+      <ngx-workflow-handle type="target" position="left">
+      </ngx-workflow-handle>
+    </div>
+  `,
+  styles: [`
+    .custom-node {
+      background: white;
+      border: 2px solid #3b82f6;
+      border-radius: 8px;
+      padding: 12px;
+      min-width: 200px;
+    }
+  `]
+})
+export class CustomNodeComponent {
+  @Input() node!: Node;
+}
+```
 
-2. **Register the Component**:
-   Provide it in your module configuration using `NGX_WORKFLOW_NODE_TYPES`.
+Register it:
 
-   ```typescript
-   import { NGX_WORKFLOW_NODE_TYPES } from 'ngx-workflow';
+```typescript
+import { NGX_WORKFLOW_NODE_TYPES } from 'ngx-workflow';
 
-   providers: [
-     {
-       provide: NGX_WORKFLOW_NODE_TYPES,
-       useValue: {
-         'my-custom-type': CustomNodeComponent
-       }
-     }
-   ]
-   ```
+providers: [
+  {
+    provide: NGX_WORKFLOW_NODE_TYPES,
+    useValue: {
+      'custom': CustomNodeComponent
+    }
+  }
+]
+```
 
-3. **Use it**:
-   ```typescript
-   { id: '3', type: 'my-custom-type', position: { x: 0, y: 0 }, data: { title: 'My Node', content: '...' } }
-   ```
+Use it:
 
-### Styling
-`ngx-workflow` uses CSS variables for easy theming. Override these in your global styles:
+```typescript
+{ 
+  id: '1', 
+  type: 'custom', 
+  position: { x: 0, y: 0 },
+  data: { title: 'My Node', description: 'Details...' }
+}
+```
+
+### Custom Edge Labels
+
+Use Angular components for edge labels:
+
+```typescript
+<ngx-workflow-diagram [nodes]="nodes" [edges]="edges">
+  <ng-template #edgeLabelTemplate let-edge>
+    <div class="custom-label">
+      <button (click)="editEdge(edge)">✏️</button>
+      <span>{{ edge.label }}</span>
+      <span class="badge">{{ edge.data?.priority }}</span>
+    </div>
+  </ng-template>
+</ngx-workflow-diagram>
+```
+
+### Theming
+
+Override CSS variables:
 
 ```css
 :root {
@@ -251,31 +426,97 @@ You can create your own node types by creating an Angular component and register
 }
 ```
 
-## ⌨️ Keyboard Shortcuts
+---
 
-| Shortcut | Action |
-|----------|--------|
-| `Delete` / `Backspace` | Delete selected nodes/edges |
-| `Ctrl/Cmd` + `A` | Select all nodes |
-| `Ctrl` + `Z` | Undo |
-| `Ctrl` + `Shift` + `Z` | Redo |
-| `Ctrl/Cmd` + `]` | Bring to front (z-index) |
-| `Ctrl/Cmd` + `[` | Send to back (z-index) |
-| `Ctrl/Cmd` + `Shift` + `]` | Raise layer |
-| `Ctrl/Cmd` + `Shift` + `[` | Lower layer |
-| `Shift` + `Drag` | Lasso Selection |
-| `Ctrl` + `Click` | Multi-select |
-| `Ctrl` + `C` | Copy |
-| `Ctrl` + `V` | Paste |
-| `Ctrl` + `X` | Cut |
-| `Ctrl` + `D` | Duplicate |
-| `Ctrl` + `G` | Group Selected Nodes |
-| `Ctrl` + `Shift` + `G` | Ungroup Selected Group |
+## 🔧 Programmatic API
+
+Access via `DiagramStateService`:
+
+```typescript
+constructor(private diagramState: DiagramStateService) {}
+
+// Selection
+this.diagramState.selectAll();
+this.diagramState.deselectAll();
+this.diagramState.selectNodes(['node-1', 'node-2']);
+
+// Alignment
+this.diagramState.alignNodes('left');
+// Options: 'left', 'right', 'center', 'top', 'bottom', 'middle'
+
+// Distribution
+this.diagramState.distributeNodes('horizontal');
+// Options: 'horizontal', 'vertical'
+
+// Deletion
+this.diagramState.deleteAll();
+
+// Z-Index
+this.diagramState.bringToFront('node-1');
+this.diagramState.sendToBack('node-1');
+this.diagramState.raiseLayer('node-1');
+this.diagramState.lowerLayer('node-1');
+
+// Viewport
+this.diagramState.setViewport({ x: 0, y: 0, zoom: 1 });
+this.diagramState.fitView();
+
+// Nodes & Edges
+this.diagramState.addNode(node);
+this.diagramState.updateNode('node-1', { label: 'Updated' });
+this.diagramState.deleteNode('node-1');
+this.diagramState.addEdge(edge);
+this.diagramState.deleteEdge('edge-1');
+```
+
+---
+
+## 📋 Examples
+
+### With Connection Limits
+
+```typescript
+<ngx-workflow-diagram
+  [maxConnectionsPerHandle]="1">
+</ngx-workflow-diagram>
+
+// Or per-handle:
+node.data = {
+  handleConfig: {
+    'output': { maxConnections: 1 }
+  }
+}
+```
+
+### With Collision Detection
+
+```typescript
+<ngx-workflow-diagram
+  [preventNodeOverlap]="true"
+  [nodeSpacing]="10">
+</ngx-workflow-diagram>
+```
+
+### With Before Delete Hook
+
+```typescript
+<ngx-workflow-diagram
+  (beforeDelete)="onBeforeDelete($event)">
+</ngx-workflow-diagram>
+
+onBeforeDelete(event: any) {
+  if (!confirm('Delete?')) {
+    event.cancel();
+  }
+}
+```
+
+---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) for details.
+Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License - see [LICENSE](LICENSE).
