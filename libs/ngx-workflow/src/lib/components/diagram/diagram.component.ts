@@ -1454,6 +1454,20 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
         this.diagramStateService.moveNode(this.draggingNode!.id, newPosition);
       }
       this.cdRef.detectChanges();
+
+      // Check for collisions if enabled
+      if (this.preventNodeOverlap) {
+        const allCollidingIds: string[] = [];
+        this.draggingNodes.forEach(node => {
+          const collidingNodes = this.getCollidingNodes(node.id, node.position);
+          if (collidingNodes.length > 0) {
+            allCollidingIds.push(node.id);
+            collidingNodes.forEach(n => allCollidingIds.push(n.id));
+          }
+        });
+        this.collidingNodeIds = [...new Set(allCollidingIds)];
+      }
+
       this.dragAnimationFrameId = null;
     });
 
