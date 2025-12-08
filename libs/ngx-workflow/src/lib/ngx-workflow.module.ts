@@ -7,6 +7,16 @@ import { RoundedRectNodeComponent } from './components/custom-node/rounded-rect-
 import { NodeToolbarComponent } from './components/node-toolbar/node-toolbar.component';
 import { PanelComponent } from './components/panel/panel.component';
 import { VersionHistoryComponent } from './components/version-history/version-history.component';
+import { MinimapComponent } from './components/minimap/minimap.component';
+import { ZoomControlsComponent } from './components/zoom-controls/zoom-controls.component';
+import { UndoRedoControlsComponent } from './components/undo-redo-controls/undo-redo-controls.component';
+import { BackgroundComponent } from './components/background/background.component';
+import { GridOverlayComponent } from './components/grid-overlay/grid-overlay.component';
+import { ContextMenuComponent } from './components/context-menu/context-menu.component';
+import { ExportControlsComponent } from './components/export-controls/export-controls.component';
+import { LayoutControlsComponent } from './components/layout-controls/layout-controls.component';
+import { AlignmentControlsComponent } from './components/alignment-controls/alignment-controls.component';
+import { PropertiesSidebarComponent } from './components/properties-sidebar/properties-sidebar.component';
 
 // Services
 import { DiagramStateService } from './services/diagram-state.service';
@@ -23,14 +33,23 @@ import { Node } from './models';
   imports: [
     CommonModule,
     DiagramComponent,
-    RoundedRectNodeComponent, // Import custom node component if it's standalone
-    NodeToolbarComponent, // Import node toolbar component
-    PanelComponent, // Import panel component
-    VersionHistoryComponent, // Import version history component
+    RoundedRectNodeComponent,
+    NodeToolbarComponent,
+    PanelComponent,
+    VersionHistoryComponent,
+    MinimapComponent,
+    ZoomControlsComponent,
+    UndoRedoControlsComponent,
+    BackgroundComponent,
+    GridOverlayComponent,
+    ContextMenuComponent,
+    ExportControlsComponent,
+    LayoutControlsComponent,
+    AlignmentControlsComponent,
+    PropertiesSidebarComponent,
   ],
   declarations: [
     // Standalone components are imported, not declared.
-    // If a non-standalone component was needed, it would go here.
   ],
   providers: [
     DiagramStateService,
@@ -40,16 +59,25 @@ import { Node } from './models';
       provide: NGX_WORKFLOW_NODE_TYPES,
       useValue: {
         'rounded-rect': RoundedRectNodeComponent,
-        // Add other custom node types here
       },
     },
   ],
   exports: [
     DiagramComponent,
     RoundedRectNodeComponent,
-    NodeToolbarComponent, // Export node toolbar component
-    PanelComponent, // Export panel component
-    VersionHistoryComponent, // Export version history component
+    NodeToolbarComponent,
+    PanelComponent,
+    VersionHistoryComponent,
+    MinimapComponent,
+    ZoomControlsComponent,
+    UndoRedoControlsComponent,
+    BackgroundComponent,
+    GridOverlayComponent,
+    ContextMenuComponent,
+    ExportControlsComponent,
+    LayoutControlsComponent,
+    AlignmentControlsComponent,
+    PropertiesSidebarComponent,
   ],
 })
 export class NgxWorkflowModule { }

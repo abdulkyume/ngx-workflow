@@ -11,7 +11,15 @@ export * from './lib/components/node-toolbar/node-toolbar.component';
 export * from './lib/components/undo-redo-controls/undo-redo-controls.component';
 export * from './lib/components/version-history/version-history.component';
 export * from './lib/components/zoom-controls/zoom-controls.component';
+export * from './lib/components/minimap/minimap.component';
 export * from './lib/components/panel/panel.component';
+export * from './lib/components/background/background.component';
+export * from './lib/components/grid-overlay/grid-overlay.component';
+export * from './lib/components/context-menu/context-menu.component';
+export * from './lib/components/export-controls/export-controls.component';
+export * from './lib/components/layout-controls/layout-controls.component';
+export * from './lib/components/alignment-controls/alignment-controls.component';
+export * from './lib/components/properties-sidebar/properties-sidebar.component';
 
 // Services
 export * from './lib/services/diagram-state.service';
