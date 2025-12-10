@@ -90,6 +90,8 @@ export class App implements OnInit {
         style: { stroke: 'blue', strokeWidth: 2 }
       }
     ];
+
+    this.testNewFeatures();
   }
 
   addRandomNode(): void {
@@ -101,6 +103,37 @@ export class App implements OnInit {
       draggable: true,
     };
     this.nodes = [...this.nodes, newNode];
+  }
+
+  // Test Method to add a node with all new features
+  testNewFeatures(): void {
+    const featureNode: Node = {
+      id: 'feature-node',
+      position: { x: 300, y: 50 },
+      data: { label: 'New Features' },
+      width: 200,
+      height: 80,
+      borderStyle: 'dashed',
+      borderColor: '#ec4899', // Pink
+      borderWidth: 2,
+      shadow: true,
+      badges: [
+        { content: 'New', backgroundColor: '#3b82f6', position: 'top-right' },
+        { content: '!', backgroundColor: '#ef4444', position: 'top-left' }
+      ]
+    };
+
+    const shadowEdge: Edge = {
+      id: 'e-shadow',
+      source: '1',
+      target: 'feature-node',
+      shadow: true,
+      label: 'Shadow Edge',
+      type: 'bezier'
+    };
+
+    this.nodes = [...this.nodes, featureNode];
+    this.edges = [...this.edges, shadowEdge];
   }
 
   clearFlow(): void {

@@ -22,8 +22,10 @@
 
 <div class="flow-container">
   <ngx-workflow-diagram #diagram class="flow-diagram" [initialNodes]="nodes" [initialEdges]="edges"
-    [initialViewport]="viewport" [colorMode]="currentTheme" [edgeReconnectable]="true" [showExportControls]="true"
-    [showLayoutControls]="true" [showMinimap]="true" [autoSave]="true" [autoSaveInterval]="1000" [maxVersions]="10"
+    [initialViewport]="viewport" [minZoom]="0.5" [maxZoom]="2.0"
+    [backgroundImage]="'https://images.unsplash.com/photo-1557683316-973673baf926?auto=format&fit=crop&w=1000&q=80'"
+    [colorMode]="currentTheme" [edgeReconnectable]="true" [showExportControls]="true" [showLayoutControls]="true"
+    [showMinimap]="true" [autoSave]="true" [autoSaveInterval]="1000" [maxVersions]="10"
     (nodeClick)="onNodeClick($event)" (nodesChange)="onNodesChange($event)" (edgesChange)="onEdgesChange($event)">
 
     <!-- Node Toolbars for selected nodes -->

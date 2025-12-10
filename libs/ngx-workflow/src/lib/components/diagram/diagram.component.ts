@@ -66,7 +66,28 @@ function getHandleAbsolutePosition(node: WorkflowNode, handleId: string | undefi
   };
 }
 
+// Helper function to calculate badge position
+function getBadgePosition(node: WorkflowNode, position: string | undefined, index: number): XYPosition {
+  const nodeWidth = node.width || 170;
+  const nodeHeight = node.height || 60;
+  const offset = 5; // Distance from corner
 
+  // Default to top-right if not specified
+  // We stack badges if multiple are in the same position (simplified stacking for now)
+  const stackOffset = index * 20;
+
+  switch (position) {
+    case 'top-left':
+      return { x: -offset, y: -offset };
+    case 'bottom-left':
+      return { x: -offset, y: nodeHeight + offset };
+    case 'bottom-right':
+      return { x: nodeWidth + offset, y: nodeHeight + offset };
+    case 'top-right':
+    default:
+      return { x: nodeWidth + offset, y: -offset };
+  }
+}
 
 @Component({
   selector: 'ngx-workflow-diagram',
@@ -85,6 +106,8 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   @Input() initialEdges: Edge[] = [];
   @Input() initialViewport?: Viewport;
   @Input() showZoomControls: boolean = true;
+  @Input() minZoom: number = 0.1;
+  @Input() maxZoom: number = 4;
 
   // Input for showing/hiding undo/redo controls
   @Input() showUndoRedoControls: boolean = true;
@@ -99,6 +122,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   @Input() backgroundSize: number = 1;
   @Input() backgroundColor: string = '#81818a';
   @Input() backgroundBgColor: string = '#f0f0f0';
+  @Input() backgroundImage: string | null = null; // New input
 
   // Color mode (theme) configuration
   @Input() colorMode: ColorMode = 'light';
@@ -280,6 +304,11 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
 
 
 
+  getBadgeTransform(node: WorkflowNode, badge: any, index: number): string {
+    const pos = getBadgePosition(node, badge.position, index);
+    return `translate(${pos.x}, ${pos.y})`;
+  }
+
   // --- Node Interaction Handlers ---
 
   onNodePointerDown(event: PointerEvent, node: WorkflowNode): void {
@@ -452,6 +481,15 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
         action: () => this.diagramStateService.paste(),
         shortcut: 'Ctrl+V'
       });
+      actions.push({
+        label: 'Select All',
+        action: () => {
+          const allNodeIds = this.nodes().map(n => n.id);
+          this.diagramStateService.selectNodes(allNodeIds);
+        },
+        shortcut: 'Ctrl+A'
+      });
+
     }
 
     if (actions.length > 0) {

@@ -217,7 +217,17 @@ foreignObject {
     opacity: 0;
     pointer-events: none;
   }
+  
+  &.shadow .ngx-workflow__edge-path {
+    filter: drop-shadow(0 2px 3px rgba(0,0,0,0.3));
+  }
 }
+
+/* --- Custom Cursors --- */
+.cursor-crosshair { cursor: crosshair !important; }
+.cursor-grab { cursor: grab !important; }
+.cursor-grabbing { cursor: grabbing !important; }
+.cursor-pointer { cursor: pointer !important; }
 
 @keyframes flowAnimation {
   from { stroke-dashoffset: 20; }
@@ -535,4 +545,19 @@ foreignObject {
 .node-search-current .ngx-workflow__node-rect { stroke: var(--ngx-workflow-primary-color, #3b82f6); stroke-width: 3px; filter: drop-shadow(0 0 12px rgba(59, 130, 246, 0.8)); animation: pulse-glow 1.5s ease-in-out infinite; }
 .node-search-dimmed { opacity: 0.3; transition: opacity 0.3s ease; }
 @keyframes pulse-glow { 0%, 100% { filter: drop-shadow(0 0 12px rgba(59, 130, 246, 0.8)); } 50% { filter: drop-shadow(0 0 16px rgba(59, 130, 246, 1)); } }
+
+/* --- Node Badges --- */
+.ngx-workflow__node-badge {
+  pointer-events: none;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+  
+  circle {
+    transition: all 0.2s ease;
+  }
+  
+  text {
+    font-family: 'Inter', sans-serif;
+    user-select: none;
+  }
+}
 

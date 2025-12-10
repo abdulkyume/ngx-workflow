@@ -36,4 +36,16 @@ export interface Node<T = any> {
   dimmed?: boolean;
   searchHighlight?: 'match' | 'current';  // Search highlighting state
   zIndex?: number; // Stacking order (higher = on top)
+
+  // New features
+  badges?: Array<{
+    content: string;
+    color?: string;
+    backgroundColor?: string;
+    position?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left';
+  }>;
+  shadow?: boolean | string; // boolean for default, string for custom CSS box-shadow
+  borderStyle?: 'solid' | 'dashed' | 'dotted' | 'none';
+  borderColor?: string;
+  borderWidth?: number;
 }

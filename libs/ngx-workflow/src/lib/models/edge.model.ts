@@ -23,6 +23,7 @@ export interface Edge<T = any> {
   // Markers (arrows, dots)
   markerStart?: MarkerType | string;
   markerEnd?: MarkerType | string;
+  shadow?: boolean; // New property
 
   // Hidden state (for edge reconnection)
   hidden?: boolean;
