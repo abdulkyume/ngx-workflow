@@ -9,7 +9,8 @@ import {
   NgxWorkflowModule,
   DiagramComponent,
   ColorMode,
-  VersionHistoryComponent
+  VersionHistoryComponent,
+  EdgeDropEvent
 } from 'ngx-workflow';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -302,5 +303,34 @@ export class App implements OnInit {
         console.log('Opening properties sidebar for node:', nodeId);
       }
     }
+  }
+
+  onEdgeDrop(event: EdgeDropEvent): void {
+    // 'event' is EdgeDropEvent from ngx-workflow
+    const newNodeId = uuidv4();
+    const newNode: Node = {
+      id: newNodeId,
+      position: event.position,
+      data: { label: 'New Node' },
+      draggable: true,
+    };
+
+    this.nodes = [...this.nodes, newNode];
+
+    // Delay edge creation slightly to ensure node is registered
+    setTimeout(() => {
+      const newEdge: Edge = {
+        id: uuidv4(),
+        source: event.sourceNodeId,
+        sourceHandle: event.sourceHandleId,
+        target: newNodeId,
+        targetHandle: 'top',
+        animated: true,
+        label: 'new connection',
+        markerEnd: 'arrowclosed'
+      };
+
+      this.edges = [...this.edges, newEdge];
+    }, 50);
   }
 }

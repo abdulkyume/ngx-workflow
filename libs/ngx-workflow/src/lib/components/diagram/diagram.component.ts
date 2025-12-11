@@ -10,7 +10,6 @@ import { NodeComponentType as WorkflowNodeComponentType } from '../../types';
 import { getBezierPath, getStraightPath, getStepPath, getSmoothStepPath, getSelfLoopPath, getSmartEdgePath, PathFinder, getPolylineMidpoint } from '../../utils';
 import { v4 as uuidv4 } from 'uuid';
 import { ZoomControlsComponent } from '../zoom-controls/zoom-controls.component';
-import { UndoRedoControlsComponent } from '../undo-redo-controls/undo-redo-controls.component';
 import { MinimapComponent } from '../minimap/minimap.component';
 import { BackgroundComponent } from '../background/background.component';
 import { GridOverlayComponent } from '../grid-overlay/grid-overlay.component';
@@ -18,13 +17,17 @@ import { PropertiesSidebarComponent } from '../properties-sidebar/properties-sid
 import { ContextMenuComponent } from '../context-menu/context-menu.component';
 import { ContextMenuService, ContextMenuItem } from '../../services/context-menu.service';
 import { SearchControlsComponent } from '../search-controls/search-controls.component';
-import { NodeToolbarComponent } from '../node-toolbar/node-toolbar.component';
 import { LayoutAlignmentControlsComponent } from '../layout-alignment-controls/layout-alignment-controls.component';
-import { PanelComponent } from '../panel/panel.component';
 import { ThemeService, ColorMode } from '../../services/theme.service';
 import { ExportService } from '../../services/export.service';
 import { ExportControlsComponent } from '../export-controls/export-controls.component';
 import { AutoSaveService } from '../../services/auto-save.service';
+
+export interface EdgeDropEvent {
+  sourceNodeId: string;
+  sourceHandleId: string;
+  position: { x: number, y: number };
+}
 
 // Helper function to get a node from the array
 function getNode(id: string, nodes: WorkflowNode[]): WorkflowNode | undefined {
@@ -97,15 +100,12 @@ function getBadgePosition(node: WorkflowNode, position: string | undefined, inde
   imports: [
     CommonModule,
     ZoomControlsComponent,
-    UndoRedoControlsComponent,
     MinimapComponent,
     BackgroundComponent,
     GridOverlayComponent,
     PropertiesSidebarComponent,
     SearchControlsComponent,
     ContextMenuComponent,
-    NodeToolbarComponent,
-    PanelComponent,
     ExportControlsComponent,
     LayoutAlignmentControlsComponent
   ]
@@ -118,9 +118,22 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   @Input() initialNodes: WorkflowNode[] = [];
   @Input() initialEdges: Edge[] = [];
   @Input() initialViewport?: Viewport;
+
+  // Inputs for binding (sync with service)
+  @Input('nodes') set nodesInput(val: WorkflowNode[]) {
+    this.diagramStateService.nodes.set(val);
+    if (!this.isDraggingNode) {
+      this.updatePathFinder(val);
+    }
+  }
+  @Input('edges') set edgesInput(val: Edge[]) {
+    this.diagramStateService.edges.set(val);
+  }
+
   @Input() showZoomControls: boolean = true;
   @Input() minZoom: number = 0.1;
   @Input() maxZoom: number = 4;
+  @Input() backgroundImage: string | null = null; // New input
 
   // Input for showing/hiding undo/redo controls
   @Input() showUndoRedoControls: boolean = true;
@@ -135,7 +148,6 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   @Input() backgroundSize: number = 1;
   @Input() backgroundColor: string = '#81818a';
   @Input() backgroundBgColor: string = '#f0f0f0';
-  @Input() backgroundImage: string | null = null; // New input
 
   // Color mode (theme) configuration
   @Input() colorMode: ColorMode = 'light';
@@ -191,6 +203,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   @Output() paneScroll = new EventEmitter<WheelEvent>();
   @Output() connectStart = new EventEmitter<{ nodeId: string; handleId?: string }>();
   @Output() connectEnd = new EventEmitter<{ nodeId: string; handleId?: string }>();
+  @Output() edgeDrop = new EventEmitter<EdgeDropEvent>();
   @Output() connectionDrop = new EventEmitter<{ position: XYPosition; event: PointerEvent; sourceNodeId: string; sourceHandleId?: string }>();
 
   // Deletion control event
@@ -1413,24 +1426,17 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
           handleId: this.connectingSourceHandleId
         });
       }
-    } else if (this.connectingSourceNodeId) {
-      // Connection was dropped on canvas (no valid target)
+    } else if (this.connectingSourceNodeId && !this.currentTargetHandle) {
+      // Connection dropped on canvas (no target handle)
       const svgRect = this.svgRef.nativeElement.getBoundingClientRect();
       const viewport = this.viewport();
       const canvasX = (event.clientX - svgRect.left - viewport.x) / viewport.zoom;
       const canvasY = (event.clientY - svgRect.top - viewport.y) / viewport.zoom;
 
-      this.connectionDrop.emit({
-        position: { x: canvasX, y: canvasY },
-        event: event,
+      this.edgeDrop.emit({
         sourceNodeId: this.connectingSourceNodeId,
-        sourceHandleId: this.connectingSourceHandleId
-      });
-
-      // Also emit connectEnd 
-      this.connectEnd.emit({
-        nodeId: this.connectingSourceNodeId,
-        handleId: this.connectingSourceHandleId
+        sourceHandleId: this.connectingSourceHandleId!,
+        position: { x: canvasX, y: canvasY }
       });
     }
 

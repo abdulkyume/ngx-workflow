@@ -26,7 +26,8 @@
     [backgroundImage]="'https://images.unsplash.com/photo-1557683316-973673baf926?auto=format&fit=crop&w=1000&q=80'"
     [colorMode]="currentTheme" [edgeReconnectable]="true" [showExportControls]="true" [showLayoutControls]="true"
     [showMinimap]="true" [autoSave]="true" [autoSaveInterval]="1000" [maxVersions]="10"
-    (nodeClick)="onNodeClick($event)" (nodesChange)="onNodesChange($event)" (edgesChange)="onEdgesChange($event)">
+    (nodeClick)="onNodeClick($event)" (nodesChange)="onNodesChange($event)" (edgesChange)="onEdgesChange($event)"
+    (edgeDrop)="onEdgeDrop($event)">
 
     <!-- Node Toolbars for selected nodes -->
     <ngx-workflow-node-toolbar *ngFor="let node of selectedNodes" [nodeId]="node.id" position="top" align="center">

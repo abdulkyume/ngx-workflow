@@ -241,16 +241,16 @@
 
 These can be added in any minor release:
 
-1. **Node Badges** - Status indicators, notification counts
-2. **Node Shadows** - Depth perception, layering
-3. **Background Images** - Custom diagram backgrounds
-4. **Zoom Limits** - Min/max zoom constraints  
-5. **Edge Shadows** - 3D effect for edges
-6. **Custom Cursors** - Mode-specific cursor icons
-7. **Selection Indicators** - Custom selection styles
-8. **Node Borders** - Additional styling options
-9. **Connection Previews** - Preview before connecting
-10. **Quick Actions Menu** - Right-click shortcuts
+1. **Node Badges** - Status indicators, notification counts ✅
+2. **Node Shadows** - Depth perception, layering ✅
+3. **Background Images** - Custom diagram backgrounds ✅
+4. **Zoom Limits** - Min/max zoom constraints ✅
+5. **Edge Shadows** - 3D effect for edges ✅
+6. **Custom Cursors** - Mode-specific cursor icons ✅
+7. **Selection Indicators** - Custom selection styles ✅
+8. **Node Borders** - Additional styling options ✅
+9. **Connection Previews** - Preview before connecting ✅
+10. **Quick Actions Menu** - Right-click shortcuts ✅
 
 ---
 
