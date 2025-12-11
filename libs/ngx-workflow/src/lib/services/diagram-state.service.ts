@@ -631,10 +631,60 @@ export class DiagramStateService {
     );
   }
 
+  getIncomingEdges(nodeId: string): Edge[] {
+    return this.edges().filter(edge => edge.target === nodeId);
+  }
+
+  getOutgoingEdges(nodeId: string): Edge[] {
+    return this.edges().filter(edge => edge.source === nodeId);
+  }
+
   deleteSelectedElements(): void {
     this.undoRedoService.saveState(this.getCurrentState());
     const nodesToDelete = this.selectedNodes().map((node) => node.id);
     const edgesToDelete = this.selectedEdges().map((edge) => edge.id);
+
+    // Smart Deletion: Auto-reconnect if exactly one node is deleted
+    if (nodesToDelete.length === 1) {
+      const deletedNodeId = nodesToDelete[0];
+      const incomingEdges = this.getIncomingEdges(deletedNodeId);
+      const outgoingEdges = this.getOutgoingEdges(deletedNodeId);
+
+      if (incomingEdges.length > 0 && outgoingEdges.length > 0) {
+        const newEdges: Edge[] = [];
+
+        // Connect every source to every target (Cartesian product)
+        incomingEdges.forEach(inEdge => {
+          outgoingEdges.forEach(outEdge => {
+            // Check if connection already exists to avoid duplicates
+            const exists = this.edges().some(e =>
+              e.source === inEdge.source &&
+              e.target === outEdge.target &&
+              e.sourceHandle === inEdge.sourceHandle &&
+              e.targetHandle === outEdge.targetHandle
+            );
+
+            if (!exists) {
+              newEdges.push({
+                id: uuidv4(),
+                source: inEdge.source,
+                sourceHandle: inEdge.sourceHandle,
+                target: outEdge.target,
+                targetHandle: outEdge.targetHandle,
+                type: inEdge.type || 'bezier', // valid fallback? or just undefined
+                animated: inEdge.animated || outEdge.animated,
+                label: inEdge.label // maybe? or no label
+              });
+            }
+          });
+        });
+
+        if (newEdges.length > 0) {
+          console.log('Smart Deletion: Auto-reconnecting nodes', newEdges);
+          this.edges.update(edges => [...edges, ...newEdges]);
+        }
+      }
+    }
 
     // Remove nodes and associated edges
     this.nodes.update((currentNodes) =>
