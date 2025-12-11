@@ -10,19 +10,14 @@ import { CommonModule } from '@angular/common';
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ExportControlsComponent {
-    @Output() exportPNG = new EventEmitter<void>();
-    @Output() exportSVG = new EventEmitter<void>();
-    @Output() copyClipboard = new EventEmitter<void>();
+    @Output() exportJSON = new EventEmitter<void>();
+    @Output() importJSON = new EventEmitter<void>();
 
-    onExportPNG(): void {
-        this.exportPNG.emit();
+    onExportJSON(): void {
+        this.exportJSON.emit();
     }
 
-    onExportSVG(): void {
-        this.exportSVG.emit();
-    }
-
-    onCopyClipboard(): void {
-        this.copyClipboard.emit();
+    onImportJSON(): void {
+        this.importJSON.emit();
     }
 }

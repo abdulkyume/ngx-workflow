@@ -346,6 +346,33 @@ foreignObject {
   }
 }
 
+/* --- Top Bar --- */
+.ngx-workflow__top-bar {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  
+  /* Glassmorphism */
+  background: var(--ngx-workflow-glass-bg);
+  backdrop-filter: var(--ngx-workflow-glass-blur);
+  border: 1px solid var(--ngx-workflow-glass-border);
+  border-radius: 12px;
+  box-shadow: var(--ngx-workflow-shadow-md);
+  
+  .divider {
+    width: 1px;
+    height: 24px;
+    background: rgba(0,0,0,0.1);
+    margin: 0 4px;
+  }
+}
+
 /* --- Controls (Glassmorphism) --- */
 .ngx-workflow__io-controls {
   position: absolute;

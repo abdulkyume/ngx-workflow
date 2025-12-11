@@ -1,0 +1,121 @@
+<div class="layout-alignment-controls">
+    <!-- Layout Group -->
+    <div class="control-group">
+        <button class="control-btn" (click)="onApplyLayout('auto')" title="Auto Layout (Hierarchical)">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <rect x="6" y="1" width="4" height="3" rx="1" stroke="currentColor" />
+                <rect x="1" y="6" width="4" height="3" rx="1" stroke="currentColor" />
+                <rect x="11" y="6" width="4" height="3" rx="1" stroke="currentColor" />
+                <rect x="6" y="11" width="4" height="3" rx="1" stroke="currentColor" />
+                <path d="M8 4V6M8 9V11M5 7.5H6M10 7.5H11" stroke="currentColor" />
+            </svg>
+        </button>
+
+        <button class="control-btn" (click)="onApplyLayout('force')" title="Force-Directed Layout">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <circle cx="3" cy="3" r="2" stroke="currentColor" />
+                <circle cx="13" cy="3" r="2" stroke="currentColor" />
+                <circle cx="3" cy="13" r="2" stroke="currentColor" />
+                <circle cx="13" cy="13" r="2" stroke="currentColor" />
+                <path d="M4.5 4.5L6.5 6.5M9.5 6.5L11.5 4.5" stroke="currentColor" />
+            </svg>
+        </button>
+
+        <button class="control-btn" (click)="onApplyLayout('hierarchical')" title="Hierarchical Layout">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <rect x="6" y="1" width="4" height="3" rx="1" stroke="currentColor" />
+                <rect x="1" y="7" width="3" height="3" rx="1" stroke="currentColor" />
+                <rect x="6" y="7" width="3" height="3" rx="1" stroke="currentColor" />
+                <rect x="11" y="7" width="3" height="3" rx="1" stroke="currentColor" />
+                <rect x="0" y="0" width="16" height="16" fill="transparent" />
+                <!-- Placeholder to avoid empty svg lint -->
+            </svg>
+        </button>
+
+        <button class="control-btn" (click)="onApplyLayout('circular')" title="Circular Layout">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-dasharray="2 2" />
+                <circle cx="8" cy="2" r="1.5" stroke="currentColor" />
+                <circle cx="14" cy="8" r="1.5" stroke="currentColor" />
+                <circle cx="8" cy="14" r="1.5" stroke="currentColor" />
+                <circle cx="2" cy="8" r="1.5" stroke="currentColor" />
+            </svg>
+        </button>
+    </div>
+
+    <!-- Divider -->
+    <div class="divider" *ngIf="showAlignment()"></div>
+
+    <!-- Alignment Group -->
+    <div class="control-group" *ngIf="showAlignment()">
+        <button class="control-btn" (click)="align('left')" title="Align Left">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <rect x="2" y="2" width="2" height="12" fill="currentColor" opacity="0.5" />
+                <rect x="5" y="4" width="6" height="2" fill="currentColor" />
+                <rect x="5" y="8" width="8" height="2" fill="currentColor" />
+                <rect x="5" y="12" width="4" height="2" fill="currentColor" />
+            </svg>
+        </button>
+        <button class="control-btn" (click)="align('center')" title="Align Center">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <rect x="7" y="2" width="2" height="12" fill="currentColor" opacity="0.5" />
+                <rect x="3" y="4" width="10" height="2" fill="currentColor" />
+                <rect x="5" y="8" width="6" height="2" fill="currentColor" />
+            </svg>
+        </button>
+        <button class="control-btn" (click)="align('right')" title="Align Right">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <rect x="12" y="2" width="2" height="12" fill="currentColor" opacity="0.5" />
+                <rect x="5" y="4" width="6" height="2" fill="currentColor" />
+                <rect x="3" y="8" width="8" height="2" fill="currentColor" />
+                <rect x="7" y="12" width="4" height="2" fill="currentColor" />
+            </svg>
+        </button>
+        <button class="control-btn" (click)="align('top')" title="Align Top">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <rect x="2" y="2" width="12" height="2" fill="currentColor" opacity="0.5" />
+                <rect x="4" y="5" width="2" height="6" fill="currentColor" />
+                <rect x="8" y="5" width="2" height="8" fill="currentColor" />
+                <rect x="12" y="5" width="2" height="4" fill="currentColor" />
+            </svg>
+        </button>
+        <button class="control-btn" (click)="align('middle')" title="Align Middle">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <rect x="2" y="7" width="12" height="2" fill="currentColor" opacity="0.5" />
+                <rect x="4" y="3" width="2" height="10" fill="currentColor" />
+                <rect x="8" y="5" width="2" height="6" fill="currentColor" />
+            </svg>
+        </button>
+        <button class="control-btn" (click)="align('bottom')" title="Align Bottom">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <rect x="2" y="12" width="12" height="2" fill="currentColor" opacity="0.5" />
+                <rect x="4" y="5" width="2" height="6" fill="currentColor" />
+                <rect x="8" y="3" width="2" height="8" fill="currentColor" />
+                <rect x="12" y="7" width="2" height="4" fill="currentColor" />
+            </svg>
+        </button>
+    </div>
+
+    <!-- Divider -->
+    <div class="divider" *ngIf="showDistribution()"></div>
+
+    <!-- Distribution Group -->
+    <div class="control-group" *ngIf="showDistribution()">
+        <button class="control-btn" (click)="distribute('horizontal')" title="Distribute Horizontally">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <rect x="2" y="2" width="2" height="12" fill="currentColor" opacity="0.3" />
+                <rect x="12" y="2" width="2" height="12" fill="currentColor" opacity="0.3" />
+                <rect x="5" y="6" width="2" height="4" fill="currentColor" />
+                <rect x="9" y="6" width="2" height="4" fill="currentColor" />
+            </svg>
+        </button>
+        <button class="control-btn" (click)="distribute('vertical')" title="Distribute Vertically">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <rect x="2" y="2" width="12" height="2" fill="currentColor" opacity="0.3" />
+                <rect x="2" y="12" width="12" height="2" fill="currentColor" opacity="0.3" />
+                <rect x="6" y="5" width="4" height="2" fill="currentColor" />
+                <rect x="6" y="9" width="4" height="2" fill="currentColor" />
+            </svg>
+        </button>
+    </div>
+</div>

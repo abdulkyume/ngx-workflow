@@ -106,8 +106,9 @@
          }" [attr.aria-label]="node.label" [attr.data-id]="node.id" [class.selected]="node.selected"
         [class.dragging]="node.dragging" [class.dimmed]="node.dimmed" [class.highlighted]="node.highlighted"
         [attr.transform]="'translate(' + node.position.x + ',' + node.position.y + ')'"
-        (dblclick)="onNodeDoubleClick($event, node)" (mouseenter)="onNodeMouseEnter($event, node)"
-        (mouseleave)="onNodeMouseLeave($event, node)" (mousemove)="onNodeMouseMove($event, node)">
+        (pointerdown)="onNodePointerDown($event, node)" (dblclick)="onNodeDoubleClick($event, node)"
+        (mouseenter)="onNodeMouseEnter($event, node)" (mouseleave)="onNodeMouseLeave($event, node)"
+        (mousemove)="onNodeMouseMove($event, node)">
 
         <!-- Node outline and background (visual + dragging) -->
         <rect [attr.width]="node.width || defaultNodeWidth" [attr.height]="node.height || defaultNodeHeight" rx="3"
@@ -232,31 +233,29 @@
   </svg>
 
 
-  <ngx-workflow-search-controls [nodes]="nodes()" (searchResults)="onSearchResults($event)"
-    (resultSelected)="onSearchResultSelected($event)" (close)="onSearchClose()">
-  </ngx-workflow-search-controls>
+  <!-- Unified Top Bar -->
+  <div class="ngx-workflow__top-bar">
+    <ngx-workflow-search-controls [nodes]="nodes()" (searchResults)="onSearchResults($event)"
+      (resultSelected)="onSearchResultSelected($event)" (close)="onSearchClose()">
+    </ngx-workflow-search-controls>
 
-  <!-- IO Controls -->
-  <div class="ngx-workflow__io-controls">
-    <button (click)="exportToJSON()">Export JSON</button>
-    <button (click)="triggerImport()">Import JSON</button>
-    <button (click)="exportToPNG()">Export PNG</button>
-    <button (click)="exportToSVG()">Export SVG</button>
+    <div class="divider"></div>
+
+    <ngx-workflow-layout-alignment-controls *ngIf="showLayoutControls"
+      (applyLayout)="onApplyLayout($any($event))"></ngx-workflow-layout-alignment-controls>
+
+    <div class="divider"></div>
+
+    <ngx-workflow-export-controls *ngIf="showExportControls" (exportJSON)="exportToJSON()"
+      (importJSON)="triggerImport()">
+    </ngx-workflow-export-controls>
   </div>
+
+  <ngx-workflow-minimap *ngIf="showMinimap"></ngx-workflow-minimap>
 
   <ngx-workflow-zoom-controls *ngIf="showZoomControls" [zoom]="viewport().zoom" [minZoom]="minZoom" [maxZoom]="maxZoom"
     (zoomIn)="onZoomChange(viewport().zoom + 0.1)" (zoomOut)="onZoomChange(viewport().zoom - 0.1)"
     (fitView)="onZoomChange(1)" (resetZoom)="onZoomChange(1)"></ngx-workflow-zoom-controls>
-
-  <ngx-workflow-export-controls *ngIf="showExportControls" (exportPNG)="exportToPNG()" (exportSVG)="exportToSVG()"
-    (copyClipboard)="copyToClipboard()"></ngx-workflow-export-controls>
-
-  <ngx-workflow-layout-controls *ngIf="showLayoutControls"
-    (applyLayout)="onApplyLayout($event)"></ngx-workflow-layout-controls>
-
-  <ngx-workflow-alignment-controls></ngx-workflow-alignment-controls>
-
-  <ngx-workflow-minimap *ngIf="showMinimap"></ngx-workflow-minimap>
 
   <ngx-workflow-properties-sidebar [node]="selectedNodeForEditing" (close)="closeSidebar()"
     (change)="onPropertiesChange($event)"></ngx-workflow-properties-sidebar>

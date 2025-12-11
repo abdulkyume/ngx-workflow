@@ -6,17 +6,17 @@ import { DiagramComponent } from './components/diagram/diagram.component';
 import { RoundedRectNodeComponent } from './components/custom-node/rounded-rect-node.component';
 import { NodeToolbarComponent } from './components/node-toolbar/node-toolbar.component';
 import { PanelComponent } from './components/panel/panel.component';
-import { VersionHistoryComponent } from './components/version-history/version-history.component';
+import { BackgroundComponent } from './components/background/background.component';
 import { MinimapComponent } from './components/minimap/minimap.component';
 import { ZoomControlsComponent } from './components/zoom-controls/zoom-controls.component';
+import { LayoutAlignmentControlsComponent } from './components/layout-alignment-controls/layout-alignment-controls.component';
+import { SearchControlsComponent } from './components/search-controls/search-controls.component';
+import { ExportControlsComponent } from './components/export-controls/export-controls.component';
+import { PropertiesSidebarComponent } from './components/properties-sidebar/properties-sidebar.component';
 import { UndoRedoControlsComponent } from './components/undo-redo-controls/undo-redo-controls.component';
-import { BackgroundComponent } from './components/background/background.component';
+import { VersionHistoryComponent } from './components/version-history/version-history.component';
 import { GridOverlayComponent } from './components/grid-overlay/grid-overlay.component';
 import { ContextMenuComponent } from './components/context-menu/context-menu.component';
-import { ExportControlsComponent } from './components/export-controls/export-controls.component';
-import { LayoutControlsComponent } from './components/layout-controls/layout-controls.component';
-import { AlignmentControlsComponent } from './components/alignment-controls/alignment-controls.component';
-import { PropertiesSidebarComponent } from './components/properties-sidebar/properties-sidebar.component';
 
 // Services
 import { DiagramStateService } from './services/diagram-state.service';
@@ -33,20 +33,19 @@ import { Node } from './models';
   imports: [
     CommonModule,
     DiagramComponent,
-    RoundedRectNodeComponent,
+    BackgroundComponent,
+    MinimapComponent,
+    ZoomControlsComponent,
+    LayoutAlignmentControlsComponent,
+    SearchControlsComponent,
+    ExportControlsComponent,
+    PropertiesSidebarComponent,
+    UndoRedoControlsComponent,
     NodeToolbarComponent,
     PanelComponent,
     VersionHistoryComponent,
-    MinimapComponent,
-    ZoomControlsComponent,
-    UndoRedoControlsComponent,
-    BackgroundComponent,
     GridOverlayComponent,
-    ContextMenuComponent,
-    ExportControlsComponent,
-    LayoutControlsComponent,
-    AlignmentControlsComponent,
-    PropertiesSidebarComponent,
+    ContextMenuComponent
   ],
   declarations: [
     // Standalone components are imported, not declared.
@@ -64,20 +63,16 @@ import { Node } from './models';
   ],
   exports: [
     DiagramComponent,
-    RoundedRectNodeComponent,
-    NodeToolbarComponent,
-    PanelComponent,
-    VersionHistoryComponent,
+    BackgroundComponent,
     MinimapComponent,
     ZoomControlsComponent,
-    UndoRedoControlsComponent,
-    BackgroundComponent,
-    GridOverlayComponent,
-    ContextMenuComponent,
+    LayoutAlignmentControlsComponent,
+    SearchControlsComponent,
     ExportControlsComponent,
-    LayoutControlsComponent,
-    AlignmentControlsComponent,
     PropertiesSidebarComponent,
+    UndoRedoControlsComponent,
+    NodeToolbarComponent,
+    PanelComponent
   ],
 })
 export class NgxWorkflowModule { }

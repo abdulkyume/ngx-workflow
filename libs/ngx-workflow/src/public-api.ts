@@ -17,9 +17,8 @@ export * from './lib/components/background/background.component';
 export * from './lib/components/grid-overlay/grid-overlay.component';
 export * from './lib/components/context-menu/context-menu.component';
 export * from './lib/components/export-controls/export-controls.component';
-export * from './lib/components/layout-controls/layout-controls.component';
-export * from './lib/components/alignment-controls/alignment-controls.component';
-export * from './lib/components/properties-sidebar/properties-sidebar.component';
+export * from './lib/components/layout-alignment-controls/layout-alignment-controls.component';
+export * from './lib/components/search-controls/search-controls.component';
 
 // Services
 export * from './lib/services/diagram-state.service';

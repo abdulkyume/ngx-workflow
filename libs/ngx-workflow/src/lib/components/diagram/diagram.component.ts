@@ -14,17 +14,16 @@ import { UndoRedoControlsComponent } from '../undo-redo-controls/undo-redo-contr
 import { MinimapComponent } from '../minimap/minimap.component';
 import { BackgroundComponent } from '../background/background.component';
 import { GridOverlayComponent } from '../grid-overlay/grid-overlay.component';
-import { AlignmentControlsComponent } from '../alignment-controls/alignment-controls.component';
 import { PropertiesSidebarComponent } from '../properties-sidebar/properties-sidebar.component';
 import { ContextMenuComponent } from '../context-menu/context-menu.component';
 import { ContextMenuService, ContextMenuItem } from '../../services/context-menu.service';
 import { SearchControlsComponent } from '../search-controls/search-controls.component';
 import { NodeToolbarComponent } from '../node-toolbar/node-toolbar.component';
+import { LayoutAlignmentControlsComponent } from '../layout-alignment-controls/layout-alignment-controls.component';
 import { PanelComponent } from '../panel/panel.component';
 import { ThemeService, ColorMode } from '../../services/theme.service';
 import { ExportService } from '../../services/export.service';
 import { ExportControlsComponent } from '../export-controls/export-controls.component';
-import { LayoutControlsComponent } from '../layout-controls/layout-controls.component';
 import { AutoSaveService } from '../../services/auto-save.service';
 
 // Helper function to get a node from the array
@@ -95,7 +94,21 @@ function getBadgePosition(node: WorkflowNode, position: string | undefined, inde
   styleUrls: ['./diagram.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true,
-  imports: [CommonModule, ZoomControlsComponent, UndoRedoControlsComponent, MinimapComponent, BackgroundComponent, GridOverlayComponent, AlignmentControlsComponent, PropertiesSidebarComponent, SearchControlsComponent, ContextMenuComponent, NodeToolbarComponent, PanelComponent, ExportControlsComponent, LayoutControlsComponent]
+  imports: [
+    CommonModule,
+    ZoomControlsComponent,
+    UndoRedoControlsComponent,
+    MinimapComponent,
+    BackgroundComponent,
+    GridOverlayComponent,
+    PropertiesSidebarComponent,
+    SearchControlsComponent,
+    ContextMenuComponent,
+    NodeToolbarComponent,
+    PanelComponent,
+    ExportControlsComponent,
+    LayoutAlignmentControlsComponent
+  ]
 })
 export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   // Trigger rebuild
@@ -319,15 +332,18 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
       return;
     }
 
+    // Stop propagation so global handler doesn't trigger
     event.stopPropagation();
 
     // Select the node (toggle if ctrl/cmd is pressed)
     const isMultiSelect = event.ctrlKey || event.metaKey;
     if (!isMultiSelect) {
-      // Clear other selections
-      this.diagramStateService.nodes.update(nodes =>
-        nodes.map(n => ({ ...n, selected: n.id === node.id }))
-      );
+      if (!node.selected) {
+        // Clear other selections only if we are selecting a new unselected node
+        this.diagramStateService.nodes.update(nodes =>
+          nodes.map(n => ({ ...n, selected: n.id === node.id }))
+        );
+      }
     } else {
       // Toggle this node's selection
       this.diagramStateService.nodes.update(nodes =>
@@ -335,8 +351,12 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
       );
     }
 
-    // Start dragging
-    this.diagramStateService.onDragStart(node);
+    // Only start dragging if the node is selected (which it should be now)
+    // and if we didn't just deselect it via multiselect
+    const currentNode = this.nodes().find(n => n.id === node.id);
+    if (currentNode?.selected) {
+      this.startDraggingNode(event, node);
+    }
   }
 
   onNodeDoubleClick(event: MouseEvent, node: WorkflowNode): void {
@@ -2292,6 +2312,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     await this.exportService.copyToClipboard(this.svgRef.nativeElement);
   }
 
+
   // Layout controls
   onApplyLayout(algorithm: 'auto' | 'force' | 'hierarchical' | 'circular'): void {
     this.diagramStateService.applyLayout(algorithm);
@@ -2459,6 +2480,9 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
         event.preventDefault();
         this.diagramStateService.redo();
       }
+
+
+
 
       // Export Shortcuts (Ctrl+Shift+...)
       if (event.shiftKey) {

@@ -9,12 +9,13 @@ import {
   NgxWorkflowModule,
   DiagramComponent,
   ColorMode,
+  VersionHistoryComponent
 } from 'ngx-workflow';
 import { v4 as uuidv4 } from 'uuid';
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, NgxWorkflowModule],
+  imports: [CommonModule, NgxWorkflowModule, VersionHistoryComponent],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
@@ -260,8 +261,9 @@ export class App implements OnInit {
   }
 
   exportSVG(): void {
-    // TODO: Re-implement SVG export
-    console.log('SVG export not yet implemented');
+    if (this.diagram) {
+      this.diagram.exportToSVG();
+    }
   }
 
   // Toolbar actions

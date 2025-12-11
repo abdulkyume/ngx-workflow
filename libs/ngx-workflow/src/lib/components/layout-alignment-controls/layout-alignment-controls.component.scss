@@ -1,18 +1,26 @@
-.layout-controls {
-  position: absolute;
-  top: 10px;
-  left: 420px; // Offset to avoid search controls and dropdown
+:host {
   display: flex;
-  gap: 4px;
-  background: var(--ngx-workflow-controls-bg, #ffffff);
-  border: 1px solid var(--ngx-workflow-controls-border, #e2e8f0);
-  border-radius: 6px;
-  padding: 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  z-index: 10;
+  align-items: center;
 }
 
-.layout-btn {
+.layout-alignment-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.control-group {
+  display: flex;
+  gap: 4px;
+}
+
+.divider {
+  width: 1px;
+  height: 20px;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.control-btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -48,13 +56,12 @@
 }
 
 // Dark mode support
-:host-context([data-color-mode='dark']) {
-  .layout-controls {
-    background: var(--ngx-workflow-controls-bg-dark, #1e293b);
-    border-color: var(--ngx-workflow-controls-border-dark, #334155);
+:host-context([data-theme='dark']) {
+  .divider {
+    background: rgba(255, 255, 255, 0.1);
   }
 
-  .layout-btn {
+  .control-btn {
     color: var(--ngx-workflow-controls-color-dark, #94a3b8);
 
     &:hover {
