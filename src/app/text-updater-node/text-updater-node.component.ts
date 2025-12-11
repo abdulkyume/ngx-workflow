@@ -14,7 +14,13 @@ import { HandleComponent } from '../../../libs/ngx-workflow/src/lib/components/h
   // I need to export HandleComponent from public-api.ts first.
   template: `
     <div class="text-updater-node">
-      <div class="handle-container">
+      <!-- 4-sided Drag Frame -->
+      <div class="drag-handle drag-top"></div>
+      <div class="drag-handle drag-bottom"></div>
+      <div class="drag-handle drag-left"></div>
+      <div class="drag-handle drag-right"></div>
+      
+      <div class="handle-container" [class.easy-connect]="easyConnect">
         <div class="ngx-workflow__handle custom-handle top" 
              [attr.data-nodeid]="id" 
              data-handleid="top" 
@@ -51,19 +57,36 @@ import { HandleComponent } from '../../../libs/ngx-workflow/src/lib/components/h
       border: 1px solid var(--ngx-workflow-border, #e2e8f0);
       border-radius: 4px; /* Standard rect radius */
       background: var(--ngx-workflow-surface, #ffffff);
-      padding: 10px;
+      padding: 0;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
+      justify-content: center; /* Center content */
       position: relative;
       box-sizing: border-box;
       /* Match standard node shadow */
       filter: drop-shadow(0 2px 4px rgba(0,0,0,0.05));
     }
+    .drag-handle {
+      position: absolute;
+      background: transparent; /* Same color as node (transparent shows node bg) */
+      cursor: grab;
+      z-index: 5; /* Above background, below content/handles if needed */
+    }
+    .drag-handle:active {
+      cursor: grabbing;
+      background: rgba(0,0,0,0.05); /* Subtle visual feedback on active drag */
+    }
+    /* Frame positioning */
+    .drag-top { top: 0; left: 0; right: 0; height: 20px; border-top-left-radius: 3px; border-top-right-radius: 3px; }
+    .drag-bottom { bottom: 0; left: 0; right: 0; height: 20px; border-bottom-left-radius: 3px; border-bottom-right-radius: 3px; }
+    .drag-left { top: 20px; bottom: 20px; left: 0; width: 20px; }
+    .drag-right { top: 20px; bottom: 20px; right: 0; width: 20px; }
+
     .content {
       display: flex;
       flex-direction: column;
+      padding: 0 10px 10px 10px;
     }
     input { 
       border: 1px solid var(--ngx-workflow-border, #ccc); 
@@ -96,13 +119,28 @@ import { HandleComponent } from '../../../libs/ngx-workflow/src/lib/components/h
     .bottom { bottom: -6px; left: 50%; margin-left: -6px; }
     .left { left: -6px; top: 50%; margin-top: -6px; }
     .right { right: -6px; top: 50%; margin-top: -6px; }
+
+    /* Easy Connect Styles: Hide handles but keep them DOM-present for logic */
+    .handle-container.easy-connect .custom-handle {
+      opacity: 0;
+      /* Ensure they don't block other clicks if needed, 
+         but we need them to be findable by querySelector.
+         Pointer events? logic finds them by DOM query, not pointer event target on the handle itself (in the body-drag case).
+         But if user clicks EXACTLY on the invisible handle, standard behavior might trigger.
+         That's probably fine/desired.
+      */
+    }
   `]
 })
 export class TextUpdaterNodeComponent {
   @Input() id!: string;
-  @Input() data!: any;
+  @Input() data: any;
+  @Input() selected?: boolean;
+  @Input() type?: string;
+  @Input() pos?: { x: number, y: number };
+  @Input() easyConnect?: boolean;
 
   onInput(event: any) {
-    console.log('Text changed:', event.target.value);
+    this.data = { ...this.data, label: event.target.value };
   }
 }

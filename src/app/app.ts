@@ -117,6 +117,7 @@ export class App implements OnInit {
       data: { label: `Custom ${this.nodes.length + 1}` },
       type: 'text-updater',
       draggable: true,
+      easyConnect: true
     };
     this.nodes = [...this.nodes, newNode];
   }
@@ -168,7 +169,8 @@ export class App implements OnInit {
       position: { x: 400, y: 350 },
       width: 200,
       height: 100,
-      data: { label: 'Custom Text' }
+      data: { label: 'Custom Text' },
+      easyConnect: true
     };
     this.nodes = [...this.nodes, customNode];
   }

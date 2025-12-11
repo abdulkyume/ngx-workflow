@@ -53,4 +53,5 @@ export interface Node<T = any> {
       isConnectable?: boolean | number | ((node: Node, connectedEdges: any[]) => boolean);
     }
   };
+  easyConnect?: boolean; // If true, dragging from node body starts connection (unless on .drag-handle)
 }

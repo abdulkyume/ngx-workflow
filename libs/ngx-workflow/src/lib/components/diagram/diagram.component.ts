@@ -292,6 +292,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   private currentTargetHandle: { nodeId: string; handleId?: string; type: 'source' | 'target' } | null = null;
   private connectingSourceNodeId: string | null = null;
   private connectingSourceHandleId: string | undefined = undefined;
+  private connectingStartPointerPosition: { x: number, y: number } | null = null;
 
   // Resizing
   private isResizing = false;
@@ -351,6 +352,23 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
 
     // Stop propagation so global handler doesn't trigger
     event.stopPropagation();
+
+    // Easy Connect Logic
+    if (node.easyConnect) {
+      const isDragHandle = target.closest('.drag-handle');
+      if (!isDragHandle) {
+        // Body click -> Attempt Connection
+        const nodeGroup = event.currentTarget as HTMLElement;
+        // Find a source handle within this node to connect from
+        const sourceHandle = nodeGroup.querySelector('.ngx-workflow__handle[data-type="source"]') as HTMLElement;
+
+        if (sourceHandle) {
+          this.startConnecting(event, sourceHandle);
+        }
+        return; // Skip selection and dragging
+      }
+      // If it IS a drag handle, proceed to selection and dragging logic below
+    }
 
     // Select the node (toggle if ctrl/cmd is pressed)
     const isMultiSelect = event.ctrlKey || event.metaKey;
@@ -1208,6 +1226,26 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
           this.diagramStateService.selectNodes([node.id], true);
         }
 
+        // Easy Connect Logic
+        console.log('onNodePointerDown', { id: node.id, easyConnect: node.easyConnect, target: target });
+        if (node.easyConnect) {
+          const isDragHandle = target.closest('.drag-handle');
+          console.log('Easy Connect Check:', { isDragHandle: !!isDragHandle });
+          if (isDragHandle) {
+            this.startDraggingNode(event, node);
+            return;
+          }
+
+          // If not drag handle, treat as connection start (or do nothing)
+          // Find a source handle to connect from.
+          const sourceHandle = nodeElement.querySelector('.ngx-workflow__handle[data-type="source"]') as HTMLElement;
+          if (sourceHandle) {
+            this.startConnecting(event, sourceHandle);
+          }
+          // STRICT: Do NOT drag from body if easyConnect is on.
+          return;
+        }
+
         this.startDraggingNode(event, node);
         return;
       }
@@ -1298,6 +1336,9 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     event.preventDefault();
 
     this.isConnecting = true;
+    // Track start position to prevent accidental clicks triggering drops
+    this.connectingStartPointerPosition = { x: event.clientX, y: event.clientY };
+
     this.svgRef.nativeElement.setPointerCapture(event.pointerId);
 
     const nodeId = handleElement.dataset['nodeid'];
