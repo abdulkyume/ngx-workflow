@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, ElementRef, OnInit, Renderer2, NgZone, OnDestroy, HostListener, WritableSignal, Inject, Optional, computed, ViewChild, ContentChild, Input, Output, EventEmitter, OnChanges, SimpleChanges, Signal, ChangeDetectorRef, TemplateRef } from '@angular/core';
+import { Component, ChangeDetectionStrategy, ElementRef, OnInit, Renderer2, NgZone, OnDestroy, HostListener, WritableSignal, Inject, Optional, computed, ViewChild, ContentChild, Input, Output, EventEmitter, OnChanges, SimpleChanges, Signal, ChangeDetectorRef, TemplateRef, Type } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { CommonModule, NgComponentOutlet } from '@angular/common';
 import { DiagramStateService } from '../../services/diagram-state.service';
@@ -692,15 +692,31 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     private themeService: ThemeService,
     private exportService: ExportService,
     private autoSaveService: AutoSaveService,
-    @Optional() @Inject(NGX_WORKFLOW_NODE_TYPES) public nodeTypes: Record<string, WorkflowNodeComponentType> | null
+    @Optional() @Inject(NGX_WORKFLOW_NODE_TYPES) private injectedNodeTypes: Record<string, WorkflowNodeComponentType> | null
   ) {
     this.nodes$ = toObservable(this.diagramStateService.nodes);
     this.edges$ = toObservable(this.diagramStateService.edges);
     this.viewport$ = toObservable(this.diagramStateService.viewport);
+
+    if (this.injectedNodeTypes) {
+      this.nodeTypes = { ...this.injectedNodeTypes };
+    }
   }
+
+  @Input() nodeTypes: Record<string, Type<any>> = {};
 
   get nodeTypeKeys(): string[] {
     return this.nodeTypes ? Object.keys(this.nodeTypes) : [];
+  }
+
+
+  isCustomNode(node: WorkflowNode): boolean {
+    return !!(node.type && this.nodeTypes && this.nodeTypes[node.type]);
+  }
+
+  getCustomNodeComponent(type: string | undefined): any {
+    if (!type || !this.nodeTypes) return undefined;
+    return this.nodeTypes[type];
   }
 
   ngOnInit(): void {
@@ -2098,12 +2114,6 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
 
   // --- Node Logic ---
 
-  getCustomNodeComponent(type: string | undefined): WorkflowNodeComponentType | null {
-    if (type && this.nodeTypes && this.nodeTypes[type]) {
-      return this.nodeTypes[type];
-    }
-    return null;
-  }
 
   zoomIn(): void {
     const currentViewport = this.viewport();

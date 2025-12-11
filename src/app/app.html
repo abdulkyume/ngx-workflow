@@ -2,6 +2,7 @@
   <h1>NgxWorkflow Demo</h1>
   <div class="controls">
     <button (click)="addRandomNode()">Add Node</button>
+    <button (click)="addCustomNode()">Add Custom Node</button>
     <button (click)="applyElkLayout()">ELK Layout</button>
     <button (click)="exportJSON()">Export JSON</button>
     <input type="file" accept="application/json" (change)="importJSON($event)" />
@@ -24,8 +25,8 @@
   <ngx-workflow-diagram #diagram class="flow-diagram" [initialNodes]="nodes" [initialEdges]="edges"
     [initialViewport]="viewport" [minZoom]="0.5" [maxZoom]="2.0"
     [backgroundImage]="'https://images.unsplash.com/photo-1557683316-973673baf926?auto=format&fit=crop&w=1000&q=80'"
-    [colorMode]="currentTheme" [edgeReconnectable]="true" [showExportControls]="true" [showLayoutControls]="true"
-    [showMinimap]="true" [autoSave]="true" [autoSaveInterval]="1000" [maxVersions]="10"
+    [nodeTypes]="nodeTypes" [colorMode]="currentTheme" [edgeReconnectable]="true" [showExportControls]="true"
+    [showLayoutControls]="true" [showMinimap]="true" [autoSave]="true" [autoSaveInterval]="1000" [maxVersions]="10"
     (nodeClick)="onNodeClick($event)" (nodesChange)="onNodesChange($event)" (edgesChange)="onEdgesChange($event)"
     (edgeDrop)="onEdgeDrop($event)">
 

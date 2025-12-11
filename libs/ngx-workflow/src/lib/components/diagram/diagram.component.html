@@ -110,84 +110,106 @@
         (mouseenter)="onNodeMouseEnter($event, node)" (mouseleave)="onNodeMouseLeave($event, node)"
         (mousemove)="onNodeMouseMove($event, node)">
 
-        <!-- Node outline and background (visual + dragging) -->
-        <rect [attr.width]="node.width || defaultNodeWidth" [attr.height]="node.height || defaultNodeHeight" rx="3"
-          ry="3" class="ngx-workflow__node-rect"
-          [style.filter]="node.shadow === true ? 'drop-shadow(0 10px 15px rgba(0,0,0,0.2))' : (node.shadow || null)"
-          [style.stroke-dasharray]="node.borderStyle === 'dashed' ? '5,5' : (node.borderStyle === 'dotted' ? '2,2' : null)"
-          [style.stroke]="node.borderColor" [style.stroke-width]="node.borderWidth"></rect>
+        <!-- Custom Node Template -->
+        <foreignObject *ngIf="isCustomNode(node)" [attr.width]="node.width || defaultNodeWidth"
+          [attr.height]="node.height || defaultNodeHeight" style="overflow: visible;">
+          <div xmlns="http://www.w3.org/1999/xhtml" style="width: 100%; height: 100%;">
+            <ng-container *ngComponentOutlet="getCustomNodeComponent(node.type); inputs: { 
+              id: node.id, 
+              data: node.data, 
+              selected: node.selected,
+              type: node.type,
+              pos: node.position
+            }"></ng-container>
+          </div>
+        </foreignObject>
 
-        <!-- Node Badges -->
-        <g *ngIf="node.badges?.length">
-          <g *ngFor="let badge of node.badges; let i = index" class="ngx-workflow__node-badge"
-            [attr.transform]="getBadgeTransform(node, badge, i)">
-            <circle r="10" [attr.fill]="badge.backgroundColor || '#ef4444'" [attr.stroke]="'#ffffff'" stroke-width="2">
-            </circle>
-            <text dy="0.3em" text-anchor="middle" font-size="10px" font-weight="bold"
-              [attr.fill]="badge.color || '#ffffff'">{{ badge.content }}</text>
+        <!-- Default Node Template (Rect + Text) -->
+        <g *ngIf="!isCustomNode(node) && node.type !== 'group'">
+          <!-- Node outline and background (visual + dragging) -->
+          <rect [attr.width]="node.width || defaultNodeWidth" [attr.height]="node.height || defaultNodeHeight" rx="3"
+            ry="3" class="ngx-workflow__node-rect"
+            [style.filter]="node.shadow === true ? 'drop-shadow(0 10px 15px rgba(0,0,0,0.2))' : (node.shadow || null)"
+            [style.stroke-dasharray]="node.borderStyle === 'dashed' ? '5,5' : (node.borderStyle === 'dotted' ? '2,2' : null)"
+            [style.stroke]="node.borderColor" [style.stroke-width]="node.borderWidth"></rect>
+
+          <!-- Node Badges -->
+          <g *ngIf="node.badges?.length">
+            <g *ngFor="let badge of node.badges; let i = index" class="ngx-workflow__node-badge"
+              [attr.transform]="getBadgeTransform(node, badge, i)">
+              <circle r="10" [attr.fill]="badge.backgroundColor || '#ef4444'" [attr.stroke]="'#ffffff'"
+                stroke-width="2">
+              </circle>
+              <text dy="0.3em" text-anchor="middle" font-size="10px" font-weight="bold"
+                [attr.fill]="badge.color || '#ffffff'">{{ badge.content }}</text>
+            </g>
           </g>
+
+          <!-- Node Label -->
+          <text [attr.x]="(node.width || defaultNodeWidth) / 2" [attr.y]="(node.height || defaultNodeHeight) / 2"
+            text-anchor="middle" dominant-baseline="middle" class="ngx-workflow__node-label">
+            {{ node.label }}
+          </text>
         </g>
 
-        <!-- Node Label -->
-        <text *ngIf="node.type !== 'group'" [attr.x]="(node.width || defaultNodeWidth) / 2"
-          [attr.y]="(node.height || defaultNodeHeight) / 2" text-anchor="middle" dominant-baseline="middle"
-          class="ngx-workflow__node-label">
-          {{ node.label }}
-        </text>
+        <!-- Only render default handles if NOT custom node? Or maybe keep them? 
+             Usually custom nodes implement their own handles.
+             Let's allow default handles to show only if NOT custom node for now to start clean.
+        -->
+        <ng-container *ngIf="!isCustomNode(node) && node.type !== 'group'">
+          <!-- Top Handle -->
+          <g ngx-workflow-handle class="ngx-workflow__handle ngx-workflow__handle--source ngx-workflow__handle--target"
+            [attr.data-nodeid]="node.id" data-handleid="top" [attr.data-type]="'source'" [nodeId]="node.id"
+            handleId="top" type="source" [isConnectable]="node.handleConfig?.['top']?.isConnectable"
+            (pointerdown)="onHandlePointerDown($event, node, 'top')">
+            <!-- Hit area -->
+            <circle [attr.cx]="(node.width || defaultNodeWidth) / 2" cy="-10" r="20" fill="transparent"
+              pointer-events="all"></circle>
+            <!-- Visual -->
+            <circle [attr.cx]="(node.width || defaultNodeWidth) / 2" [attr.cy]="0" r="6"
+              class="ngx-workflow__handle-circle">
+            </circle>
+          </g>
 
-        <!-- Top Handle -->
-        <g ngx-workflow-handle class="ngx-workflow__handle ngx-workflow__handle--source ngx-workflow__handle--target"
-          [attr.data-nodeid]="node.id" data-handleid="top" [attr.data-type]="'source'" [nodeId]="node.id" handleId="top"
-          type="source" [isConnectable]="node.handleConfig?.['top']?.isConnectable"
-          (pointerdown)="onHandlePointerDown($event, node, 'top')">
-          <!-- Hit area -->
-          <circle [attr.cx]="(node.width || defaultNodeWidth) / 2" cy="-10" r="20" fill="transparent"
-            pointer-events="all"></circle>
-          <!-- Visual -->
-          <circle [attr.cx]="(node.width || defaultNodeWidth) / 2" [attr.cy]="0" r="6"
-            class="ngx-workflow__handle-circle">
-          </circle>
-        </g>
-
-        <!-- Right Handle -->
-        <g ngx-workflow-handle class="ngx-workflow__handle ngx-workflow__handle--source ngx-workflow__handle--target"
-          [attr.data-nodeid]="node.id" data-handleid="right" [attr.data-type]="'source'" [nodeId]="node.id"
-          handleId="right" type="source" [isConnectable]="node.handleConfig?.['right']?.isConnectable"
-          (pointerdown)="onHandlePointerDown($event, node, 'right')">
-          <!-- Hit area -->
-          <circle [attr.cx]="(node.width || defaultNodeWidth) + 10" [attr.cy]="(node.height || defaultNodeHeight) / 2"
-            r="20" fill="transparent" pointer-events="all">
-          </circle>
-          <!-- Visual -->
-          <circle [attr.cx]="(node.width || defaultNodeWidth)" [attr.cy]="(node.height || defaultNodeHeight) / 2" r="6"
-            class="ngx-workflow__handle-circle"></circle>
-        </g>
-        <!-- Bottom Handle -->
-        <g ngx-workflow-handle class="ngx-workflow__handle ngx-workflow__handle--source ngx-workflow__handle--target"
-          [attr.data-nodeid]="node.id" data-handleid="bottom" [attr.data-type]="'source'" [nodeId]="node.id"
-          handleId="bottom" type="source" [isConnectable]="node.handleConfig?.['bottom']?.isConnectable"
-          (pointerdown)="onHandlePointerDown($event, node, 'bottom')">
-          <!-- Hit area -->
-          <circle [attr.cx]="(node.width || defaultNodeWidth) / 2" [attr.cy]="(node.height || defaultNodeHeight) + 10"
-            r="20" fill="transparent" pointer-events="all">
-          </circle>
-          <!-- Visual -->
-          <circle [attr.cx]="(node.width || defaultNodeWidth) / 2" [attr.cy]="(node.height || defaultNodeHeight)" r="6"
-            class="ngx-workflow__handle-circle"></circle>
-        </g>
-        <!-- Left Handle -->
-        <g ngx-workflow-handle class="ngx-workflow__handle ngx-workflow__handle--source ngx-workflow__handle--target"
-          [attr.data-nodeid]="node.id" data-handleid="left" [attr.data-type]="'source'" [nodeId]="node.id"
-          handleId="left" type="source" [isConnectable]="node.handleConfig?.['left']?.isConnectable"
-          (pointerdown)="onHandlePointerDown($event, node, 'left')">
-          <!-- Hit area -->
-          <circle cx="-10" [attr.cy]="(node.height || defaultNodeHeight) / 2" r="20" fill="transparent"
-            pointer-events="all"></circle>
-          <!-- Visual -->
-          <circle [attr.cx]="0" [attr.cy]="(node.height || defaultNodeHeight) / 2" r="6"
-            class="ngx-workflow__handle-circle">
-          </circle>
-        </g>
+          <!-- Right Handle -->
+          <g ngx-workflow-handle class="ngx-workflow__handle ngx-workflow__handle--source ngx-workflow__handle--target"
+            [attr.data-nodeid]="node.id" data-handleid="right" [attr.data-type]="'source'" [nodeId]="node.id"
+            handleId="right" type="source" [isConnectable]="node.handleConfig?.['right']?.isConnectable"
+            (pointerdown)="onHandlePointerDown($event, node, 'right')">
+            <!-- Hit area -->
+            <circle [attr.cx]="(node.width || defaultNodeWidth) + 10" [attr.cy]="(node.height || defaultNodeHeight) / 2"
+              r="20" fill="transparent" pointer-events="all">
+            </circle>
+            <!-- Visual -->
+            <circle [attr.cx]="(node.width || defaultNodeWidth)" [attr.cy]="(node.height || defaultNodeHeight) / 2"
+              r="6" class="ngx-workflow__handle-circle"></circle>
+          </g>
+          <!-- Bottom Handle -->
+          <g ngx-workflow-handle class="ngx-workflow__handle ngx-workflow__handle--source ngx-workflow__handle--target"
+            [attr.data-nodeid]="node.id" data-handleid="bottom" [attr.data-type]="'source'" [nodeId]="node.id"
+            handleId="bottom" type="source" [isConnectable]="node.handleConfig?.['bottom']?.isConnectable"
+            (pointerdown)="onHandlePointerDown($event, node, 'bottom')">
+            <!-- Hit area -->
+            <circle [attr.cx]="(node.width || defaultNodeWidth) / 2" [attr.cy]="(node.height || defaultNodeHeight) + 10"
+              r="20" fill="transparent" pointer-events="all">
+            </circle>
+            <!-- Visual -->
+            <circle [attr.cx]="(node.width || defaultNodeWidth) / 2" [attr.cy]="(node.height || defaultNodeHeight)"
+              r="6" class="ngx-workflow__handle-circle"></circle>
+          </g>
+          <!-- Left Handle -->
+          <g ngx-workflow-handle class="ngx-workflow__handle ngx-workflow__handle--source ngx-workflow__handle--target"
+            [attr.data-nodeid]="node.id" data-handleid="left" [attr.data-type]="'source'" [nodeId]="node.id"
+            handleId="left" type="source" [isConnectable]="node.handleConfig?.['left']?.isConnectable"
+            (pointerdown)="onHandlePointerDown($event, node, 'left')">
+            <!-- Hit area -->
+            <circle cx="-10" [attr.cy]="(node.height || defaultNodeHeight) / 2" r="20" fill="transparent"
+              pointer-events="all"></circle>
+            <!-- Visual -->
+            <circle cx="0" [attr.cy]="(node.height || defaultNodeHeight) / 2" r="6" class="ngx-workflow__handle-circle">
+            </circle>
+          </g>
+        </ng-container>
 
         <!-- Resize Handles -->
         <g *ngIf="node.selected && (node.resizable !== false) && nodesResizable">

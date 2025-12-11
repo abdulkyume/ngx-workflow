@@ -2,7 +2,7 @@ import { Component, Input, OnDestroy, OnInit, OnChanges, SimpleChanges } from '@
 import { HandleRegistryService, ConnectableLimit } from '../../services/handle-registry.service';
 
 @Component({
-    selector: 'g[ngx-workflow-handle]',
+    selector: 'g[ngx-workflow-handle], ngx-workflow-handle',
     template: '<ng-content></ng-content>',
     standalone: true
 })

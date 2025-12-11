@@ -13,6 +13,7 @@ import {
   EdgeDropEvent
 } from 'ngx-workflow';
 import { v4 as uuidv4 } from 'uuid';
+import { TextUpdaterNodeComponent } from './text-updater-node/text-updater-node.component';
 
 @Component({
   selector: 'app-root',
@@ -107,6 +108,19 @@ export class App implements OnInit {
     this.nodes = [...this.nodes, newNode];
   }
 
+  addCustomNode(): void {
+    const newNode: Node = {
+      id: uuidv4(),
+      position: { x: Math.random() * 500, y: Math.random() * 300 },
+      width: 200,
+      height: 100,
+      data: { label: `Custom ${this.nodes.length + 1}` },
+      type: 'text-updater',
+      draggable: true,
+    };
+    this.nodes = [...this.nodes, newNode];
+  }
+
   // Test Method to add a node with all new features
   testNewFeatures(): void {
     const featureNode: Node = {
@@ -147,8 +161,21 @@ export class App implements OnInit {
         'bottom': { isConnectable: false } // Not connectable
       }
     };
-    this.nodes = [...this.nodes, limitNode];
+    // Custom Node
+    const customNode: Node = {
+      id: 'custom-node-1',
+      type: 'text-updater',
+      position: { x: 400, y: 350 },
+      width: 200,
+      height: 100,
+      data: { label: 'Custom Text' }
+    };
+    this.nodes = [...this.nodes, customNode];
   }
+
+  nodeTypes = {
+    'text-updater': TextUpdaterNodeComponent
+  };
 
   clearFlow(): void {
     this.nodes = [];
