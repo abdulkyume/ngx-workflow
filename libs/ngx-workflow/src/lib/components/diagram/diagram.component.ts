@@ -62,6 +62,31 @@ function getHandleAbsolutePosition(node: WorkflowNode, handleId: string | undefi
       offsetX = nodeWidth / 2;
       offsetY = nodeHeight / 2;
   }
+
+  // Apple rotation if present
+  if (node.data && typeof node.data.rotation === 'number') {
+    const rotation = node.data.rotation;
+    const cx = nodeWidth / 2;
+    const cy = nodeHeight / 2;
+
+    // Translate to center
+    const dx = offsetX - cx;
+    const dy = offsetY - cy;
+
+    // Rotate
+    const rad = rotation * (Math.PI / 180);
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+
+    const rotatedDx = dx * cos - dy * sin;
+    const rotatedDy = dx * sin + dy * cos;
+
+    return {
+      x: node.position.x + cx + rotatedDx,
+      y: node.position.y + cy + rotatedDy
+    };
+  }
+
   return {
     x: node.position.x + offsetX,
     y: node.position.y + offsetY
@@ -350,7 +375,8 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     // Ignore if clicking on a handle or resize handle
     const target = event.target as HTMLElement;
     if (target.classList.contains('ngx-workflow__handle') ||
-      target.classList.contains('ngx-workflow__resize-handle')) {
+      target.classList.contains('ngx-workflow__resize-handle') ||
+      target.closest('.nodrag')) { // Check for nodrag class
       return;
     }
 

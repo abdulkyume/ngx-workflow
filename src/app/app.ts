@@ -14,6 +14,7 @@ import {
 } from 'ngx-workflow';
 import { v4 as uuidv4 } from 'uuid';
 import { TextUpdaterNodeComponent } from './text-updater-node/text-updater-node.component';
+import { RotatableNodeComponent } from './rotatable-node/rotatable-node.component';
 
 @Component({
   selector: 'app-root',
@@ -29,6 +30,13 @@ export class App implements OnInit {
   edges: Edge[] = [];
   viewport: Viewport = { x: 0, y: 0, zoom: 1 };
   currentTheme: ColorMode = 'light';
+
+  nodeTypes = {
+    'text-updater': TextUpdaterNodeComponent,
+    'rotatable': RotatableNodeComponent
+  };
+
+  @ViewChild(DiagramComponent) diagram?: DiagramComponent;
 
   constructor(private layoutService: LayoutService) { }
 
@@ -172,12 +180,18 @@ export class App implements OnInit {
       data: { label: 'Custom Text' },
       easyConnect: true
     };
-    this.nodes = [...this.nodes, customNode];
-  }
 
-  nodeTypes = {
-    'text-updater': TextUpdaterNodeComponent
-  };
+    const rotateNode: Node = {
+      id: 'rotate-node-1',
+      type: 'rotatable',
+      position: { x: 100, y: 450 },
+      width: 150,
+      height: 150,
+      data: { label: 'Rotate Me' }
+    };
+
+    this.nodes = [...this.nodes, customNode, rotateNode];
+  }
 
   clearFlow(): void {
     this.nodes = [];
@@ -253,9 +267,6 @@ export class App implements OnInit {
   get edgesCount(): number {
     return this.edges.length;
   }
-
-  // Access the diagram component to call export methods
-  @ViewChild(DiagramComponent) diagram?: DiagramComponent;
 
   exportJSON(): void {
     if (!this.diagram) return;

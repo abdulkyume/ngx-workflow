@@ -905,8 +905,8 @@ export class DiagramStateService {
     this.edges.update((edges) => edges.filter((e) => e.source !== id && e.target !== id));
   }
 
-  updateNode(id: string, changes: Partial<Node>): void {
-    if (!changes.dragging && !changes.position) {
+  updateNode(id: string, changes: Partial<Node>, saveToHistory: boolean = true): void {
+    if (saveToHistory && !changes.dragging && !changes.position) {
       this.undoRedoService.saveState(this.getCurrentState());
     }
     this.nodes.update((nodes) =>
