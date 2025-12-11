@@ -13,7 +13,7 @@ import { HandleComponent } from '../../../libs/ngx-workflow/src/lib/components/h
   // Wait, I can't easily import from libraries in App unless they are exported.
   // I need to export HandleComponent from public-api.ts first.
   template: `
-    <div class="text-updater-node">
+    <div class="text-updater-node" [style.background-color]="style?.backgroundColor">
       <!-- 4-sided Drag Frame -->
       <div class="drag-handle drag-top"></div>
       <div class="drag-handle drag-bottom"></div>
@@ -40,8 +40,8 @@ import { HandleComponent } from '../../../libs/ngx-workflow/src/lib/components/h
       </div>
       
       <div class="content">
-        <label>Text:</label>
-        <input type="text" [value]="data.label" (input)="onInput($event)" class="nodrag" />
+        <label [style.color]="style?.color">Text:</label>
+        <input type="text" [value]="data.label" (input)="onInput($event)" class="nodrag" [style.color]="style?.color" />
       </div>
     </div>
   `,
@@ -139,6 +139,7 @@ export class TextUpdaterNodeComponent {
   @Input() type?: string;
   @Input() pos?: { x: number, y: number };
   @Input() easyConnect?: boolean;
+  @Input() style?: any;
 
   onInput(event: any) {
     this.data = { ...this.data, label: event.target.value };

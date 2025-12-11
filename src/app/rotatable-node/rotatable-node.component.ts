@@ -7,7 +7,7 @@ import { DiagramStateService } from '../../../libs/ngx-workflow/src/lib/services
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="rotatable-node" [style.transform]="'rotate(' + rotation + 'deg)'">
+    <div class="rotatable-node" [style.transform]="'rotate(' + rotation + 'deg)'" [style.background-color]="style?.backgroundColor">
       <!-- Rotation Handle (Not a connection handle) -->
       <div 
         class="rotate-handle nodrag"
@@ -33,8 +33,8 @@ import { DiagramStateService } from '../../../libs/ngx-workflow/src/lib/services
             data-type="source"></div>
       
       <div class="content" #content>
-        <label>{{ data.label }}</label>
-        <div>{{ rotation }}°</div>
+        <label [style.color]="style?.color">{{ data.label }}</label>
+        <div [style.color]="style?.color">{{ rotation }}°</div>
       </div>
     </div>
   `,
@@ -163,6 +163,10 @@ export class RotatableNodeComponent implements OnInit, OnDestroy {
   @Input() id!: string;
   @Input() data: any;
   @Input() selected?: boolean;
+  @Input() pos: any;
+  @Input() easyConnect?: boolean;
+  @Input() type?: string;
+  @Input() style?: any;
 
   rotation = 0;
   isRotating = false;

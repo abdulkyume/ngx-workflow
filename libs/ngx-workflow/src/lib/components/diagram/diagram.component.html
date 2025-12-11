@@ -120,7 +120,8 @@
               selected: node.selected,
               type: node.type,
               pos: node.position,
-              easyConnect: node.easyConnect
+              easyConnect: node.easyConnect,
+              style: node.style
             }"></ng-container>
           </div>
         </foreignObject>
@@ -132,7 +133,8 @@
             ry="3" class="ngx-workflow__node-rect"
             [style.filter]="node.shadow === true ? 'drop-shadow(0 10px 15px rgba(0,0,0,0.2))' : (node.shadow || null)"
             [style.stroke-dasharray]="node.borderStyle === 'dashed' ? '5,5' : (node.borderStyle === 'dotted' ? '2,2' : null)"
-            [style.stroke]="node.borderColor" [style.stroke-width]="node.borderWidth"></rect>
+            [style.stroke]="node.borderColor" [style.stroke-width]="node.borderWidth"
+            [style.fill]="node.style?.['backgroundColor'] || 'var(--ngx-workflow-surface, #ffffff)'"></rect>
 
           <!-- Node Badges -->
           <g *ngIf="node.badges?.length">
@@ -148,7 +150,8 @@
 
           <!-- Node Label -->
           <text [attr.x]="(node.width || defaultNodeWidth) / 2" [attr.y]="(node.height || defaultNodeHeight) / 2"
-            text-anchor="middle" dominant-baseline="middle" class="ngx-workflow__node-label">
+            text-anchor="middle" dominant-baseline="middle" class="ngx-workflow__node-label"
+            [style.fill]="node.style?.['color'] || 'black'">
             {{ node.label }}
           </text>
         </g>

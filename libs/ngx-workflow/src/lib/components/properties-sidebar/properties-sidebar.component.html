@@ -15,6 +15,20 @@
             <input type="text" [ngModel]="node.label" (ngModelChange)="updateLabel($event)" class="ngx-workflow__input">
         </div>
 
+        <div class="ngx-workflow__form-group">
+            <label>Background Color</label>
+            <input type="color" [ngModel]="node.style?.['backgroundColor'] || '#ffffff'"
+                (ngModelChange)="updateBackgroundColor($event)" class="ngx-workflow__input"
+                style="height: 40px; padding: 2px;">
+        </div>
+
+        <div class="ngx-workflow__form-group">
+            <label>Text Color</label>
+            <input type="color" [ngModel]="node.style?.['color'] || '#000000'"
+                (ngModelChange)="updateLabelColor($event)" class="ngx-workflow__input"
+                style="height: 40px; padding: 2px;">
+        </div>
+
         <div class="ngx-workflow__form-row">
             <div class="ngx-workflow__form-group">
                 <label>X</label>

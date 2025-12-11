@@ -37,4 +37,16 @@ export class PropertiesSidebarComponent {
         if (!this.node) return;
         this.change.emit({ position: { x: this.node.position.x, y } });
     }
+
+    updateBackgroundColor(color: string) {
+        if (!this.node) return;
+        const currentStyle = this.node.style || {};
+        this.change.emit({ style: { ...currentStyle, backgroundColor: color } });
+    }
+
+    updateLabelColor(color: string) {
+        if (!this.node) return;
+        const currentStyle = this.node.style || {};
+        this.change.emit({ style: { ...currentStyle, color: color } });
+    }
 }
