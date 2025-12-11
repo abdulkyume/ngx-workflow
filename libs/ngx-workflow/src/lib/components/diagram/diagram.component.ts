@@ -294,7 +294,11 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   private connectingSourceHandleId: string | undefined = undefined;
   private connectingStartPointerPosition: { x: number, y: number } | null = null;
 
-  // Resizing
+  // Proximity Connect
+  @Input() proximityThreshold = 200; // Increased to 200px for easier testing
+  private proximityTargetNodeId: string | null = null;
+  private proximityCandidate: { source: string, target: string, sourceHandle: string, targetHandle: string } | null = null;
+  private proximityPreviewEdgeId: string | null = null;
   private isResizing = false;
   private resizingNode: WorkflowNode | null = null;
   private resizeHandle: 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | null = null;
@@ -1593,10 +1597,157 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
       }
 
       this.dragAnimationFrameId = null;
+
+      // Check for Proximity Connect (Pass current position!)
+      if (this.draggingNodes.length === 1) {
+        // For single drag, we have 'newPosition' calculated above in the 'else' block
+        // But it's scoped. Let's recalculate or access it.
+        // Easier to just recalculate for this check or lift var.
+        const currentX = this.startNodePosition.x + deltaX;
+        const currentY = this.startNodePosition.y + deltaY;
+        this.checkProximityConnect(this.draggingNode!, { x: currentX, y: currentY });
+      }
     });
 
     // Check for auto-pan
     this.checkAutoPan(event.clientX, event.clientY);
+  }
+
+  private checkProximityConnect(node: WorkflowNode, currentPosition: { x: number, y: number }): void {
+    const nodes = this.nodes();
+    const nodeCenter = {
+      x: currentPosition.x + (node.width || this.defaultNodeWidth) / 2,
+      y: currentPosition.y + (node.height || this.defaultNodeHeight) / 2
+    };
+
+    let closestNodeId: string | null = null;
+    let minDist = Infinity;
+
+    nodes.forEach(n => {
+      if (n.id === node.id || n.selected) return; // Skip self and other selected nodes
+
+      const nCenter = {
+        x: n.position.x + (n.width || this.defaultNodeWidth) / 2,
+        y: n.position.y + (n.height || this.defaultNodeHeight) / 2
+      };
+
+      const dist = Math.sqrt(Math.pow(nCenter.x - nodeCenter.x, 2) + Math.pow(nCenter.y - nodeCenter.y, 2));
+
+      // console.log(`Distance to ${n.id}: ${dist}`); // Debug log
+
+      if (dist < this.proximityThreshold && dist < minDist) {
+        minDist = dist;
+        closestNodeId = n.id;
+      }
+    });
+
+    if (closestNodeId) {
+      if (this.proximityTargetNodeId !== closestNodeId) {
+        // Target changed, update preview
+        if (this.proximityPreviewEdgeId) {
+          this.diagramStateService.removeEdge(this.proximityPreviewEdgeId);
+        }
+
+        this.proximityTargetNodeId = closestNodeId;
+        const previewId = `proximity-preview-${uuidv4()}`;
+        this.proximityPreviewEdgeId = previewId;
+
+        const targetNode = nodes.find(n => n.id === closestNodeId)!;
+        const targetCenter = {
+          x: targetNode.position.x + (targetNode.width || this.defaultNodeWidth) / 2,
+          y: targetNode.position.y + (targetNode.height || this.defaultNodeHeight) / 2
+        };
+
+        // Determine direction
+        const dx = nodeCenter.x - targetCenter.x;
+        const dy = nodeCenter.y - targetCenter.y;
+
+        let source: string, target: string, sourceHandle: string, targetHandle: string;
+        let startX: number, startY: number, endX: number, endY: number;
+
+        // Horizontal Dominant
+        if (Math.abs(dx) > Math.abs(dy)) {
+          if (dx > 0) {
+            // Dragging Node (Right) -> Target Node (Left)
+            // Connection: Target(Right) -> Dragging(Left)
+            source = closestNodeId!;
+            target = node.id;
+            sourceHandle = 'right';
+            targetHandle = 'left';
+
+            // Coords
+            startX = targetNode.position.x + (targetNode.width || this.defaultNodeWidth);
+            startY = targetCenter.y;
+            endX = currentPosition.x;
+            endY = nodeCenter.y;
+          } else {
+            // Dragging Node (Left) -> Target Node (Right)
+            // Connection: Dragging(Right) -> Target(Left)
+            source = node.id;
+            target = closestNodeId!;
+            sourceHandle = 'right';
+            targetHandle = 'left';
+
+            startX = currentPosition.x + (node.width || this.defaultNodeWidth);
+            startY = nodeCenter.y;
+            endX = targetNode.position.x;
+            endY = targetCenter.y;
+          }
+        } else {
+          // Vertical Dominant
+          if (dy > 0) {
+            // Dragging (Bottom) -> Target (Top)
+            // Connection: Target(Bottom) -> Dragging(Top)
+            source = closestNodeId!;
+            target = node.id;
+            sourceHandle = 'bottom';
+            targetHandle = 'top';
+
+            startX = targetCenter.x;
+            startY = targetNode.position.y + (targetNode.height || this.defaultNodeHeight);
+            endX = nodeCenter.x;
+            endY = currentPosition.y;
+          } else {
+            // Dragging (Top) -> Target (Bottom)
+            // Connection: Dragging(Bottom) -> Target(Top)
+            source = node.id;
+            target = closestNodeId!;
+            sourceHandle = 'bottom';
+            targetHandle = 'top';
+
+            startX = nodeCenter.x;
+            startY = currentPosition.y + (node.height || this.defaultNodeHeight);
+            endX = targetCenter.x;
+            endY = targetNode.position.y;
+          }
+        }
+
+        this.proximityCandidate = { source, target, sourceHandle, targetHandle };
+
+        this.diagramStateService.addTempEdge({
+          id: previewId,
+          source: source,
+          target: target,
+          sourceHandle: sourceHandle,
+          targetHandle: targetHandle,
+          type: 'straight',
+          animated: true,
+          style: { stroke: 'black', strokeWidth: '2', strokeDasharray: '5,5' }, // Dotted line
+          sourceX: startX,
+          sourceY: startY,
+          targetX: endX,
+          targetY: endY
+        });
+      }
+    } else {
+      this.proximityCandidate = null; // Clear candidate if no node is close
+      // No target in range
+      if (this.proximityPreviewEdgeId) {
+        this.diagramStateService.removeEdge(this.proximityPreviewEdgeId);
+        this.proximityPreviewEdgeId = null;
+      }
+      this.proximityTargetNodeId = null;
+    }
   }
 
   private stopDraggingNode(event: PointerEvent): void {
@@ -1619,6 +1770,31 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
       this.diagramStateService.onDragEnd(node);
       this.checkReparenting(node);
     });
+
+    // Commit Proximity Connection
+    if (this.proximityCandidate && this.draggingNode) {
+      // Create real edge
+      const newEdge: Edge = {
+        id: uuidv4(),
+        source: this.proximityCandidate.source,
+        sourceHandle: this.proximityCandidate.sourceHandle,
+        target: this.proximityCandidate.target,
+        targetHandle: this.proximityCandidate.targetHandle,
+        animated: true,
+        label: 'auto-connect',
+        markerEnd: 'arrowclosed'
+      };
+      this.diagramStateService.addEdge(newEdge);
+
+      // Cleanup
+      if (this.proximityPreviewEdgeId) {
+        this.diagramStateService.removeEdge(this.proximityPreviewEdgeId);
+        this.proximityPreviewEdgeId = null;
+      }
+      this.proximityTargetNodeId = null;
+      this.proximityCandidate = null;
+    }
+
     console.log('stopDraggingNode: stopped');
 
     this.draggingNode = null;
