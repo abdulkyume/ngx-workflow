@@ -136,8 +136,9 @@
         </text>
 
         <!-- Top Handle -->
-        <g class="ngx-workflow__handle ngx-workflow__handle--source ngx-workflow__handle--target"
-          [attr.data-nodeid]="node.id" data-handleid="top" [attr.data-type]="'source'"
+        <g ngx-workflow-handle class="ngx-workflow__handle ngx-workflow__handle--source ngx-workflow__handle--target"
+          [attr.data-nodeid]="node.id" data-handleid="top" [attr.data-type]="'source'" [nodeId]="node.id" handleId="top"
+          type="source" [isConnectable]="node.handleConfig?.['top']?.isConnectable"
           (pointerdown)="onHandlePointerDown($event, node, 'top')">
           <!-- Hit area -->
           <circle [attr.cx]="(node.width || defaultNodeWidth) / 2" cy="-10" r="20" fill="transparent"
@@ -149,8 +150,9 @@
         </g>
 
         <!-- Right Handle -->
-        <g class="ngx-workflow__handle ngx-workflow__handle--source ngx-workflow__handle--target"
-          [attr.data-nodeid]="node.id" data-handleid="right" [attr.data-type]="'source'"
+        <g ngx-workflow-handle class="ngx-workflow__handle ngx-workflow__handle--source ngx-workflow__handle--target"
+          [attr.data-nodeid]="node.id" data-handleid="right" [attr.data-type]="'source'" [nodeId]="node.id"
+          handleId="right" type="source" [isConnectable]="node.handleConfig?.['right']?.isConnectable"
           (pointerdown)="onHandlePointerDown($event, node, 'right')">
           <!-- Hit area -->
           <circle [attr.cx]="(node.width || defaultNodeWidth) + 10" [attr.cy]="(node.height || defaultNodeHeight) / 2"
@@ -161,8 +163,9 @@
             class="ngx-workflow__handle-circle"></circle>
         </g>
         <!-- Bottom Handle -->
-        <g class="ngx-workflow__handle ngx-workflow__handle--source ngx-workflow__handle--target"
-          [attr.data-nodeid]="node.id" data-handleid="bottom" [attr.data-type]="'source'"
+        <g ngx-workflow-handle class="ngx-workflow__handle ngx-workflow__handle--source ngx-workflow__handle--target"
+          [attr.data-nodeid]="node.id" data-handleid="bottom" [attr.data-type]="'source'" [nodeId]="node.id"
+          handleId="bottom" type="source" [isConnectable]="node.handleConfig?.['bottom']?.isConnectable"
           (pointerdown)="onHandlePointerDown($event, node, 'bottom')">
           <!-- Hit area -->
           <circle [attr.cx]="(node.width || defaultNodeWidth) / 2" [attr.cy]="(node.height || defaultNodeHeight) + 10"
@@ -173,8 +176,9 @@
             class="ngx-workflow__handle-circle"></circle>
         </g>
         <!-- Left Handle -->
-        <g class="ngx-workflow__handle ngx-workflow__handle--source ngx-workflow__handle--target"
-          [attr.data-nodeid]="node.id" data-handleid="left" [attr.data-type]="'source'"
+        <g ngx-workflow-handle class="ngx-workflow__handle ngx-workflow__handle--source ngx-workflow__handle--target"
+          [attr.data-nodeid]="node.id" data-handleid="left" [attr.data-type]="'source'" [nodeId]="node.id"
+          handleId="left" type="source" [isConnectable]="node.handleConfig?.['left']?.isConnectable"
           (pointerdown)="onHandlePointerDown($event, node, 'left')">
           <!-- Hit area -->
           <circle cx="-10" [attr.cy]="(node.height || defaultNodeHeight) / 2" r="20" fill="transparent"

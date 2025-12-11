@@ -136,6 +136,18 @@ export class App implements OnInit {
 
     this.nodes = [...this.nodes, featureNode];
     this.edges = [...this.edges, shadowEdge];
+
+    // Node with connection limits
+    const limitNode: Node = {
+      id: 'limit-node',
+      position: { x: 50, y: 350 },
+      data: { label: 'Limited Connections' },
+      handleConfig: {
+        'top': { isConnectable: 1 }, // Max 1 connection
+        'bottom': { isConnectable: false } // Not connectable
+      }
+    };
+    this.nodes = [...this.nodes, limitNode];
   }
 
   clearFlow(): void {

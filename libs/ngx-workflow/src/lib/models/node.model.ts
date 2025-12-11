@@ -48,4 +48,9 @@ export interface Node<T = any> {
   borderStyle?: 'solid' | 'dashed' | 'dotted' | 'none';
   borderColor?: string;
   borderWidth?: number;
+  handleConfig?: {
+    [handleId: string]: {
+      isConnectable?: boolean | number | ((node: Node, connectedEdges: any[]) => boolean);
+    }
+  };
 }

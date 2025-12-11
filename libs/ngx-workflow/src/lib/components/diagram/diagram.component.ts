@@ -91,6 +91,9 @@ function getBadgePosition(node: WorkflowNode, position: string | undefined, inde
   }
 }
 
+import { HandleComponent } from '../handle/handle.component';
+import { HandleRegistryService } from '../../services/handle-registry.service';
+
 @Component({
   selector: 'ngx-workflow-diagram',
   templateUrl: './diagram.component.html',
@@ -107,7 +110,8 @@ function getBadgePosition(node: WorkflowNode, position: string | undefined, inde
     SearchControlsComponent,
     ContextMenuComponent,
     ExportControlsComponent,
-    LayoutAlignmentControlsComponent
+    LayoutAlignmentControlsComponent,
+    HandleComponent
   ]
 })
 export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
@@ -1357,17 +1361,16 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
 
         // Allow connecting to any handle on a different node OR same node (self-loop)
         // console.log('updateConnection: handle found', targetNodeId, this.connectingSourceNodeId);
-        if (targetNodeId && this.isValidConnection(this.connectingSourceNodeId!, targetNodeId, this.connectingSourceHandleId, targetHandleId)) {
+        if (targetNodeId) {
           this.currentTargetHandle = { nodeId: targetNodeId, handleId: targetHandleId, type: 'target' };
 
-          // We need to find the handle element to highlight it
-          // This is a bit expensive but necessary for visual feedback
-          const handleEl = this.el.nativeElement.querySelector(`.ngx-workflow__handle[data-nodeid="${targetNodeId}"][data-handleid="${targetHandleId}"]`);
-          if (handleEl) {
-            this.renderer.addClass(handleEl, 'ngx-workflow__handle--valid-target');
+          if (this.isValidConnection(this.connectingSourceNodeId!, targetNodeId, this.connectingSourceHandleId, targetHandleId)) {
+            // We need to find the handle element to highlight it
+            const handleEl = this.el.nativeElement.querySelector(`.ngx-workflow__handle[data-nodeid="${targetNodeId}"][data-handleid="${targetHandleId}"]`);
+            if (handleEl) {
+              this.renderer.addClass(handleEl, 'ngx-workflow__handle--valid-target');
+            }
           }
-        } else {
-          this.currentTargetHandle = null;
         }
       } else {
         this.currentTargetHandle = null;
