@@ -249,6 +249,9 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   // Custom edge template
   @Input() edgeTemplate?: TemplateRef<any>;
 
+  // Custom definitions template (for markers, patterns, etc.)
+  @Input() defsTemplate?: TemplateRef<any>;
+
   // Custom edge label template
   @ContentChild('edgeLabelTemplate', { read: TemplateRef }) edgeLabelTemplate?: TemplateRef<any>;
 
