@@ -38,9 +38,17 @@
         class="ngx-workflow__edge" (click)="onEdgeClick($event, edge)" (dblclick)="onEdgeDoubleClick($event, edge)"
         (mouseenter)="onEdgeMouseEnter($event, edge)" (mouseleave)="onEdgeMouseLeave($event, edge)">
         <!-- Edge path with markers -->
-        <path [attr.d]="getEdgePath(edge)" class="ngx-workflow__edge-path" [style]="edge.style"
-          [attr.marker-start]="getMarkerUrl(edge.markerStart)" [attr.marker-end]="getMarkerUrl(edge.markerEnd)">
+        <path [attr.id]="'edge-path-' + edge.id" [attr.d]="getEdgePath(edge)" class="ngx-workflow__edge-path"
+          [style]="edge.style" [attr.marker-start]="getMarkerUrl(edge.markerStart)"
+          [attr.marker-end]="getMarkerUrl(edge.markerEnd)">
         </path>
+
+        <!-- SVG Motion Animation -->
+        <circle *ngIf="edge.animated" r="4" fill="#3b82f6">
+          <animateMotion dur="2s" repeatCount="indefinite">
+            <mpath [attr.href]="'#edge-path-' + edge.id"></mpath>
+          </animateMotion>
+        </circle>
         <!-- Invisible hitbox for easier clicking -->
         <path [attr.d]="getEdgePath(edge)" class="ngx-workflow__edge-hitbox"></path>
 

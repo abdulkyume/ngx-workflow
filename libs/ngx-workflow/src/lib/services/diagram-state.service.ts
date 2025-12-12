@@ -1469,4 +1469,73 @@ export class DiagramStateService {
   selectAllNodes(): void {
     this.nodes.update((nodes) => nodes.map((n) => ({ ...n, selected: true })));
   }
+  // --- Node Animation (Web Animations API) ---
+
+  animateNodeAlongEdge(nodeId: string, edgeId: string, duration: number = 2000): void {
+    if (!this.el?.nativeElement) {
+      console.warn('DiagramStateService: SVG ElementRef not set.');
+      return;
+    }
+    const svg = this.el.nativeElement as SVGSVGElement | HTMLElement;
+    // It might be SVG or Div depending on implementation, DiagramComponent sets it to svgRef.
+
+    // Find node group element
+    const nodeEl = svg.querySelector(`g[data-id="${nodeId}"]`) as HTMLElement;
+    if (!nodeEl) {
+      console.warn(`DiagramStateService: Node element with id ${nodeId} not found.`);
+      return;
+    }
+
+    // Find edge path element
+    // We expect the path to have ID 'edge-path-{edgeId}'
+    const edgePathEl = svg.querySelector(`#edge-path-${edgeId}`) as SVGPathElement;
+    if (!edgePathEl) {
+      console.warn(`DiagramStateService: Edge path element for edge ${edgeId} not found.`);
+      return;
+    }
+
+    const pathData = edgePathEl.getAttribute('d');
+    if (!pathData) {
+      console.warn(`DiagramStateService: Edge path ${edgeId} has no 'd' attribute.`);
+      return;
+    }
+
+    // Capture original style to restore later
+    const originalOffsetPath = nodeEl.style.offsetPath;
+    const originalOffsetRotate = nodeEl.style.offsetRotate;
+    const originalTransform = nodeEl.style.transform;
+    const originalTransition = nodeEl.style.transition;
+
+    // Reset transform to ensure offset-path uses absolute coordinates correctly
+    nodeEl.style.transition = 'none';
+    nodeEl.style.transform = 'translate(0, 0)';
+
+    // Web Animations API
+    const animation = nodeEl.animate([
+      { offsetDistance: '0%' },
+      { offsetDistance: '100%' }
+    ], {
+      duration: duration,
+      iterations: 1,
+      easing: 'linear',
+      fill: 'forwards' // Keep at end? or 'none'? User said "animation" implies temporary movement?
+      // "animating other nodes... along an edge"
+    });
+
+    nodeEl.style.offsetPath = `path('${pathData}')`;
+    nodeEl.style.offsetRotate = 'auto'; // Follow curvature
+
+    // Optional: Hide drag handles or disable interaction via class
+    nodeEl.classList.add('animating');
+
+    animation.onfinish = () => {
+      // Cleanup
+      nodeEl.style.offsetPath = originalOffsetPath;
+      nodeEl.style.offsetRotate = originalOffsetRotate;
+      nodeEl.style.transform = originalTransform;
+      nodeEl.style.transition = originalTransition;
+      nodeEl.classList.remove('animating');
+      animation.cancel(); // remove effect
+    };
+  }
 }
