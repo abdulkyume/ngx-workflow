@@ -14,23 +14,23 @@ import { DiagramStateService } from '../../../libs/ngx-workflow/src/lib/services
         (pointerdown)="onRotateStart($event)"
       ></div>
 
-      <!-- Connection Handles -->
-      <div class="ngx-workflow__handle custom-handle top" 
-            [attr.data-nodeid]="id" 
-            data-handleid="top" 
-            data-type="target"></div>
-      <div class="ngx-workflow__handle custom-handle bottom" 
-            [attr.data-nodeid]="id" 
-            data-handleid="bottom" 
-            data-type="source"></div>
-      <div class="ngx-workflow__handle custom-handle left" 
-            [attr.data-nodeid]="id" 
-            data-handleid="left" 
-            data-type="target"></div>
-      <div class="ngx-workflow__handle custom-handle right" 
-            [attr.data-nodeid]="id" 
-            data-handleid="right" 
-            data-type="source"></div>
+      <!-- Handles (hidden visually but functional for connections) -->
+      <!-- Top -->
+      <div *ngIf="!ports || ports === 1 || ports === 2 || ports === 4"
+           class="ngx-workflow__handle custom-handle top" 
+           [attr.data-nodeid]="id" data-handleid="top" data-type="target"></div>
+      <!-- Bottom -->
+      <div *ngIf="!ports || ports === 2 || ports === 4"
+           class="ngx-workflow__handle custom-handle bottom" 
+           [attr.data-nodeid]="id" data-handleid="bottom" data-type="source"></div>
+      <!-- Left -->
+      <div *ngIf="!ports || ports === 3 || ports === 4"
+           class="ngx-workflow__handle custom-handle left" 
+           [attr.data-nodeid]="id" data-handleid="left" data-type="target"></div>
+      <!-- Right -->
+      <div *ngIf="!ports || ports === 3 || ports === 4"
+           class="ngx-workflow__handle custom-handle right" 
+           [attr.data-nodeid]="id" data-handleid="right" data-type="source"></div>
       
       <div class="content" #content>
         <label [style.color]="style?.color">{{ data.label }}</label>
@@ -163,10 +163,12 @@ export class RotatableNodeComponent implements OnInit, OnDestroy {
   @Input() id!: string;
   @Input() data: any;
   @Input() selected?: boolean;
+  @Input() label: string = ''; // Added to fix NG0303 error
   @Input() pos: any;
   @Input() easyConnect?: boolean;
   @Input() type?: string;
   @Input() style?: any;
+  @Input() ports?: number;
 
   rotation = 0;
   isRotating = false;

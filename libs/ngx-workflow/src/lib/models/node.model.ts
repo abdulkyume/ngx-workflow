@@ -54,4 +54,5 @@ export interface Node<T = any> {
     }
   };
   easyConnect?: boolean; // If true, dragging from node body starts connection (unless on .drag-handle)
+  ports?: number; // 1: Top, 2: Top/Bottom, 3: Left/Right, 4: All
 }

@@ -4,6 +4,7 @@
     [backgroundImage]="backgroundImage"></ngx-workflow-background>
   <ngx-workflow-grid-overlay *ngIf="showGrid" [gridSize]="gridSize"></ngx-workflow-grid-overlay>
   <svg #svg class="ngx-workflow__diagram" (wheel)="onWheel($event)" (pointerdown)="onPointerDown($event)"
+    (pointermove)="onPointerMove($event)" (pointerup)="onPointerUp($event)" (pointerleave)="onPointerUp($event)"
     (dblclick)="onDiagramDoubleClick($event)">
     <defs>
       <pattern id="ngx-workflow__grid-pattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
@@ -121,7 +122,9 @@
               type: node.type,
               pos: node.position,
               easyConnect: node.easyConnect,
-              style: node.style
+              style: node.style,
+              ports: node.ports,
+              label: node.label
             }"></ng-container>
           </div>
         </foreignObject>
@@ -162,7 +165,8 @@
         -->
         <ng-container *ngIf="!isCustomNode(node) && node.type !== 'group'">
           <!-- Top Handle -->
-          <g ngx-workflow-handle class="ngx-workflow__handle ngx-workflow__handle--source ngx-workflow__handle--target"
+          <g *ngIf="!node.ports || node.ports === 1 || node.ports === 2 || node.ports === 4" ngx-workflow-handle
+            class="ngx-workflow__handle ngx-workflow__handle--source ngx-workflow__handle--target"
             [attr.data-nodeid]="node.id" data-handleid="top" [attr.data-type]="'source'" [nodeId]="node.id"
             handleId="top" type="source" [isConnectable]="node.handleConfig?.['top']?.isConnectable"
             (pointerdown)="onHandlePointerDown($event, node, 'top')">
@@ -176,7 +180,8 @@
           </g>
 
           <!-- Right Handle -->
-          <g ngx-workflow-handle class="ngx-workflow__handle ngx-workflow__handle--source ngx-workflow__handle--target"
+          <g *ngIf="!node.ports || node.ports === 3 || node.ports === 4" ngx-workflow-handle
+            class="ngx-workflow__handle ngx-workflow__handle--source ngx-workflow__handle--target"
             [attr.data-nodeid]="node.id" data-handleid="right" [attr.data-type]="'source'" [nodeId]="node.id"
             handleId="right" type="source" [isConnectable]="node.handleConfig?.['right']?.isConnectable"
             (pointerdown)="onHandlePointerDown($event, node, 'right')">
@@ -189,7 +194,8 @@
               r="6" class="ngx-workflow__handle-circle"></circle>
           </g>
           <!-- Bottom Handle -->
-          <g ngx-workflow-handle class="ngx-workflow__handle ngx-workflow__handle--source ngx-workflow__handle--target"
+          <g *ngIf="!node.ports || node.ports === 2 || node.ports === 4" ngx-workflow-handle
+            class="ngx-workflow__handle ngx-workflow__handle--source ngx-workflow__handle--target"
             [attr.data-nodeid]="node.id" data-handleid="bottom" [attr.data-type]="'source'" [nodeId]="node.id"
             handleId="bottom" type="source" [isConnectable]="node.handleConfig?.['bottom']?.isConnectable"
             (pointerdown)="onHandlePointerDown($event, node, 'bottom')">
@@ -202,7 +208,8 @@
               r="6" class="ngx-workflow__handle-circle"></circle>
           </g>
           <!-- Left Handle -->
-          <g ngx-workflow-handle class="ngx-workflow__handle ngx-workflow__handle--source ngx-workflow__handle--target"
+          <g *ngIf="!node.ports || node.ports === 3 || node.ports === 4" ngx-workflow-handle
+            class="ngx-workflow__handle ngx-workflow__handle--source ngx-workflow__handle--target"
             [attr.data-nodeid]="node.id" data-handleid="left" [attr.data-type]="'source'" [nodeId]="node.id"
             handleId="left" type="source" [isConnectable]="node.handleConfig?.['left']?.isConnectable"
             (pointerdown)="onHandlePointerDown($event, node, 'left')">
@@ -215,25 +222,29 @@
           </g>
         </ng-container>
 
-        <!-- Resize Handles -->
-        <g *ngIf="node.selected && (node.resizable !== false) && nodesResizable">
-          <!-- NW Handle -->
-          <rect class="ngx-workflow__resize-handle ngx-workflow__resize-handle-nw" data-handle="nw" [attr.x]="-5"
-            [attr.y]="-5" width="10" height="10">
-          </rect>
-          <!-- NE Handle -->
-          <rect class="ngx-workflow__resize-handle ngx-workflow__resize-handle-ne" data-handle="ne"
-            [attr.x]="(node.width || defaultNodeWidth) - 5" [attr.y]="-5" width="10" height="10"></rect>
-          <!-- SW Handle -->
-          <rect class="ngx-workflow__resize-handle ngx-workflow__resize-handle-sw" data-handle="sw" [attr.x]="-5"
-            [attr.y]="(node.height || defaultNodeHeight) - 5" width="10" height="10"></rect>
-          <!-- SE Handle -->
-          <rect class="ngx-workflow__resize-handle ngx-workflow__resize-handle-se" data-handle="se"
-            [attr.x]="(node.width || defaultNodeWidth) - 5" [attr.y]="(node.height || defaultNodeHeight) - 5" width="10"
-            height="10"></rect>
-
-
-        </g>
+        <!-- Resize Handles (HTML implementation to ensure they are on top of custom nodes) -->
+        <foreignObject *ngIf="node.selected && (node.resizable !== false) && nodesResizable"
+          [attr.width]="node.width || defaultNodeWidth" [attr.height]="node.height || defaultNodeHeight"
+          style="overflow: visible; pointer-events: none;">
+          <div style="position: relative; width: 100%; height: 100%; pointer-events: none;">
+            <!-- NW Handle -->
+            <div class="ngx-workflow__resize-handle" data-handle="nw"
+              style="position: absolute; top: -5px; left: -5px; width: 10px; height: 10px; cursor: nw-resize; pointer-events: auto;"
+              (pointerdown)="startResizing($event, node, 'nw')"></div>
+            <!-- NE Handle -->
+            <div class="ngx-workflow__resize-handle" data-handle="ne"
+              style="position: absolute; top: -5px; right: -5px; width: 10px; height: 10px; cursor: ne-resize; pointer-events: auto;"
+              (pointerdown)="startResizing($event, node, 'ne')"></div>
+            <!-- SW Handle -->
+            <div class="ngx-workflow__resize-handle" data-handle="sw"
+              style="position: absolute; bottom: -5px; left: -5px; width: 10px; height: 10px; cursor: sw-resize; pointer-events: auto;"
+              (pointerdown)="startResizing($event, node, 'sw')"></div>
+            <!-- SE Handle -->
+            <div class="ngx-workflow__resize-handle" data-handle="se"
+              style="position: absolute; bottom: -5px; right: -5px; width: 10px; height: 10px; cursor: se-resize; pointer-events: auto;"
+              (pointerdown)="startResizing($event, node, 'se')"></div>
+          </div>
+        </foreignObject>
 
         <!-- Group Node Template -->
         <g *ngIf="node.type === 'group'" class="ngx-workflow__group-node">

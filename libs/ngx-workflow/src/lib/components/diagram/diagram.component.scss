@@ -507,16 +507,19 @@ foreignObject {
 
 /* --- Resize Handles --- */
 .ngx-workflow__resize-handle {
-  fill: var(--ngx-workflow-surface);
-  stroke: var(--ngx-workflow-primary);
-  stroke-width: 1.5;
-  width: 8px;
-  height: 8px;
-  transition: transform 0.2s ease;
-  
   /* Ensure scaling happens from center to avoid moving the element away from mouse */
   transform-box: fill-box;
   transform-origin: center;
+
+  /* SVG Styles */
+  fill: var(--ngx-workflow-surface);
+  stroke: var(--ngx-workflow-primary);
+  
+  /* HTML Styles */
+  background-color: var(--ngx-workflow-surface);
+  border: 1.5px solid var(--ngx-workflow-primary);
+  box-sizing: border-box; /* Ensure border doesn't add size if we set explicit width */
+  pointer-events: auto; /* Ensure HTML handles capture clicks */
 
   &:hover {
     fill: var(--ngx-workflow-primary);

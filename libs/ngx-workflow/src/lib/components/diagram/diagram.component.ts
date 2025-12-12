@@ -591,6 +591,48 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
       this.diagramStateService.updateNode(this.selectedNodeForEditing.id, changes);
       // Update local reference to keep sidebar in sync
       this.selectedNodeForEditing = { ...this.selectedNodeForEditing, ...changes };
+
+      // If ports changed, validate edges
+      if (changes.ports !== undefined) {
+        this.validateEdgesForNode(this.selectedNodeForEditing);
+      }
+    }
+  }
+
+  /**
+   * Validates and removes edges that are no longer connected to valid ports
+   */
+  private validateEdgesForNode(node: WorkflowNode): void {
+    const edges = this.edges();
+    const ports = node.ports || 4; // Default to 4 (all)
+    const validHandles = new Set<string>();
+
+    if (ports === 1 || ports === 2 || ports === 4) validHandles.add('top');
+    if (ports === 2 || ports === 4) validHandles.add('bottom');
+    if (ports === 3 || ports === 4) {
+      validHandles.add('left');
+      validHandles.add('right');
+    }
+
+    const edgesToRemove: string[] = [];
+
+    edges.forEach(edge => {
+      // Check if this node is the source
+      if (edge.source === node.id) {
+        if (edge.sourceHandle && !validHandles.has(edge.sourceHandle)) {
+          edgesToRemove.push(edge.id);
+        }
+      }
+      // Check if this node is the target
+      else if (edge.target === node.id) {
+        if (edge.targetHandle && !validHandles.has(edge.targetHandle)) {
+          edgesToRemove.push(edge.id);
+        }
+      }
+    });
+
+    if (edgesToRemove.length > 0) {
+      edgesToRemove.forEach(edgeId => this.diagramStateService.removeEdge(edgeId));
     }
   }
 
@@ -644,10 +686,45 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
       return false;
     }
 
+    // Check if ports are valid (based on node.ports configuration)
+    if (!this.checkPortValidity(sourceId, sourceHandleId)) {
+      return false;
+    }
+    if (!this.checkPortValidity(targetId, targetHandleId)) {
+      return false;
+    }
+
     // Use custom validator if provided
     if (this.connectionValidator) {
       return this.connectionValidator(sourceId, targetId);
     }
+    return true;
+  }
+
+  /**
+   * Check if a specific handle is valid based on the node's ports configuration
+   */
+  private checkPortValidity(nodeId: string, handleId: string | undefined): boolean {
+    if (!handleId) return true; // Center connection (if allowed) or no handle specified
+
+    const node = this.nodes().find(n => n.id === nodeId);
+    if (!node) return false;
+
+    const ports = node.ports || 4; // Default to 4 (all)
+
+    // 1: Top
+    if (ports === 1) {
+      return handleId === 'top';
+    }
+    // 2: Top, Bottom
+    if (ports === 2) {
+      return handleId === 'top' || handleId === 'bottom';
+    }
+    // 3: Left, Right
+    if (ports === 3) {
+      return handleId === 'left' || handleId === 'right';
+    }
+    // 4: All (Top, Bottom, Left, Right)
     return true;
   }
 
@@ -1877,7 +1954,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
 
   // --- Resizing Logic ---
 
-  private startResizing(event: PointerEvent, node: WorkflowNode, handle: 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w'): void {
+  startResizing(event: PointerEvent, node: WorkflowNode, handle: 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w'): void {
     event.stopPropagation();
     this.isResizing = true;
     this.resizingNode = node;
@@ -2001,6 +2078,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
 
       // Update node
       this.diagramStateService.resizeNode(resizingNode.id, newWidth, newHeight, { x: newX, y: newY });
+      this.cdRef.detectChanges();
     });
   }
 

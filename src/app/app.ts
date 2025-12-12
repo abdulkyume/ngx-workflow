@@ -15,6 +15,7 @@ import {
 import { v4 as uuidv4 } from 'uuid';
 import { TextUpdaterNodeComponent } from './text-updater-node/text-updater-node.component';
 import { RotatableNodeComponent } from './rotatable-node/rotatable-node.component';
+import { ShapeNodeComponent } from './shape-node/shape-node.component';
 
 @Component({
   selector: 'app-root',
@@ -33,7 +34,8 @@ export class App implements OnInit {
 
   nodeTypes = {
     'text-updater': TextUpdaterNodeComponent,
-    'rotatable': RotatableNodeComponent
+    'rotatable': RotatableNodeComponent,
+    'shape': ShapeNodeComponent
   };
 
   @ViewChild(DiagramComponent) diagram?: DiagramComponent;
@@ -190,7 +192,17 @@ export class App implements OnInit {
       data: { label: 'Rotate Me' }
     };
 
-    this.nodes = [...this.nodes, customNode, rotateNode];
+    const shapeNode: Node = {
+      id: 'shape-node-1',
+      type: 'shape',
+      position: { x: 500, y: 350 },
+      width: 100,
+      height: 100,
+      data: { label: 'Shape', type: 'diamond' },
+      style: { backgroundColor: '#ff0071', color: '#ffffff' }
+    };
+
+    this.nodes = [...this.nodes, customNode, rotateNode, shapeNode];
   }
 
   clearFlow(): void {

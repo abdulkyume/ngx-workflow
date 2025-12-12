@@ -21,22 +21,22 @@ import { HandleComponent } from '../../../libs/ngx-workflow/src/lib/components/h
       <div class="drag-handle drag-right"></div>
       
       <div class="handle-container" [class.easy-connect]="easyConnect">
-        <div class="ngx-workflow__handle custom-handle top" 
-             [attr.data-nodeid]="id" 
-             data-handleid="top" 
-             data-type="target"></div>
-        <div class="ngx-workflow__handle custom-handle bottom" 
-             [attr.data-nodeid]="id" 
-             data-handleid="bottom" 
-             data-type="source"></div>
-        <div class="ngx-workflow__handle custom-handle left" 
-             [attr.data-nodeid]="id" 
-             data-handleid="left" 
-             data-type="target"></div>
-        <div class="ngx-workflow__handle custom-handle right" 
-             [attr.data-nodeid]="id" 
-             data-handleid="right" 
-             data-type="source"></div>
+        <!-- Top -->
+        <div *ngIf="!ports || ports === 1 || ports === 2 || ports === 4"
+             class="ngx-workflow__handle custom-handle top" 
+             [attr.data-nodeid]="id" data-handleid="top" data-type="target"></div>
+        <!-- Bottom -->
+        <div *ngIf="!ports || ports === 2 || ports === 4"
+             class="ngx-workflow__handle custom-handle bottom" 
+             [attr.data-nodeid]="id" data-handleid="bottom" data-type="source"></div>
+        <!-- Left -->
+        <div *ngIf="!ports || ports === 3 || ports === 4"
+             class="ngx-workflow__handle custom-handle left" 
+             [attr.data-nodeid]="id" data-handleid="left" data-type="target"></div>
+        <!-- Right -->
+        <div *ngIf="!ports || ports === 3 || ports === 4"
+             class="ngx-workflow__handle custom-handle right" 
+             [attr.data-nodeid]="id" data-handleid="right" data-type="source"></div>
       </div>
       
       <div class="content">
@@ -137,9 +137,11 @@ export class TextUpdaterNodeComponent {
   @Input() data: any;
   @Input() selected?: boolean;
   @Input() type?: string;
+  @Input() label: string = ''; // Added to fix NG0303 error
   @Input() pos?: { x: number, y: number };
   @Input() easyConnect?: boolean;
   @Input() style?: any;
+  @Input() ports?: number;
 
   onInput(event: any) {
     this.data = { ...this.data, label: event.target.value };

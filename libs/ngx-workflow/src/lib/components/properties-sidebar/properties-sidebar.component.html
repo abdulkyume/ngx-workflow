@@ -16,6 +16,24 @@
         </div>
 
         <div class="ngx-workflow__form-group">
+            <label>Shape</label>
+            <select [ngModel]="node.type === 'shape' ? (node.data?.type || 'rectangle') : 'default'"
+                (ngModelChange)="updateShapeType($event)" class="ngx-workflow__input">
+                <option *ngFor="let s of shapes" [value]="s">{{ s | titlecase }}</option>
+            </select>
+        </div>
+
+        <div class="ngx-workflow__form-group">
+            <label>Ports</label>
+            <select [ngModel]="node.ports || 4" (ngModelChange)="updatePorts($event)" class="ngx-workflow__input">
+                <option [value]="1">1 - Top</option>
+                <option [value]="2">2 - Top, Bottom</option>
+                <option [value]="3">3 - Left, Right</option>
+                <option [value]="4">4 - All</option>
+            </select>
+        </div>
+
+        <div class="ngx-workflow__form-group">
             <label>Background Color</label>
             <input type="color" [ngModel]="node.style?.['backgroundColor'] || '#ffffff'"
                 (ngModelChange)="updateBackgroundColor($event)" class="ngx-workflow__input"

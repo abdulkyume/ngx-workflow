@@ -49,4 +49,31 @@ export class PropertiesSidebarComponent {
         const currentStyle = this.node.style || {};
         this.change.emit({ style: { ...currentStyle, color: color } });
     }
+
+    shapes = [
+        'default', 'rectangle', 'circle', 'diamond', 'hexagon', 'round-rectangle',
+        'cylinder', 'cylinder-simple', 'arrow-rectangle', 'plus', 'triangle', 'parallelogram'
+    ];
+
+    updateShapeType(type: string) {
+        if (!this.node) return;
+        const currentData = this.node.data || {};
+
+        if (type === 'default') {
+            this.change.emit({
+                type: 'default',
+                data: { ...currentData } // Keep data, remove specific shape type from data if needed, or just let it be ignored
+            });
+        } else {
+            this.change.emit({
+                type: 'shape',
+                data: { ...currentData, type }
+            });
+        }
+    }
+
+    updatePorts(ports: number) {
+        if (!this.node) return;
+        this.change.emit({ ports: +ports });
+    }
 }
