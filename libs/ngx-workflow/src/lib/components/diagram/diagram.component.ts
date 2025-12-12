@@ -697,6 +697,34 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
       return false;
     }
 
+    // Check handle-level validation (source handle)
+    if (sourceHandleId) {
+      const sourceHandleConfig = this.handleRegistry.getHandle(sourceId, sourceHandleId, 'source');
+      if (sourceHandleConfig?.isValidConnection) {
+        const isValid = sourceHandleConfig.isValidConnection({
+          source: sourceId,
+          sourceHandle: sourceHandleId,
+          target: targetId,
+          targetHandle: targetHandleId || ''
+        });
+        if (!isValid) return false;
+      }
+    }
+
+    // Check handle-level validation (target handle)
+    if (targetHandleId) {
+      const targetHandleConfig = this.handleRegistry.getHandle(targetId, targetHandleId, 'target');
+      if (targetHandleConfig?.isValidConnection) {
+        const isValid = targetHandleConfig.isValidConnection({
+          source: sourceId,
+          sourceHandle: sourceHandleId || '',
+          target: targetId,
+          targetHandle: targetHandleId
+        });
+        if (!isValid) return false;
+      }
+    }
+
     // Use custom validator if provided
     if (this.connectionValidator) {
       return this.connectionValidator(sourceId, targetId);
@@ -820,6 +848,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     private themeService: ThemeService,
     private exportService: ExportService,
     private autoSaveService: AutoSaveService,
+    private handleRegistry: HandleRegistryService,
     @Optional() @Inject(NGX_WORKFLOW_NODE_TYPES) private injectedNodeTypes: Record<string, WorkflowNodeComponentType> | null
   ) {
     this.nodes$ = toObservable(this.diagramStateService.nodes);

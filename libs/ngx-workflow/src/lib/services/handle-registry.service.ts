@@ -8,6 +8,12 @@ export interface HandleConfig {
     handleId: string;
     type: 'source' | 'target';
     isConnectable?: ConnectableLimit;
+    isValidConnection?: (connection: {
+        source: string;
+        sourceHandle: string;
+        target: string;
+        targetHandle: string;
+    }) => boolean;
 }
 
 @Injectable({
@@ -58,5 +64,10 @@ export class HandleRegistryService {
         }
 
         return true;
+    }
+
+    getHandle(nodeId: string, handleId: string, type: 'source' | 'target'): HandleConfig | undefined {
+        const key = this.getHandleKey(nodeId, handleId, type);
+        return this.handles.get(key);
     }
 }

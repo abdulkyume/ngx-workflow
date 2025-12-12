@@ -11,6 +11,12 @@ export class HandleComponent implements OnInit, OnDestroy, OnChanges {
     @Input() handleId!: string;
     @Input() type!: 'source' | 'target';
     @Input() isConnectable: ConnectableLimit | undefined;
+    @Input() isValidConnection?: (connection: {
+        source: string;
+        sourceHandle: string;
+        target: string;
+        targetHandle: string;
+    }) => boolean;
 
     constructor(private handleRegistry: HandleRegistryService) { }
 
@@ -19,7 +25,8 @@ export class HandleComponent implements OnInit, OnDestroy, OnChanges {
     }
 
     ngOnChanges(changes: SimpleChanges): void {
-        if (changes['isConnectable'] && !changes['isConnectable'].firstChange) {
+        if ((changes['isConnectable'] && !changes['isConnectable'].firstChange) ||
+            (changes['isValidConnection'] && !changes['isValidConnection'].firstChange)) {
             this.register(); // Re-register on change
         }
     }
@@ -33,7 +40,8 @@ export class HandleComponent implements OnInit, OnDestroy, OnChanges {
     private register(): void {
         if (this.nodeId && this.handleId && this.type) {
             this.handleRegistry.registerHandle(this.nodeId, this.handleId, this.type, {
-                isConnectable: this.isConnectable
+                isConnectable: this.isConnectable,
+                isValidConnection: this.isValidConnection
             });
         }
     }
