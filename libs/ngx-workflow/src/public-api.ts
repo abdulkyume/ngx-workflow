@@ -19,6 +19,7 @@ export * from './lib/components/context-menu/context-menu.component';
 export * from './lib/components/export-controls/export-controls.component';
 export * from './lib/components/layout-alignment-controls/layout-alignment-controls.component';
 export * from './lib/components/search-controls/search-controls.component';
+export * from './lib/components/properties-sidebar/properties-sidebar.component';
 
 // Services
 export * from './lib/services/diagram-state.service';

@@ -1,6 +1,6 @@
 {
   "name": "ngx-workflow",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "A powerful Angular library for building interactive node-based editors, flow charts, and diagrams with Signals",
   "peerDependencies": {
     "@angular/common": ">=17.0.0",
@@ -33,7 +33,7 @@
     "url": "https://github.com/abdulkyume/ngx-workflow.git"
   },
   "bugs": {
-    "url": "https://github.com/abdulkyume/ngx-workflowflow/issues"
+    "url": "https://github.com/abdulkyume/ngx-workflow/issues"
   },
   "homepage": "https://github.com/abdulkyume/ngx-workflow#readme"
 }

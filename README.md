@@ -16,19 +16,48 @@ A powerful, highly customizable Angular library for building interactive node-ba
 - **Rich UI**: Built-in minimap, background patterns, controls, and alignment tools
 - **Layouts**: Automatic layout support via Dagre and ELK
 - **History**: Robust Undo/Redo history stack with Ctrl+Z/Ctrl+Shift+Z
-- **Theming**: Extensive CSS variables for easy styling with dark mode support
+- **Theming**: Explicit `colorMode` and CSS variables for easy styling with dark mode support
+- **Smart Alignment**: Visual alignment guides and drag snapping
 
 ### Advanced Features
 - **Snap-to-Grid**: Configurable grid snapping for precise node placement
 - **Space Panning**: Professional canvas panning with Space + Drag
 - **Export Controls**: Built-in UI for PNG, SVG, and clipboard export
-- **Export Options**: Customizable quality, scale, and background for exports
-- **Clipboard Operations**: Full copy/paste/cut support with Ctrl+C/V/X
+- **Clipboard Operations**: Full copy/paste/cut support with Ctrl+C/V/X and localStorage persistence
 - **Connection Validation**: Prevent invalid connections with custom validators
-- **Alignment Guides**: Visual guides for node alignment during dragging
-- **Search & Filter**: Built-in search and type filtering
-- **Node Grouping**: Create and manage node groups
-- **Edge Reconnection**: Drag edge endpoints to reconnect
+- **Collision Detection**: Optional collision prevention to stop nodes from overlapping
+- **Edge Reconnection**: Drag edge endpoints to reconnect them
+
+### Visuals & Motion
+- **Edge Animation**: SVG motion particles on edges (`animated: true`)
+- **Node Motion**: Programmatic API to animate nodes along edge paths
+- **Custom Markers**: Support for `arrow`, `arrowclosed`, `dot`, or fully custom SVG definitions via `[defsTemplate]`
+- **Background Images**: Support for custom background images via `[backgroundImage]`
+
+### Built-in UI Components
+- **Search Bar**: Press `Ctrl+F` to search nodes by label/id.
+- **Properties Panel**: Sidebar for editing node properties (auto-shows on selection).
+- **Context Menu**: Right-click canvas/nodes/edges for actions.
+- **Layout Alignment**: Auto-align selected nodes (if `showLayoutControls` is true).
+- **Minimap**: Navigable overview of complex flows.
+
+### Content Projection (Slots)
+- **Node Toolbars**: Show contextual buttons above selected nodes.
+- **Panels**: Add fixed overlays to the canvas (e.g., top-right controls).
+
+```html
+<ngx-workflow-diagram ...>
+  <!-- Shows above selected node -->
+  <ngx-workflow-node-toolbar [nodeId]="selectedNodeId">
+    <button (click)="deleteNode()">Delete</button>
+  </ngx-workflow-node-toolbar>
+
+  <!-- Fixed panel -->
+  <ngx-workflow-panel position="top-right">
+    <button>Save</button>
+  </ngx-workflow-panel>
+</ngx-workflow-diagram>
+```
 
 ## 📦 Installation
 
@@ -36,11 +65,11 @@ A powerful, highly customizable Angular library for building interactive node-ba
 npm install ngx-workflow
 ```
 
+```bash
+npm install ngx-workflow
+```
+
 ## 🏁 Quick Start
-
-You can use `ngx-workflow` in two ways: **Standalone Component** (recommended for Angular 14+) or **NgModule**.
-
-### Option 1: Standalone Component (Recommended)
 
 Import `NgxWorkflowModule` directly into your standalone component's `imports` array.
 
@@ -55,8 +84,8 @@ import { NgxWorkflowModule, Node, Edge } from 'ngx-workflow';
   template: `
     <div style="height: 100vh; width: 100%;">
       <ngx-workflow-diagram
-        [initialNodes]="nodes"
-        [initialEdges]="edges"
+        [nodes]="nodes"
+        [edges]="edges"
         (nodeClick)="onNodeClick($event)"
         (connect)="onConnect($event)"
       ></ngx-workflow-diagram>
@@ -70,7 +99,7 @@ export class AppComponent {
   ];
 
   edges: Edge[] = [
-    { id: 'e1-2', source: '1', target: '2', sourceHandle: 'right', targetHandle: 'left' }
+    { id: 'e1-2', source: '1', target: '2', sourceHandle: 'right', targetHandle: 'left', animated: true }
   ];
 
   onNodeClick(node: Node) {
@@ -83,29 +112,6 @@ export class AppComponent {
 }
 ```
 
-### Option 2: NgModule (Modular Approach)
-
-If you are using NgModules, import `NgxWorkflowModule` in your module.
-
-```typescript
-import { NgModule } from '@angular/core';
-import { BrowserModule } from '@angular/platform-browser';
-import { NgxWorkflowModule } from 'ngx-workflow';
-import { AppComponent } from './app.component';
-
-@NgModule({
-  declarations: [AppComponent],
-  imports: [
-    BrowserModule,
-    NgxWorkflowModule // Import the module here
-  ],
-  bootstrap: [AppComponent]
-})
-export class AppModule { }
-```
-
-Then use it in your component template just like in the standalone example.
-
 ## 📖 API Reference
 
 ### `<ngx-workflow-diagram>`
@@ -116,34 +122,74 @@ The main component for rendering the workflow.
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| `initialNodes` | `Node[]` | `[]` | Initial array of nodes to display. |
-| `initialEdges` | `Edge[]` | `[]` | Initial array of edges to display. |
+| `nodes` | `Node[]` | `[]` | Array of nodes to display (Signal-based sync). |
+| `edges` | `Edge[]` | `[]` | Array of edges to display. |
 | `initialViewport` | `Viewport` | `undefined` | Initial viewport state `{ x, y, zoom }`. |
 | `showZoomControls` | `boolean` | `true` | Whether to show the zoom control buttons (bottom-left). |
+| `minZoom` | `number` | `0.1` | Minimum zoom level. |
+| `maxZoom` | `number` | `4` | Maximum zoom level. |
 | `showMinimap` | `boolean` | `true` | Whether to show the minimap (bottom-right). |
 | `showBackground` | `boolean` | `true` | Whether to show the background pattern. |
 | `backgroundVariant` | `'dots' \| 'lines' \| 'cross'` | `'dots'` | The pattern style of the background. |
+| `backgroundImage` | `string \| null` | `null` | URL for a custom background image. |
 | `backgroundGap` | `number` | `20` | Gap between background pattern elements. |
 | `backgroundSize` | `number` | `1` | Size of background pattern elements. |
 | `backgroundColor` | `string` | `'#81818a'` | Color of the background pattern dots/lines. |
 | `backgroundBgColor` | `string` | `'#f0f0f0'` | Background color of the canvas itself. |
-| `connectionValidator` | `(source: string, target: string) => boolean` | `undefined` | Custom function to validate connections. Return `false` to prevent connection. |
+| `fitView` | `boolean` | `false` | Automatically fit all nodes in view on load. |
+| `connectionValidator` | `(source: string, target: string) => boolean` | `undefined` | Custom function to validate connections globally. |
 | `nodesResizable` | `boolean` | `true` | Global toggle to enable/disable node resizing. |
 | `snapToGrid` | `boolean` | `false` | Enable snap-to-grid for node positioning. |
 | `gridSize` | `number` | `20` | Grid size in pixels for snap-to-grid. |
 | `showExportControls` | `boolean` | `false` | Show export controls UI (PNG, SVG, Clipboard). |
+| `showUndoRedoControls` | `boolean` | `true` | Show history controls UI. |
+| `showLayoutControls` | `boolean` | `false` | Show auto-layout controls. |
 | `colorMode` | `'light' \| 'dark'` | `'light'` | Color theme mode. |
+| `zIndexMode` | `'default' \| 'layered'` | `'default'` | Strategy for node z-indexing. |
+| `preventNodeOverlap` | `boolean` | `false` | Enable collision detection to prevent partial overlaps. |
+| `nodeSpacing` | `number` | `10` | Minimum spacing between nodes when `preventNodeOverlap` is true. |
+| `edgeReconnection` | `boolean` | `false` | Allow dragging edge endpoints to reconnect them. |
+| `autoSave` | `boolean` | `false` | Enable auto-saving of diagram state to localStorage. |
+| `autoSaveInterval` | `number` | `1000` | throttled auto-save interval in ms. |
+| `autoPanOnNodeDrag` | `boolean` | `true` | Pan canvas automatically when dragging node near edge. |
+| `autoPanOnConnect` | `boolean` | `true` | Pan canvas automatically when connecting edges near boundary. |
+| `autoPanSpeed` | `number` | `15` | Pixels per frame for auto-pan. |
+| `autoPanEdgeThreshold` | `number` | `50` | Distance in pixels from edge to trigger auto-pan. |
+| `defsTemplate` | `TemplateRef<any>` | `undefined` | Angular template containing SVG `<defs>` (markers, etc). |
+| `edgeTemplate` | `TemplateRef<any>` | `undefined` | Custom template for rendering edges. |
+| `maxConnectionsPerHandle` | `number` | `undefined` | Global limit for connections per handle. |
+
+#### Methods
+
+You can access these methods via `@ViewChild(DiagramComponent)`:
+
+| Method | Return | Description |
+|--------|--------|-------------|
+| `fitView()` | `void` | Fits all nodes within the viewport. |
+| `zoomIn()` | `void` | Increases zoom level by 20%. |
+| `zoomOut()` | `void` | Decreases zoom level by 20%. |
+| `resetZoom()` | `void` | Resets zoom to 100%. |
+| `exportToPNG(filename, options)` | `void` | Export canvas as PNG. |
+| `exportToSVG(filename, options)` | `void` | Export canvas as SVG. |
+| `copyToClipboard(options)` | `void` | Copy diagram image to clipboard. |
 
 #### Outputs
 
 | Name | Type | Description |
 |------|------|-------------|
 | `nodeClick` | `EventEmitter<Node>` | Emitted when a node is clicked. |
+| `nodeDoubleClick` | `EventEmitter<Node>` | Emitted when a node is double-clicked. |
 | `edgeClick` | `EventEmitter<Edge>` | Emitted when an edge is clicked. |
 | `connect` | `EventEmitter<Connection>` | Emitted when a new connection is created. |
 | `nodesChange` | `EventEmitter<Node[]>` | Emitted when the nodes array changes (move, add, delete). |
 | `edgesChange` | `EventEmitter<Edge[]>` | Emitted when the edges array changes. |
-| `nodeDoubleClick` | `EventEmitter<Node>` | Emitted when a node is double-clicked. |
+| `paneClick` | `EventEmitter<MouseEvent>` | Emitted when the empty canvas is clicked. |
+| `contextMenu` | `EventEmitter<Event>` | Emitted on right-click. |
+| `beforeDelete` | `EventEmitter<{nodes, edges, cancel}>` | cancellable event before deletion. |
+| `nodeMouseEnter` | `EventEmitter<Node>` | Emitted when mouse enters a node. |
+| `nodeMouseLeave` | `EventEmitter<Node>` | Emitted when mouse leaves a node. |
+| `edgeMouseEnter` | `EventEmitter<Edge>` | Emitted when mouse enters an edge. |
+| `edgeMouseLeave` | `EventEmitter<Edge>` | Emitted when mouse leaves an edge. |
 
 ### Interfaces
 
@@ -162,8 +208,27 @@ interface Node {
   selectable?: boolean;    // Is the node selectable? (default: true)
   connectable?: boolean;   // Can edges be connected? (default: true)
   resizable?: boolean;     // Is this specific node resizable? (default: true)
+  zIndex?: number;         // Manual Z-Index
   class?: string;          // Custom CSS class
   style?: object;          // Custom inline styles
+  
+  // Styling
+  shadow?: boolean | string;   // Drop shadow
+  borderStyle?: 'solid' | 'dashed' | 'dotted' | 'none';
+  borderColor?: string;
+  borderWidth?: number;
+
+  // Behavior
+  ports?: 1 | 2 | 3 | 4;   // Default handle configuration (1=Top, 4=All)
+  easyConnect?: boolean;   // Drag from node body to connect
+  
+  // Visuals
+  badges?: Array<{
+    content: string;
+    color?: string;
+    backgroundColor?: string;
+    position?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left';
+  }>;
 }
 ```
 
@@ -179,62 +244,59 @@ interface Edge {
   label?: string;          // Label text displayed on the edge
   type?: 'bezier' | 'straight' | 'step'; // Path type (default: 'bezier')
   animated?: boolean;      // Show animation (dashed moving line)?
-  markerEnd?: 'arrow' | 'arrowclosed'; // Arrowhead type
+  markerStart?: string;    // Start marker ID (e.g., 'arrow', 'dot')
+  markerEnd?: string;      // End marker ID
   style?: object;          // SVG styles (stroke, stroke-width, etc.)
 }
 ```
 
-## 🎨 Customization
+#### `Handle` (Component)
 
-### Custom Nodes
-You can create your own node types by creating an Angular component and registering it.
+Use `<ngx-workflow-handle>` inside your custom nodes.
 
-1. **Create the Component**:
-   It should accept an input `node`.
+```html
+<ngx-workflow-handle
+    type="source"
+    position="right"
+    [isConnectable]="true"
+    [isValidConnection]="validateConnectionFn"
+></ngx-workflow-handle>
+```
 
-   ```typescript
-   @Component({
-     selector: 'app-custom-node',
-     template: `
-       <div class="custom-node">
-         <div class="header">{{ node.data.title }}</div>
-         <div class="content">{{ node.data.content }}</div>
-         <!-- Add handles -->
-         <ngx-workflow-handle type="source" position="right"></ngx-workflow-handle>
-         <ngx-workflow-handle type="target" position="left"></ngx-workflow-handle>
-       </div>
-     `,
-     styles: [`
-       .custom-node { border: 1px solid #333; background: white; border-radius: 4px; }
-       .header { background: #eee; padding: 4px; border-bottom: 1px solid #333; }
-       .content { padding: 8px; }
-     `]
-   })
-   export class CustomNodeComponent {
-     @Input() node!: Node;
-   }
-   ```
+| Input | Type | Description |
+|-------|------|-------------|
+| `type` | `'source' \| 'target'` | Type of handle. |
+| `position` | `'top' \| 'right' \| 'bottom' \| 'left'` | Position on the node boundary. |
+| `isValidConnection` | `(connection) => boolean` | Function to validate connections for this specific handle. |
 
-2. **Register the Component**:
-   Provide it in your module configuration using `NGX_WORKFLOW_NODE_TYPES`.
+### Custom Edges
+Similar to nodes, you can register custom edge types.
 
-   ```typescript
-   import { NGX_WORKFLOW_NODE_TYPES } from 'ngx-workflow';
+1.  **Create Edge Component**: It must extend `BaseEdge`.
+2.  **Register Token**:
+    ```typescript
+    import { NGX_WORKFLOW_EDGE_TYPES } from 'ngx-workflow';
+    providers: [
+      { provide: NGX_WORKFLOW_EDGE_TYPES, useValue: { 'my-edge': CustomEdgeComponent } }
+    ]
+    ```
 
-   providers: [
-     {
-       provide: NGX_WORKFLOW_NODE_TYPES,
-       useValue: {
-         'my-custom-type': CustomNodeComponent
-       }
-     }
-   ]
-   ```
+## 🎨 Custom Customization
 
-3. **Use it**:
-   ```typescript
-   { id: '3', type: 'my-custom-type', position: { x: 0, y: 0 }, data: { title: 'My Node', content: '...' } }
-   ```
+### Edge Markers
+To use custom SVG markers, pass a template to `[defsTemplate]`:
+
+```html
+<ng-template #defs>
+  <svg:marker id="my-marker" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5">
+    <circle cx="5" cy="5" r="5" fill="red" />
+  </svg:marker>
+</ng-template>
+
+<ngx-workflow-diagram [defsTemplate]="defs" ...></ngx-workflow-diagram>
+```
+
+Then use it in your edge: `{ id: 'e1', ..., markerEnd: 'my-marker' }`.
 
 ### Styling
 `ngx-workflow` uses CSS variables for easy theming. Override these in your global styles:
@@ -297,3 +359,7 @@ Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md)
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+See [ADVANCED_FEATURES.md](ADVANCED_FEATURES.md) for details on Space Panning, Exports, Grid Snapping, and more.
