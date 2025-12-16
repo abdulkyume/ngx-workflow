@@ -31,8 +31,9 @@ export class SearchService {
 
         const lowerQuery = query.toLowerCase();
         const results = nodes.filter(node => {
-            const label = node.data?.label?.toString().toLowerCase() || '';
-            return label.includes(lowerQuery);
+            const label = node.label?.toLowerCase() || '';
+            const dataLabel = node.data?.label?.toString().toLowerCase() || '';
+            return label.includes(lowerQuery) || dataLabel.includes(lowerQuery);
         });
 
         this.searchState$.next({

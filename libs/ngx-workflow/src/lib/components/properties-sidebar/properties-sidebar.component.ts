@@ -1,7 +1,7 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Node } from '../../models';
+import { Node, Edge } from '../../models';
 
 @Component({
     selector: 'ngx-workflow-properties-sidebar',
@@ -12,8 +12,10 @@ import { Node } from '../../models';
 })
 export class PropertiesSidebarComponent {
     @Input() node: Node | null = null;
+    @Input() edge: Edge | null = null;
     @Output() close = new EventEmitter<void>();
     @Output() change = new EventEmitter<Partial<Node>>();
+    @Output() edgeChange = new EventEmitter<Partial<Edge>>();
 
     updateLabel(label: string) {
         if (!this.node) return;
@@ -75,5 +77,77 @@ export class PropertiesSidebarComponent {
     updatePorts(ports: number) {
         if (!this.node) return;
         this.change.emit({ ports: +ports });
+    }
+
+    // Edge Updates
+    updateEdgeLabel(label: string) {
+        if (!this.edge) return;
+        this.edgeChange.emit({ label });
+    }
+
+    updateEdgeType(type: any) {
+        if (!this.edge) return;
+        this.edgeChange.emit({ type });
+    }
+
+    updateEdgeAnimated(animated: boolean) {
+        if (!this.edge) return;
+        this.edgeChange.emit({ animated });
+    }
+
+    updateEdgeColor(color: string) {
+        if (!this.edge) return;
+        const currentStyle = this.edge.style || {};
+        this.edgeChange.emit({ style: { ...currentStyle, stroke: color } });
+    }
+
+    updateEdgeWidth(width: number) {
+        if (!this.edge) return;
+        const currentStyle = this.edge.style || {};
+        this.edgeChange.emit({ style: { ...currentStyle, strokeWidth: width.toString() } });
+    }
+
+    updateEdgeLabelColor(color: string) {
+        if (!this.edge) return;
+        const currentLabelStyle = this.edge.labelStyle || {};
+        this.edgeChange.emit({
+            labelStyle: { ...currentLabelStyle, fill: color, color: color }
+        });
+    }
+
+    updateEdgeAnimationDuration(duration: string) {
+        if (!this.edge) return;
+        this.edgeChange.emit({ animationDuration: duration });
+    }
+
+    updateEdgeAnimationColor(color: string) {
+        if (!this.edge) return;
+        const currentAnimStyle = this.edge.animationStyle || {};
+        this.edgeChange.emit({
+            animationStyle: { ...currentAnimStyle, fill: color }
+        });
+    }
+
+    updateEdgeAnimationType(type: any) {
+        if (!this.edge) return;
+        this.edgeChange.emit({ animationType: type });
+    }
+
+    updateEdgeStrokeStyle(style: string) {
+        if (!this.edge) return;
+        const currentStyle = this.edge.style || {};
+        this.edgeChange.emit({
+            style: { ...currentStyle, strokeDasharray: style }
+        });
+    }
+
+    updateEdgeMarkerStart(marker: string) {
+        if (!this.edge) return;
+        this.edgeChange.emit({ markerStart: marker });
+    }
+
+    updateEdgeMarkerEnd(marker: string) {
+        if (!this.edge) return;
+        this.edgeChange.emit({ markerEnd: marker });
     }
 }

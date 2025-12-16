@@ -260,6 +260,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
 
   // Sidebar State
   selectedNodeForEditing: WorkflowNode | null = null;
+  selectedEdgeForEditing: Edge | null = null;
 
   // Edge Editing State
   editingEdgeId: string | null = null;
@@ -587,6 +588,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
 
   closeSidebar(): void {
     this.selectedNodeForEditing = null;
+    this.selectedEdgeForEditing = null;
   }
 
   onPropertiesChange(changes: Partial<WorkflowNode>): void {
@@ -599,6 +601,14 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
       if (changes.ports !== undefined) {
         this.validateEdgesForNode(this.selectedNodeForEditing);
       }
+    }
+  }
+
+  onEdgePropertiesChange(changes: Partial<Edge>): void {
+    if (this.selectedEdgeForEditing) {
+      this.diagramStateService.updateEdge(this.selectedEdgeForEditing.id, changes);
+      // Update local reference to keep sidebar in sync
+      this.selectedEdgeForEditing = { ...this.selectedEdgeForEditing, ...changes };
     }
   }
 
@@ -2357,6 +2367,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
       case 'step': return getStepPath(sourcePos, targetPos);
       case 'smoothstep': return getSmoothStepPath(sourcePos, targetPos);
       case 'straight': return getStraightPath(sourcePos, targetPos);
+      case 'dashed': return getStraightPath(sourcePos, targetPos);
       default: return getStraightPath(sourcePos, targetPos);
     }
   }
@@ -2447,22 +2458,10 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     console.log('onEdgeDoubleClick', edge.id);
     event.stopPropagation();
     event.preventDefault();
-    this.editingEdgeId = edge.id;
-    this.editingEdgeLabel = edge.label || '';
 
-    // Force change detection
+    this.selectedEdgeForEditing = edge;
+    this.selectedNodeForEditing = null; // Close node sidebar if open
     this.cdRef.detectChanges();
-
-    // Focus the input after a short delay to allow rendering
-    setTimeout(() => {
-      const input = this.el.nativeElement.querySelector('.ngx-workflow__edge-label-input') as HTMLInputElement;
-      if (input) {
-        input.focus();
-        input.select();
-      } else {
-        console.warn('Edge label input not found');
-      }
-    }, 10);
   }
 
   // --- Node Logic ---

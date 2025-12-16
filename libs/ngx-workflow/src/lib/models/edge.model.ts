@@ -6,8 +6,11 @@ export interface Edge<T = any> {
   target: string; // target node id
   sourceHandle?: string;
   targetHandle?: string;
-  type?: 'bezier' | 'straight' | 'step' | 'smoothstep' | 'smart';
+  type?: 'bezier' | 'straight' | 'step' | 'smoothstep' | 'smart' | 'dashed';
   animated?: boolean;
+  animationType?: 'flow' | 'dot' | 'both'; // Default to 'flow' if undefined
+  animationDuration?: string; // e.g. '2s'
+  animationStyle?: { [key: string]: any }; // e.g. { fill: 'red' }
   style?: { [key: string]: any };
 
   // Selection

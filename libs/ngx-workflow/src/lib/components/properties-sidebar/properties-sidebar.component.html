@@ -1,6 +1,6 @@
-<div class="ngx-workflow__sidebar" [class.open]="!!node">
+<div class="ngx-workflow__sidebar" [class.open]="!!node || !!edge">
     <div class="ngx-workflow__sidebar-header">
-        <h3>Node Properties</h3>
+        <h3>Properties</h3>
         <button class="ngx-workflow__close-btn" (click)="close.emit()">×</button>
     </div>
 
@@ -71,6 +71,120 @@
                 <input type="number" [ngModel]="node.height || 60" (ngModelChange)="updateHeight($event)"
                     class="ngx-workflow__input">
             </div>
+        </div>
+    </div>
+
+    <div class="ngx-workflow__sidebar-content" *ngIf="edge">
+        <div class="ngx-workflow__form-group">
+            <label>ID</label>
+            <input type="text" [value]="edge.id" disabled class="ngx-workflow__input disabled">
+        </div>
+
+        <div class="ngx-workflow__form-group">
+            <label>Label</label>
+            <input type="text" [ngModel]="edge.label" (ngModelChange)="updateEdgeLabel($event)"
+                class="ngx-workflow__input">
+        </div>
+
+        <div class="ngx-workflow__form-group">
+            <label>Type</label>
+            <select [ngModel]="edge.type || 'bezier'" (ngModelChange)="updateEdgeType($event)"
+                class="ngx-workflow__input">
+                <option value="bezier">Bezier</option>
+                <option value="straight">Straight</option>
+                <option value="dashed">Dashed</option>
+                <option value="step">Step</option>
+                <option value="smoothstep">Smooth Step</option>
+                <option value="smart">Smart</option>
+            </select>
+        </div>
+
+        <div class="ngx-workflow__form-group" style="flex-direction: row; align-items: center; gap: 10px;">
+            <input type="checkbox" [ngModel]="edge.animated" (ngModelChange)="updateEdgeAnimated($event)"
+                id="edge-animated">
+            <label for="edge-animated" style="margin: 0;">Animated</label>
+        </div>
+
+        <div class="ngx-workflow__form-group" *ngIf="edge.animated">
+            <label>Animation Type</label>
+            <select [ngModel]="edge.animationType || 'flow'" (ngModelChange)="updateEdgeAnimationType($event)"
+                class="ngx-workflow__input">
+                <option value="flow">Flow (Dashed)</option>
+                <option value="dot">Dot (Moving Circle)</option>
+                <option value="both">Both</option>
+            </select>
+        </div>
+
+        <div class="ngx-workflow__form-group" *ngIf="edge.animated">
+            <label>Animation Speed</label>
+            <select [ngModel]="edge.animationDuration || '2s'" (ngModelChange)="updateEdgeAnimationDuration($event)"
+                class="ngx-workflow__input">
+                <option value="0.5s">Fast (0.5s)</option>
+                <option value="1s">Medium (1s)</option>
+                <option value="2s">Normal (2s)</option>
+                <option value="5s">Slow (5s)</option>
+                <option value="10s">Very Slow (10s)</option>
+            </select>
+        </div>
+
+        <div class="ngx-workflow__form-group"
+            *ngIf="edge.animated && (edge.animationType === 'dot' || edge.animationType === 'both')">
+            <label>Animation Color</label>
+            <input type="color" [ngModel]="edge.animationStyle?.['fill'] || '#3b82f6'"
+                (ngModelChange)="updateEdgeAnimationColor($event)" class="ngx-workflow__input"
+                style="height: 40px; padding: 2px;">
+        </div>
+
+        <div class="ngx-workflow__form-group">
+            <label>Color</label>
+            <input type="color" [ngModel]="edge.style?.['stroke'] || '#b1b1b7'"
+                (ngModelChange)="updateEdgeColor($event)" class="ngx-workflow__input"
+                style="height: 40px; padding: 2px;">
+        </div>
+
+        <div class="ngx-workflow__form-group">
+            <label>Label Color</label>
+            <input type="color" [ngModel]="edge.labelStyle?.['fill'] || '#000000'"
+                (ngModelChange)="updateEdgeLabelColor($event)" class="ngx-workflow__input"
+                style="height: 40px; padding: 2px;">
+        </div>
+
+        <div class="ngx-workflow__form-group">
+            <label>Stroke Width</label>
+            <input type="number" [ngModel]="edge.style?.['strokeWidth'] || 2" (ngModelChange)="updateEdgeWidth($event)"
+                class="ngx-workflow__input">
+        </div>
+
+        <div class="ngx-workflow__form-group">
+            <label>Line Style</label>
+            <select [ngModel]="edge.style?.['strokeDasharray'] || ''" (ngModelChange)="updateEdgeStrokeStyle($event)"
+                class="ngx-workflow__input">
+                <option value="">Solid</option>
+                <option value="5,5">Dashed</option>
+                <option value="2,2">Dotted</option>
+            </select>
+        </div>
+
+        <div class="ngx-workflow__form-group">
+            <label>Marker Start</label>
+            <select [ngModel]="edge.markerStart || ''" (ngModelChange)="updateEdgeMarkerStart($event)"
+                class="ngx-workflow__input">
+                <option value="">None</option>
+                <option value="arrow">Arrow</option>
+                <option value="arrowclosed">Arrow (Filled)</option>
+                <option value="dot">Dot</option>
+            </select>
+        </div>
+
+        <div class="ngx-workflow__form-group">
+            <label>Marker End</label>
+            <select [ngModel]="edge.markerEnd || ''" (ngModelChange)="updateEdgeMarkerEnd($event)"
+                class="ngx-workflow__input">
+                <option value="">None</option>
+                <option value="arrow">Arrow</option>
+                <option value="arrowclosed">Arrow (Filled)</option>
+                <option value="dot">Dot</option>
+            </select>
         </div>
     </div>
 </div>
