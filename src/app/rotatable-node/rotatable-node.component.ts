@@ -33,8 +33,7 @@ import { DiagramStateService } from '../../../libs/ngx-workflow/src/lib/services
            [attr.data-nodeid]="id" data-handleid="right" data-type="source"></div>
       
       <div class="content" #content>
-        <label [style.color]="style?.color">{{ data.label }}</label>
-        <div [style.color]="style?.color">{{ rotation }}°</div>
+        <label [style.color]="style?.color">{{ label || data.label }}</label>
       </div>
     </div>
   `,
