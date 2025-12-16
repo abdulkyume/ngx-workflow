@@ -36,7 +36,7 @@ A powerful, highly customizable Angular library for building interactive node-ba
 
 ### Built-in UI Components
 - **Search Bar**: Press `Ctrl+F` to search nodes by label/id.
-- **Properties Panel**: Sidebar for editing node properties (auto-shows on selection).
+- **Properties Panel**: Sidebar for editing node and edge properties (auto-shows on selection/double-click).
 - **Context Menu**: Right-click canvas/nodes/edges for actions.
 - **Layout Alignment**: Auto-align selected nodes (if `showLayoutControls` is true).
 - **Minimap**: Navigable overview of complex flows.
@@ -242,11 +242,14 @@ interface Edge {
   sourceHandle?: string;   // ID of source handle (optional)
   targetHandle?: string;   // ID of target handle (optional)
   label?: string;          // Label text displayed on the edge
-  type?: 'bezier' | 'straight' | 'step'; // Path type (default: 'bezier')
-  animated?: boolean;      // Show animation (dashed moving line)?
+  type?: 'bezier' | 'straight' | 'step' | 'dashed'; // Path type
+  animated?: boolean;      // Show animation?
+  animationType?: 'flow' | 'dot' | 'both'; // Type of animation
+  animationDuration?: string; // CSS duration (e.g., '2s')
+  animationStyle?: object; // Style for animation element (e.g., { fill: 'red' })
   markerStart?: string;    // Start marker ID (e.g., 'arrow', 'dot')
   markerEnd?: string;      // End marker ID
-  style?: object;          // SVG styles (stroke, stroke-width, etc.)
+  style?: object;          // SVG styles (stroke, stroke-width, strokeDasharray, etc.)
 }
 ```
 
