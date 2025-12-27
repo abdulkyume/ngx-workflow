@@ -18,12 +18,16 @@ A powerful, highly customizable Angular library for building interactive node-ba
 - **History**: Robust Undo/Redo history stack with Ctrl+Z/Ctrl+Shift+Z
 - **Theming**: Explicit `colorMode` and CSS variables for easy styling with dark mode support
 - **Smart Alignment**: Visual alignment guides and drag snapping
+- **True Recursive Sub-flows**: Create nested graph structures with relative positioning and drag-Nest support
+- **Performance Virtualization**: Optimizes rendering for large graphs by culling off-screen nodes
 
 ### Advanced Features
 - **Snap-to-Grid**: Configurable grid snapping for precise node placement
 - **Space Panning**: Professional canvas panning with Space + Drag
 - **Export Controls**: Built-in UI for PNG, SVG, and clipboard export
 - **Clipboard Operations**: Full copy/paste/cut support with Ctrl+C/V/X and localStorage persistence
+- **Smart Routing**: Use `type: 'smart'` for edges that automatically route around nodes (obstacle avoidance)
+- **Interactive Labels**: Clickable edge labels with pointer events and hover states
 - **Connection Validation**: Prevent invalid connections with custom validators
 - **Collision Detection**: Optional collision prevention to stop nodes from overlapping
 - **Edge Reconnection**: Drag edge endpoints to reconnect them
@@ -242,7 +246,7 @@ interface Edge {
   sourceHandle?: string;   // ID of source handle (optional)
   targetHandle?: string;   // ID of target handle (optional)
   label?: string;          // Label text displayed on the edge
-  type?: 'bezier' | 'straight' | 'step' | 'dashed'; // Path type
+  type?: 'bezier' | 'straight' | 'step' | 'smoothstep' | 'smart' | 'dashed'; // Path type
   animated?: boolean;      // Show animation?
   animationType?: 'flow' | 'dot' | 'both'; // Type of animation
   animationDuration?: string; // CSS duration (e.g., '2s')
