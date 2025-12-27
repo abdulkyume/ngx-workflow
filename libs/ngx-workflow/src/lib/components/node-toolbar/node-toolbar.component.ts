@@ -85,9 +85,12 @@ export class NodeToolbarComponent implements AfterViewInit {
 
         const svgRect = svgEl.getBoundingClientRect();
 
-        // Calculate node position in screen space
-        const nodeScreenX = svgRect.left + node.position.x * viewport.zoom + viewport.x;
-        const nodeScreenY = svgRect.top + node.position.y * viewport.zoom + viewport.y;
+        // Calculate node position in screen space (use absolute position for nested nodes)
+        const nodes = this.diagramStateService.nodes();
+        const absPos = this.diagramStateService.getAbsolutePosition(node, nodes);
+
+        const nodeScreenX = svgRect.left + absPos.x * viewport.zoom + viewport.x;
+        const nodeScreenY = svgRect.top + absPos.y * viewport.zoom + viewport.y;
 
         // Calculate node dimensions in screen space
         const nodeWidth = (node.width || 170) * viewport.zoom;

@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, ElementRef, OnInit, Renderer2, NgZone, OnDestroy, HostListener, WritableSignal, Inject, Optional, computed, ViewChild, ContentChild, Input, Output, EventEmitter, OnChanges, SimpleChanges, Signal, ChangeDetectorRef, TemplateRef, Type } from '@angular/core';
+import { Component, ChangeDetectionStrategy, ElementRef, OnInit, Renderer2, NgZone, OnDestroy, HostListener, WritableSignal, Inject, Optional, computed, ViewChild, ContentChild, Input, Output, EventEmitter, OnChanges, SimpleChanges, Signal, ChangeDetectorRef, TemplateRef, Type, signal } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { CommonModule, NgComponentOutlet } from '@angular/common';
 import { DiagramStateService } from '../../services/diagram-state.service';
@@ -35,63 +35,7 @@ function getNode(id: string, nodes: WorkflowNode[]): WorkflowNode | undefined {
 }
 
 // Helper function to determine handle position based on node and handle id/type
-function getHandleAbsolutePosition(node: WorkflowNode, handleId: string | undefined): XYPosition {
-  const nodeWidth = node.width || 170;
-  const nodeHeight = node.height || 60;
-  let offsetX = 0;
-  let offsetY = 0;
-
-  switch (handleId) {
-    case 'top':
-      offsetX = nodeWidth / 2;
-      offsetY = 0;
-      break;
-    case 'right':
-      offsetX = nodeWidth;
-      offsetY = nodeHeight / 2;
-      break;
-    case 'bottom':
-      offsetX = nodeWidth / 2;
-      offsetY = nodeHeight;
-      break;
-    case 'left':
-      offsetX = 0;
-      offsetY = nodeHeight / 2;
-      break;
-    default: // Center of the node if no specific handle
-      offsetX = nodeWidth / 2;
-      offsetY = nodeHeight / 2;
-  }
-
-  // Apple rotation if present
-  if (node.data && typeof node.data.rotation === 'number') {
-    const rotation = node.data.rotation;
-    const cx = nodeWidth / 2;
-    const cy = nodeHeight / 2;
-
-    // Translate to center
-    const dx = offsetX - cx;
-    const dy = offsetY - cy;
-
-    // Rotate
-    const rad = rotation * (Math.PI / 180);
-    const cos = Math.cos(rad);
-    const sin = Math.sin(rad);
-
-    const rotatedDx = dx * cos - dy * sin;
-    const rotatedDy = dx * sin + dy * cos;
-
-    return {
-      x: node.position.x + cx + rotatedDx,
-      y: node.position.y + cy + rotatedDy
-    };
-  }
-
-  return {
-    x: node.position.x + offsetX,
-    y: node.position.y + offsetY
-  };
-}
+// Helper function removed (moved to DiagramComponent method)
 
 // Helper function to calculate badge position
 function getBadgePosition(node: WorkflowNode, position: string | undefined, index: number): XYPosition {
@@ -118,6 +62,7 @@ function getBadgePosition(node: WorkflowNode, position: string | undefined, inde
 
 import { HandleComponent } from '../handle/handle.component';
 import { HandleRegistryService } from '../../services/handle-registry.service';
+import { LayoutService } from '../../services/layout.service';
 
 @Component({
   selector: 'ngx-workflow-diagram',
@@ -325,9 +270,14 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
 
   // Proximity Connect
   @Input() proximityThreshold = 200; // Increased to 200px for easier testing
-  private proximityTargetNodeId: string | null = null;
-  private proximityCandidate: { source: string, target: string, sourceHandle: string, targetHandle: string } | null = null;
-  private proximityPreviewEdgeId: string | null = null;
+  // Proximity Connect State
+  proximityTargetNodeId: string | null = null;
+  proximityCandidate: any = null;
+  proximityPreviewEdgeId: string | null = null;
+
+  // Grouping State
+  hoveredGroupId: WritableSignal<string | null> = signal(null);
+
   private isResizing = false;
   private resizingNode: WorkflowNode | null = null;
   private resizeHandle: 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | null = null;
@@ -519,6 +469,42 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
         shortcut: 'Ctrl+D'
       });
 
+      // Grouping actions
+      const selectedNodes = this.diagramStateService.selectedNodes();
+      // If multiple nodes are selected, offer Group
+      if (selectedNodes.length > 1) {
+        actions.push({
+          label: 'Group',
+          action: () => {
+            const ids = selectedNodes.map(n => n.id);
+            this.diagramStateService.groupNodes(ids);
+          },
+          shortcut: 'Ctrl+G'
+        });
+      }
+
+      // If single node selected and it's a Group, offer Ungroup
+      if (selectedNodes.length === 1 && selectedNodes[0].type === 'group') {
+        actions.push({
+          label: 'Ungroup',
+          action: () => {
+            this.diagramStateService.ungroupNodes([selectedNodes[0].id]);
+          },
+          shortcut: 'Ctrl+Shift+G'
+        });
+      }
+
+      // If single node selected and it is a child, offer Detach (Ungroup)
+      if (selectedNodes.length === 1 && selectedNodes[0].parentId) {
+        actions.push({
+          label: 'Ungroup (Detach)',
+          action: () => {
+            this.diagramStateService.ungroupNodes([selectedNodes[0].id]);
+          },
+          shortcut: 'Ctrl+Shift+G'
+        });
+      }
+
       // Z-index operations (only in layered mode)
       if (this.zIndexMode === 'layered') {
         actions.push({
@@ -569,6 +555,14 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
         label: 'Paste',
         action: () => this.diagramStateService.paste(),
         shortcut: 'Ctrl+V'
+      });
+
+      const virtualizationEnabled = this.diagramStateService.virtualizationEnabled();
+      actions.push({
+        label: virtualizationEnabled ? 'Disable Virtualization' : 'Enable Virtualization',
+        action: () => {
+          this.diagramStateService.virtualizationEnabled.set(!virtualizationEnabled);
+        }
       });
       actions.push({
         label: 'Select All',
@@ -685,11 +679,29 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     sourceHandleId?: string,
     targetHandleId?: string
   ): boolean {
-    // Prevent duplicate edges between same source and target
-    const existing = this.edges().some(e => e.source === sourceId && e.target === targetId);
+    // Prevent duplicate edges between same source and target (exact match including handles)
+    const existing = this.edges().find(e =>
+      e.source === sourceId &&
+      e.target === targetId &&
+      (e.sourceHandle || '') === (sourceHandleId || '') &&
+      (e.targetHandle || '') === (targetHandleId || '')
+    );
+
     if (existing) {
+      console.warn('isValidConnection: Duplicate prevented', {
+        sourceId, targetId, sourceHandleId, targetHandleId,
+        existingEdge: existing
+      });
       return false;
+    } else {
+      // Debug log for *allowed* connections to see what passed
+      /*
+      console.log('isValidConnection: Connection ALLOWED', {
+          sourceId, targetId, sourceHandleId, targetHandleId
+      });
+      */
     }
+
 
     // Check max connections limit
     if (!this.checkConnectionLimits(sourceId, sourceHandleId, 'source')) {
@@ -859,6 +871,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     private exportService: ExportService,
     private autoSaveService: AutoSaveService,
     private handleRegistry: HandleRegistryService,
+    private layoutService: LayoutService,
     @Optional() @Inject(NGX_WORKFLOW_NODE_TYPES) private injectedNodeTypes: Record<string, WorkflowNodeComponentType> | null
   ) {
     this.nodes$ = toObservable(this.diagramStateService.nodes);
@@ -890,6 +903,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     this.diagramStateService.el = this.svgRef;
     this.viewport = this.diagramStateService.viewport;
     this.nodes = this.diagramStateService.nodes;
+    this.viewNodes = this.diagramStateService.viewNodes;
     this.filteredNodes = this.diagramStateService.visibleNodes; // Use visibleNodes for rendering
     this.edges = this.diagramStateService.edges;
     this.filteredEdges = this.diagramStateService.visibleEdges; // Use visibleEdges for rendering
@@ -1157,27 +1171,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     this.diagramStateService.duplicate();
   }
 
-  @HostListener('window:keydown.control.g', ['$event'])
-  @HostListener('window:keydown.meta.g', ['$event'])
-  onGroupKeyPress(event: any): void {
-    if (this.isInputActive(event)) return;
-    event.preventDefault(); // Prevent browser find
-    const selectedNodes = this.diagramStateService.selectedNodes();
-    if (selectedNodes.length > 1) {
-      this.diagramStateService.groupNodes(selectedNodes.map(n => n.id));
-    }
-  }
-
-  @HostListener('window:keydown.control.shift.g', ['$event'])
-  @HostListener('window:keydown.meta.shift.g', ['$event'])
-  onUngroupKeyPress(event: any): void {
-    if (this.isInputActive(event)) return;
-    event.preventDefault();
-    const selectedNodes = this.diagramStateService.selectedNodes();
-    if (selectedNodes.length === 1 && selectedNodes[0].type === 'group') {
-      this.diagramStateService.ungroupNodes(selectedNodes[0].id);
-    }
-  }
+  // Duplicate Group/Ungroup listeners removed (superseded by new listeners below)
 
   @HostListener('window:keydown.control.]', ['$event'])
   @HostListener('window:keydown.meta.]', ['$event'])
@@ -1229,6 +1223,24 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     if (this.isInputActive(event)) return;
     event.preventDefault();
     this.diagramStateService.selectAll();
+  }
+
+  @HostListener('window:keydown.control.g', ['$event'])
+  @HostListener('window:keydown.meta.g', ['$event'])
+  onGroupKeyPress(event: any): void {
+    if (this.isInputActive(event)) return;
+    event.preventDefault();
+    const selectedIds = this.diagramStateService.selectedNodeIds();
+    this.diagramStateService.groupNodes(selectedIds);
+  }
+
+  @HostListener('window:keydown.control.shift.g', ['$event'])
+  @HostListener('window:keydown.meta.shift.g', ['$event'])
+  onUngroupKeyPress(event: any): void {
+    if (this.isInputActive(event)) return;
+    event.preventDefault();
+    const selectedIds = this.diagramStateService.selectedNodeIds();
+    this.diagramStateService.ungroupNodes(selectedIds);
   }
 
   @HostListener('window:keydown.arrowup', ['$event'])
@@ -1501,7 +1513,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     // Emit connectStart event
     this.connectStart.emit({ nodeId, handleId });
 
-    const previewEdgeId = `preview-${uuidv4()}`;
+    const previewEdgeId = `preview - ${uuidv4()} `;
     this.currentPreviewEdgeId = previewEdgeId;
 
     const viewport = this.viewport();
@@ -1550,7 +1562,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
       for (const node of nodes) {
         const handles = ['top', 'right', 'bottom', 'left'];
         for (const handleId of handles) {
-          const handlePos = getHandleAbsolutePosition(node, handleId);
+          const handlePos = this.getHandleAbsolutePosition(node, handleId);
           const dist = Math.hypot(handlePos.x - currentPointerX, handlePos.y - currentPointerY);
           if (dist < minDistance) {
             minDistance = dist;
@@ -1572,7 +1584,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
 
           if (this.isValidConnection(this.connectingSourceNodeId!, targetNodeId, this.connectingSourceHandleId, targetHandleId)) {
             // We need to find the handle element to highlight it
-            const handleEl = this.el.nativeElement.querySelector(`.ngx-workflow__handle[data-nodeid="${targetNodeId}"][data-handleid="${targetHandleId}"]`);
+            const handleEl = this.el.nativeElement.querySelector(`.ngx - workflow__handle[data - nodeid="${targetNodeId}"][data - handleid="${targetHandleId}"]`);
             if (handleEl) {
               this.renderer.addClass(handleEl, 'ngx-workflow__handle--valid-target');
             }
@@ -1623,7 +1635,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
       } else {
         console.log('finishConnecting: invalid connection');
         // Visual feedback for invalid connection: flash source node
-        const sourceNodeEl = this.el.nativeElement.querySelector(`[data-nodeid=\"${sourceId}\"]`);
+        const sourceNodeEl = this.el.nativeElement.querySelector(`[data - nodeid=\"${sourceId}\"]`);
         if (sourceNodeEl) {
           this.renderer.addClass(sourceNodeEl, 'invalid-connection');
           setTimeout(() => this.renderer.removeClass(sourceNodeEl, 'invalid-connection'), 1000);
@@ -1743,11 +1755,17 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
 
       this.dragAnimationFrameId = null;
 
-      // Check for Proximity Connect (Pass current position!)
+      const currentX = this.startNodePosition.x + deltaX;
+      const currentY = this.startNodePosition.y + deltaY;
+
+      // Group Proximity (Visual Feedback)
       if (this.draggingNodes.length === 1) {
-        // For single drag, we have 'newPosition' calculated above in the 'else' block
-        // But it's scoped. Let's recalculate or access it.
-        // Easier to just recalculate for this check or lift var.
+        this.checkGroupProximity(this.draggingNode!, { x: currentX, y: currentY });
+      }
+
+      // Check for Proximity Connect (Pass current position!)
+      // Ensure we DO NOT auto-connect if we are dragging a GROUP
+      if (this.draggingNodes.length === 1 && this.draggingNode!.type !== 'group') {
         const currentX = this.startNodePosition.x + deltaX;
         const currentY = this.startNodePosition.y + deltaY;
         this.checkProximityConnect(this.draggingNode!, { x: currentX, y: currentY });
@@ -1760,20 +1778,37 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
 
   private checkProximityConnect(node: WorkflowNode, currentPosition: { x: number, y: number }): void {
     const nodes = this.nodes();
+
+    // Calculate Absolute Position of the dragged node
+    let nodeAbsX = currentPosition.x;
+    let nodeAbsY = currentPosition.y;
+
+    if (node.parentId) {
+      const parent = nodes.find(n => n.id === node.parentId);
+      if (parent) {
+        const parentAbsPos = this.diagramStateService.getAbsolutePosition(parent, nodes);
+        nodeAbsX += parentAbsPos.x;
+        nodeAbsY += parentAbsPos.y;
+      }
+    }
+
     const nodeCenter = {
-      x: currentPosition.x + (node.width || this.defaultNodeWidth) / 2,
-      y: currentPosition.y + (node.height || this.defaultNodeHeight) / 2
+      x: nodeAbsX + (node.width || this.defaultNodeWidth) / 2,
+      y: nodeAbsY + (node.height || this.defaultNodeHeight) / 2
     };
 
     let closestNodeId: string | null = null;
     let minDist = Infinity;
 
     nodes.forEach(n => {
-      if (n.id === node.id || n.selected) return; // Skip self and other selected nodes
+      if (n.id === node.id || n.selected || n.type === 'group') return; // Skip self, other selected nodes, and groups
+
+      // Use Absolute Position for candidate node
+      const nAbsPos = this.diagramStateService.getAbsolutePosition(n, nodes);
 
       const nCenter = {
-        x: n.position.x + (n.width || this.defaultNodeWidth) / 2,
-        y: n.position.y + (n.height || this.defaultNodeHeight) / 2
+        x: nAbsPos.x + (n.width || this.defaultNodeWidth) / 2,
+        y: nAbsPos.y + (n.height || this.defaultNodeHeight) / 2
       };
 
       const dist = Math.sqrt(Math.pow(nCenter.x - nodeCenter.x, 2) + Math.pow(nCenter.y - nodeCenter.y, 2));
@@ -1867,22 +1902,37 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
           }
         }
 
-        this.proximityCandidate = { source, target, sourceHandle, targetHandle };
 
-        this.diagramStateService.addTempEdge({
-          id: previewId,
-          source: source,
-          target: target,
-          sourceHandle: sourceHandle,
-          targetHandle: targetHandle,
-          type: 'straight',
-          animated: true,
-          style: { stroke: 'black', strokeWidth: '2', strokeDasharray: '5,5' }, // Dotted line
-          sourceX: startX,
-          sourceY: startY,
-          targetX: endX,
-          targetY: endY
-        });
+
+        // Check if edge already exists
+        const edgeExists = this.diagramStateService.edges().some(e =>
+          e.source === source && e.target === target &&
+          e.sourceHandle === sourceHandle && e.targetHandle === targetHandle
+        );
+
+        if (!edgeExists) {
+          this.proximityCandidate = { source, target, sourceHandle, targetHandle };
+          this.diagramStateService.addTempEdge({
+            id: previewId,
+            source: source,
+            target: target,
+            sourceHandle: sourceHandle,
+            targetHandle: targetHandle,
+            type: 'straight',
+            animated: true,
+            style: { stroke: 'black', strokeWidth: '2', strokeDasharray: '5,5' },
+            sourceX: startX,
+            sourceY: startY,
+            targetX: endX,
+            targetY: endY
+          });
+        } else {
+          this.proximityCandidate = null;
+          if (this.proximityPreviewEdgeId) {
+            this.diagramStateService.removeEdge(this.proximityPreviewEdgeId);
+            this.proximityPreviewEdgeId = null;
+          }
+        }
       }
     } else {
       this.proximityCandidate = null; // Clear candidate if no node is close
@@ -1892,6 +1942,54 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
         this.proximityPreviewEdgeId = null;
       }
       this.proximityTargetNodeId = null;
+    }
+  }
+
+  private checkGroupProximity(node: WorkflowNode, currentPosition: { x: number, y: number }): void {
+    const nodes = this.nodes();
+
+    const nodeRect = {
+      x: currentPosition.x,
+      y: currentPosition.y,
+      width: node.width || this.defaultNodeWidth,
+      height: node.height || this.defaultNodeHeight
+    };
+
+    const nodeCenter = {
+      x: nodeRect.x + nodeRect.width / 2,
+      y: nodeRect.y + nodeRect.height / 2
+    };
+
+    const potentialParents = nodes.filter(n => {
+      if (n.type !== 'group' || n.id === node.id || n.selected) return false;
+
+      const groupAbsPos = this.diagramStateService.getAbsolutePosition(n, nodes);
+
+      // Check if center is inside group
+      return (
+        nodeCenter.x >= groupAbsPos.x &&
+        nodeCenter.x <= groupAbsPos.x + (n.width || this.defaultNodeWidth) &&
+        nodeCenter.y >= groupAbsPos.y &&
+        nodeCenter.y <= groupAbsPos.y + (n.height || this.defaultNodeHeight)
+      );
+    });
+
+    if (potentialParents.length > 0) {
+      // Sort by area (smallest first)
+      potentialParents.sort((a, b) => {
+        const areaA = (a.width || this.defaultNodeWidth) * (a.height || this.defaultNodeHeight);
+        const areaB = (b.width || this.defaultNodeWidth) * (b.height || this.defaultNodeHeight);
+        return areaA - areaB;
+      });
+
+      const targetGroup = potentialParents[0];
+      if (this.hoveredGroupId() !== targetGroup.id) {
+        this.hoveredGroupId.set(targetGroup.id);
+      }
+    } else {
+      if (this.hoveredGroupId() !== null) {
+        this.hoveredGroupId.set(null);
+      }
     }
   }
 
@@ -1915,6 +2013,8 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
       this.diagramStateService.onDragEnd(node);
       this.checkReparenting(node);
     });
+
+    this.hoveredGroupId.set(null); // Clear group hover state
 
     // Commit Proximity Connection
     if (this.proximityCandidate && this.draggingNode) {
@@ -1953,9 +2053,11 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   private checkReparenting(node: WorkflowNode): void {
     // Find if the node is dropped onto a group
     const nodes = this.nodes();
+    const nodeAbsPos = this.diagramStateService.getAbsolutePosition(node, nodes);
+
     const nodeRect = {
-      x: node.position.x,
-      y: node.position.y,
+      x: nodeAbsPos.x,
+      y: nodeAbsPos.y,
       width: node.width || this.defaultNodeWidth,
       height: node.height || this.defaultNodeHeight
     };
@@ -1965,15 +2067,19 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
       y: nodeRect.y + nodeRect.height / 2
     };
 
-    const potentialParents = nodes.filter(n =>
-      n.type === 'group' &&
-      n.id !== node.id &&
+    const potentialParents = nodes.filter(n => {
+      if (n.type !== 'group' || n.id === node.id || n.selected) return false;
+
+      const groupAbsPos = this.diagramStateService.getAbsolutePosition(n, nodes);
+
       // Check if center is inside group
-      nodeCenter.x >= n.position.x &&
-      nodeCenter.x <= n.position.x + (n.width || this.defaultNodeWidth) &&
-      nodeCenter.y >= n.position.y &&
-      nodeCenter.y <= n.position.y + (n.height || this.defaultNodeHeight)
-    );
+      return (
+        nodeCenter.x >= groupAbsPos.x &&
+        nodeCenter.x <= groupAbsPos.x + (n.width || this.defaultNodeWidth) &&
+        nodeCenter.y >= groupAbsPos.y &&
+        nodeCenter.y <= groupAbsPos.y + (n.height || this.defaultNodeHeight)
+      );
+    });
 
     let newParentId: string | undefined = undefined;
 
@@ -1990,7 +2096,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     // Only update if parent changed
     if (node.parentId !== newParentId) {
       console.log(`Reparenting node ${node.id} to ${newParentId || 'root'}`);
-      this.diagramStateService.updateNode(node.id, { parentId: newParentId });
+      this.diagramStateService.reparentNode(node.id, newParentId);
     }
   }
 
@@ -2156,8 +2262,8 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
 
     if (!sourceNode || !targetNode) return;
 
-    const sourcePos = getHandleAbsolutePosition(sourceNode, edge.sourceHandle);
-    const targetPos = getHandleAbsolutePosition(targetNode, edge.targetHandle);
+    const sourcePos = this.getHandleAbsolutePosition(sourceNode, edge.sourceHandle);
+    const targetPos = this.getHandleAbsolutePosition(targetNode, edge.targetHandle);
 
     let startX, startY, endX, endY;
 
@@ -2331,8 +2437,8 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
         return 'M 0 0';
       }
 
-      sourcePos = getHandleAbsolutePosition(sourceNode, edge.sourceHandle);
-      targetPos = getHandleAbsolutePosition(targetNode, edge.targetHandle);
+      sourcePos = this.getHandleAbsolutePosition(sourceNode, edge.sourceHandle);
+      targetPos = this.getHandleAbsolutePosition(targetNode, edge.targetHandle);
 
       if (sourceNode.id === targetNode.id) {
         return getSelfLoopPath(sourcePos, edge.sourceHandle);
@@ -2390,8 +2496,8 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
       return { x: 0, y: 0 };
     }
 
-    const sourcePos = getHandleAbsolutePosition(sourceNode, edge.sourceHandle);
-    const targetPos = getHandleAbsolutePosition(targetNode, edge.targetHandle);
+    const sourcePos = this.getHandleAbsolutePosition(sourceNode, edge.sourceHandle);
+    const targetPos = this.getHandleAbsolutePosition(targetNode, edge.targetHandle);
 
     if (edge.type === 'smart' || !edge.type) {
       try {
@@ -2685,9 +2791,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
 
 
   // Layout controls
-  onApplyLayout(algorithm: 'auto' | 'force' | 'hierarchical' | 'circular'): void {
-    this.diagramStateService.applyLayout(algorithm);
-  }
+
 
   /**
    * Exports the diagram state as a JSON file.
@@ -2779,8 +2883,8 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
       return { x: 0, y: 0 };
     }
 
-    const sourcePos = getHandleAbsolutePosition(sourceNode, edge.sourceHandle);
-    const targetPos = getHandleAbsolutePosition(targetNode, edge.targetHandle);
+    const sourcePos = this.getHandleAbsolutePosition(sourceNode, edge.sourceHandle);
+    const targetPos = this.getHandleAbsolutePosition(targetNode, edge.targetHandle);
 
     // Offset 30px along the edge from each node
     const offset = 30;
@@ -3108,7 +3212,69 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     this.autoSaveService.clearHistory();
   }
 
-  // --- Search Methods ---
+  // Helper method for handle position
+  getHandleAbsolutePosition(node: WorkflowNode, handleId: string | undefined): XYPosition {
+    // Get absolute position of the node (recurses up parents)
+    const absPos = this.diagramStateService.getAbsolutePosition(node, this.nodes());
+
+    const nodeWidth = node.width || 170;
+    const nodeHeight = node.height || 60;
+    let offsetX = 0;
+    let offsetY = 0;
+
+    switch (handleId) {
+      case 'top':
+        offsetX = nodeWidth / 2;
+        offsetY = 0;
+        break;
+      case 'right':
+        offsetX = nodeWidth;
+        offsetY = nodeHeight / 2;
+        break;
+      case 'bottom':
+        offsetX = nodeWidth / 2;
+        offsetY = nodeHeight;
+        break;
+      case 'left':
+        offsetX = 0;
+        offsetY = nodeHeight / 2;
+        break;
+      default: // Center of the node if no specific handle
+        offsetX = nodeWidth / 2;
+        offsetY = nodeHeight / 2;
+    }
+
+    // Apply rotation if present
+    if (node.data && typeof node.data.rotation === 'number') {
+      const rotation = node.data.rotation;
+      const cx = nodeWidth / 2;
+      const cy = nodeHeight / 2;
+
+      // Translate to center
+      const dx = offsetX - cx;
+      const dy = offsetY - cy;
+
+      // Rotate
+      const rad = rotation * (Math.PI / 180);
+      const cos = Math.cos(rad);
+      const sin = Math.sin(rad);
+
+      const rotatedDx = dx * cos - dy * sin;
+      const rotatedDy = dx * sin + dy * cos;
+
+      return {
+        x: absPos.x + cx + rotatedDx,
+        y: absPos.y + cy + rotatedDy
+      };
+    }
+
+    return {
+      x: absPos.x + offsetX,
+      y: absPos.y + offsetY
+    };
+  }
+
+  // --- Utility Methods ---
 
   /**
    * Handle search results - update node highlighting
@@ -3152,5 +3318,34 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
       searchHighlight: undefined
     }));
     this.diagramStateService.nodes.set(updatedNodes);
+  }
+
+  async onApplyLayout(algorithm: 'auto' | 'force' | 'hierarchical' | 'circular') {
+    const nodes = this.nodes();
+    const edges = this.edges();
+    let layoutedNodes: WorkflowNode[] = [];
+
+    // Show loading state?
+
+    try {
+      if (algorithm === 'auto' || algorithm === 'hierarchical') {
+        layoutedNodes = await this.layoutService.applyElkLayout(nodes, edges, { direction: 'DOWN' });
+      } else if (algorithm === 'force') {
+        layoutedNodes = this.layoutService.calculateForceDirected(nodes, edges);
+      } else if (algorithm === 'circular') {
+        layoutedNodes = this.layoutService.calculateCircular(nodes, edges);
+      }
+
+      if (layoutedNodes && layoutedNodes.length > 0) {
+        this.diagramStateService.nodes.set(layoutedNodes);
+
+        // Wait for render then fit view
+        setTimeout(() => {
+          this.diagramStateService.fitView();
+        }, 100);
+      }
+    } catch (e) {
+      console.error('Layout failed', e);
+    }
   }
 }

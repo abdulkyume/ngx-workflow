@@ -151,10 +151,12 @@ export class PathFinder {
 
         // Mark obstacles
         this.nodes.forEach(node => {
-            const startX = Math.floor((node.x - this.bounds.minX) / this.gridSize);
-            const startY = Math.floor((node.y - this.bounds.minY) / this.gridSize);
-            const endX = Math.ceil((node.x + node.width - this.bounds.minX) / this.gridSize);
-            const endY = Math.ceil((node.y + node.height - this.bounds.minY) / this.gridSize);
+            // Add path finding buffer (1 grid unit) so lines don't touch nodes
+            const buffer = 1;
+            const startX = Math.floor((node.x - this.bounds.minX) / this.gridSize) - buffer;
+            const startY = Math.floor((node.y - this.bounds.minY) / this.gridSize) - buffer;
+            const endX = Math.ceil((node.x + node.width - this.bounds.minX) / this.gridSize) + buffer;
+            const endY = Math.ceil((node.y + node.height - this.bounds.minY) / this.gridSize) + buffer;
 
             for (let y = Math.max(0, startY); y < Math.min(this.height, endY); y++) {
                 for (let x = Math.max(0, startX); x < Math.min(this.width, endX); x++) {

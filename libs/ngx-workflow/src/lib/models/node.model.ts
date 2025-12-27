@@ -36,6 +36,7 @@ export interface Node<T = any> {
   dimmed?: boolean;
   searchHighlight?: 'match' | 'current';  // Search highlighting state
   zIndex?: number; // Stacking order (higher = on top)
+  _renderPosition?: XYPosition; // Computed absolute position for rendering
 
   // New features
   badges?: Array<{

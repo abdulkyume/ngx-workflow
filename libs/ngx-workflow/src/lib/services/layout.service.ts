@@ -34,49 +34,105 @@ export class LayoutService {
   }
 
   // --- ELK Layout ---
-  async applyElkLayout(nodes: Node[], edges: Edge[], options?: any): Promise<Node[]> {
-    const elkGraph = {
+  async applyElkLayout(nodes: Node[], edges: Edge[], options: { direction?: 'DOWN' | 'RIGHT' | 'UP' | 'LEFT', spacing?: number } = {}): Promise<Node[]> {
+    const isHorizontal = options.direction === 'RIGHT' || options.direction === 'LEFT';
+
+    // Construct the ELK graph
+    const graph: ElkNode = {
       id: 'root',
       layoutOptions: {
         'elk.algorithm': 'layered',
-        'elk.direction': 'DOWN',
-        'elk.spacing.nodeNode': '75',
-        'elk.layered.nodePlacement.strategy': 'BRANDES_KOELLER',
-        ...options
+        'elk.direction': options.direction || 'DOWN',
+        'elk.spacing.nodeNode': (options.spacing || 75).toString(),
+        'elk.layered.spacing.nodeNodeBetweenLayers': (options.spacing || 75).toString(),
+        'elk.padding': '[top=20,left=20,bottom=20,right=20]',
+        'elk.hierarchyHandling': 'INCLUDE_CHILDREN' // Enable hierarchical layout
       },
-      children: nodes.map(node => ({
+      children: [],
+      edges: []
+    };
+
+    // Build hierarchy (handling groups)
+    const nodeMap = new Map<string, ElkNode>();
+    const rootChildren: ElkNode[] = [];
+
+    // Create ElkNodes
+    nodes.forEach(node => {
+      const elkNode: ElkNode = {
         id: node.id,
         width: node.width || 170,
         height: node.height || 60,
-      })),
-      edges: edges.map(edge => ({
-        id: edge.id,
-        sources: [edge.source],
-        targets: [edge.target],
-      })),
-    };
+        labels: [{ text: node.label || '' }],
+        children: [],
+        edges: []
+      };
+
+      nodeMap.set(node.id, elkNode);
+    });
+
+    // Establish parent-child relationships
+    nodes.forEach(node => {
+      const elkNode = nodeMap.get(node.id)!;
+      if (node.parentId && nodeMap.has(node.parentId)) {
+        const parent = nodeMap.get(node.parentId)!;
+        if (!parent.children) parent.children = [];
+        parent.children.push(elkNode);
+      } else {
+        rootChildren.push(elkNode);
+      }
+    });
+
+    graph.children = rootChildren;
+
+    // Create ElkEdges
+    // Edges must be added to the common ancestor of source and target, or the root if none.
+    // For simplicity, we add all edges to the root. ELK resolves IDs globally.
+    const elkEdges: any[] = edges.map(edge => ({
+      id: edge.id,
+      sources: [edge.source],
+      targets: [edge.target]
+    }));
+
+    graph.edges = elkEdges;
 
     try {
-      const result = await this.elk.layout(elkGraph);
+      const layoutedGraph = await this.elk.layout(graph);
 
-      const laidOutNodes = nodes.map(node => {
-        const elkNode = result.children?.find((n: ElkNode) => n.id === node.id);
-        if (elkNode && elkNode.x !== undefined && elkNode.y !== undefined) {
-          return {
-            ...node,
-            position: {
-              x: elkNode.x,
-              y: elkNode.y,
-            },
-          };
-        }
-        return node; // Return original if not found or no position
-      });
-      return laidOutNodes;
+      // Flatten the result to map back to WorkflowNode[]
+      const layoutedNodes: Node[] = [];
+      this.flattenGraph(layoutedGraph, layoutedNodes, nodes);
 
-    } catch (error) {
-      console.error('ELK layout failed:', error);
+      return layoutedNodes;
+    } catch (err) {
+      console.error('ELK Layout failed:', err);
       return nodes; // Return original nodes on error
+    }
+  }
+
+  private flattenGraph(elkNode: ElkNode, result: Node[], originalNodes: Node[], parentOffset: XYPosition = { x: 0, y: 0 }) {
+    if (elkNode.children) {
+      elkNode.children.forEach(child => {
+        const originalNode = originalNodes.find(n => n.id === child.id);
+        if (originalNode) {
+          // ELK coordinates are relative to parent
+          // If we use parentId mechanism in DiagramComponent, we should keep them relative.
+          // If the node has parentId, its position should be relative to parent.
+          // ELK provides relative positions for children.
+
+          const updatedNode: Node = {
+            ...originalNode,
+            position: {
+              x: child.x || 0,
+              y: child.y || 0
+            },
+            width: child.width,
+            height: child.height
+          };
+          result.push(updatedNode);
+
+          this.flattenGraph(child, result, originalNodes); // Recursive call
+        }
+      });
     }
   }
 

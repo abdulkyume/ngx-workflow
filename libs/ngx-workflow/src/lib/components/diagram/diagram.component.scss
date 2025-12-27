@@ -459,6 +459,14 @@ foreignObject {
 
 /* --- Group Nodes --- */
 .ngx-workflow__group-node {
+    &--hover {
+        rect {
+            stroke: var(--ngx-workflow-primary-hover) !important;
+            stroke-width: 2px !important;
+            stroke-dasharray: 4, 4;
+            transition: all 0.2s ease;
+        }
+    }
   .ngx-workflow__group-header {
     fill: rgba(0,0,0,0.03);
     stroke: none;

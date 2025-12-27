@@ -35,7 +35,23 @@
     <rect width="100%" height="100%" fill="url(#ngx-workflow__grid-pattern)" class="ngx-workflow__background" />
 
     <g class="ngx-workflow__viewport" [attr.transform]="transform">
-      <!-- Edges -->
+      <!-- Group Backgrounds (Layer 1: Bottom) -->
+      <g *ngFor="let node of sortedNodes(); trackBy: trackByNodeId">
+        <g *ngIf="node.type === 'group'"
+          [attr.transform]="'translate(' + (node._renderPosition?.x ?? node.position.x) + ',' + (node._renderPosition?.y ?? node.position.y) + ')'"
+          (pointerdown)="onNodePointerDown($event, node)" (dblclick)="onNodeDoubleClick($event, node)"
+          (mouseenter)="onNodeMouseEnter($event, node)" (mouseleave)="onNodeMouseLeave($event, node)"
+          (mousemove)="onNodeMouseMove($event, node)" class="ngx-workflow__group-node --background-layer"
+          [class.ngx-workflow__group-node--hover]="hoveredGroupId() === node.id">
+          <!-- Only the background rect -->
+          <rect [attr.width]="node.width" [attr.height]="node.height" rx="4" ry="4"
+            [style.fill]="node.style?.['backgroundColor'] || 'rgba(240, 240, 240, 0.5)'"
+            [style.stroke]="node.selected ? '#2563eb' : (node.style?.['borderColor'] || '#e5e7eb')"
+            [style.stroke-width]="node.selected ? 2 : 1"></rect>
+        </g>
+      </g>
+
+      <!-- Edges (Layer 2: Middle) -->
       <g *ngFor="let edge of filteredEdges(); trackBy: trackByEdgeId" [class.selected]="edge.selected"
         [class.animated]="edge.animated && edge.animationType !== 'dot'" [class.hidden]="edge.hidden"
         [class.animated]="edge.animated && (edge.animationType === 'flow' || edge.animationType === 'both')"
@@ -117,12 +133,8 @@
         [attr.height]="getSelectionBox().height" />
 
       <!-- Nodes -->
-      <g *ngFor="let node of sortedNodes(); trackBy: trackByNodeId" class="ngx-workflow__node" [ngClass]="{
-           'node-search-match': node.searchHighlight === 'match',
-           'node-search-current': node.searchHighlight === 'current'
-         }" [attr.aria-label]="node.label" [attr.data-id]="node.id" [class.selected]="node.selected"
-        [class.dragging]="node.dragging" [class.dimmed]="node.dimmed" [class.highlighted]="node.highlighted"
-        [attr.transform]="'translate(' + node.position.x + ',' + node.position.y + ')'"
+      <g *ngFor="let node of sortedNodes(); trackBy: trackByNodeId" class="ngx-workflow__node" [attr.data-id]="node.id"
+        [attr.transform]="'translate(' + (node._renderPosition?.x ?? node.position.x) + ',' + (node._renderPosition?.y ?? node.position.y) + ')'"
         (pointerdown)="onNodePointerDown($event, node)" (dblclick)="onNodeDoubleClick($event, node)"
         (mouseenter)="onNodeMouseEnter($event, node)" (mouseleave)="onNodeMouseLeave($event, node)"
         (mousemove)="onNodeMouseMove($event, node)">
@@ -179,7 +191,7 @@
              Usually custom nodes implement their own handles.
              Let's allow default handles to show only if NOT custom node for now to start clean.
         -->
-        <ng-container *ngIf="!isCustomNode(node) && node.type !== 'group'">
+        <ng-container *ngIf="!isCustomNode(node)">
           <!-- Top Handle -->
           <g *ngIf="!node.ports || node.ports === 1 || node.ports === 2 || node.ports === 4" ngx-workflow-handle
             class="ngx-workflow__handle ngx-workflow__handle--source ngx-workflow__handle--target"
@@ -262,10 +274,15 @@
           </div>
         </foreignObject>
 
-        <!-- Group Node Template -->
+        <!-- Group Node Template (Layer 3: Top - Content Only) -->
         <g *ngIf="node.type === 'group'" class="ngx-workflow__group-node">
+          <!-- Background moved to Layer 1, but we keep a transparent hit area or just rely on content? 
+               actually Layer 1 handles interactions for the body.
+               We just need Header and Content here.
+          -->
+
           <!-- Header -->
-          <rect [attr.width]="node.width" height="30" class="ngx-workflow__group-header"></rect>
+          <rect [attr.width]="node.width" height="30" class="ngx-workflow__group-header" rx="4" ry="4"></rect>
           <text [attr.x]="10" [attr.y]="20" class="ngx-workflow__group-label">{{ node.label }}</text>
 
           <!-- Expand/Collapse Toggle -->

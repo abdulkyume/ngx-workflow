@@ -52,6 +52,10 @@ export class DiagramStateService {
   readonly containerDimensions = signal<{ width: number; height: number }>({ width: 0, height: 0 });
   readonly selectionBox = signal<SelectionBox | null>(null);
 
+  // Virtualization
+  readonly virtualizationEnabled = signal<boolean>(true);
+  readonly virtualizationBuffer = signal<number>(500);
+
   // Computed signals
   readonly selectedNodes = computed(() => this.nodes().filter((n) => n.selected));
   readonly selectedEdges = computed(() => this.edges().filter((e) => e.selected));
@@ -69,15 +73,17 @@ export class DiagramStateService {
       const matchesType = !type || node.type === type;
 
       const isMatch = matchesSearch && matchesType;
-
-      // If there is a search/filter active, highlight matches and dim non-matches
-      // If no search/filter, reset (no highlight, no dim)
       const isActive = !!query || !!type;
+
+      // Compute absolute position for rendering
+      // We pass the full nodes list for recursion
+      const renderPosition = this.getAbsolutePosition(node, nodes);
 
       return {
         ...node,
         highlighted: isActive && isMatch,
-        dimmed: isActive && !isMatch
+        dimmed: isActive && !isMatch,
+        _renderPosition: renderPosition
       };
     }).sort((a, b) => {
       // Render groups first so they are behind other nodes
@@ -91,10 +97,11 @@ export class DiagramStateService {
     const nodes = this.viewNodes();
     const viewport = this.viewport();
     const dimensions = this.containerDimensions();
-    const buffer = 500; // Buffer in pixels
+    const enabled = this.virtualizationEnabled();
+    const buffer = this.virtualizationBuffer();
 
-    if (dimensions.width === 0 || dimensions.height === 0) {
-      return nodes; // Render all if dimensions not set
+    if (!enabled || dimensions.width === 0 || dimensions.height === 0) {
+      return nodes; // Render all if disabled or dimensions not set
     }
 
     const minX = -viewport.x / viewport.zoom - buffer;
@@ -103,8 +110,8 @@ export class DiagramStateService {
     const maxY = (-viewport.y + dimensions.height) / viewport.zoom + buffer;
 
     return nodes.filter(node => {
-      const nodeX = node.position.x;
-      const nodeY = node.position.y;
+      const nodeX = node._renderPosition?.x ?? node.position.x;
+      const nodeY = node._renderPosition?.y ?? node.position.y;
       const nodeWidth = node.width || 150; // Default width
       const nodeHeight = node.height || 60; // Default height
 
@@ -116,6 +123,14 @@ export class DiagramStateService {
       );
     });
   });
+
+  // Helper to compute absolute position of a node
+  // MOVED to bottom of class to avoid duplication
+  /*
+  getAbsolutePosition(node: Node, allNodes: Node[]): XYPosition {
+    // ...
+  }
+  */
 
   readonly visibleEdges = computed(() => {
     const edges = this.edges();
@@ -272,6 +287,22 @@ export class DiagramStateService {
 
   addEdge(edge: Edge): void {
     console.log('DiagramStateService.addEdge: start', edge);
+
+    // Check for duplicates before adding to state
+    const existing = this.edges().find(e =>
+      e.source === edge.source &&
+      e.target === edge.target &&
+      (e.sourceHandle || '') === (edge.sourceHandle || '') &&
+      (e.targetHandle || '') === (edge.targetHandle || '')
+    );
+    if (existing) {
+      console.warn('DiagramStateService.addEdge: duplicate edge prevented', {
+        newEdge: edge,
+        existingEdge: existing
+      });
+      return;
+    }
+
     this.undoRedoService.saveState(this.getCurrentState());
     this.edges.update((currentEdges) => [...currentEdges, { ...edge, selected: false }]);
     this.connect.emit({
@@ -840,59 +871,7 @@ export class DiagramStateService {
   }
   // --- Grouping Operations ---
 
-  groupNodes(nodeIds: string[]): void {
-    if (nodeIds.length < 2) return;
-    this.undoRedoService.saveState(this.getCurrentState());
-
-    const nodesToGroup = this.nodes().filter((n) => nodeIds.includes(n.id));
-    if (nodesToGroup.length === 0) return;
-
-    // Calculate bounding box
-    const minX = Math.min(...nodesToGroup.map((n) => n.position.x));
-    const minY = Math.min(...nodesToGroup.map((n) => n.position.y));
-    const maxX = Math.max(...nodesToGroup.map((n) => n.position.x + (n.width || 150)));
-    const maxY = Math.max(...nodesToGroup.map((n) => n.position.y + (n.height || 60)));
-
-    const padding = 20;
-    const groupNode: Node = {
-      id: uuidv4(),
-      type: 'group',
-      position: { x: minX - padding, y: minY - padding },
-      width: maxX - minX + padding * 2,
-      height: maxY - minY + padding * 2,
-      data: { label: 'Group' },
-      expanded: true,
-      selected: true,
-    };
-
-    // Update children to point to parent
-    // Note: We are keeping absolute coordinates for now, so no position update needed for children
-    const updatedChildren = nodesToGroup.map((n) => ({ ...n, parentId: groupNode.id, selected: false }));
-    const otherNodes = this.nodes().filter((n) => !nodeIds.includes(n.id));
-
-    this.nodes.set([...otherNodes, groupNode, ...updatedChildren]);
-    this.clearSelection();
-    this.selectNodes([groupNode.id]);
-  }
-
-  ungroupNodes(groupId: string): void {
-    const groupNode = this.nodes().find((n) => n.id === groupId);
-    if (!groupNode || groupNode.type !== 'group') return;
-
-    this.undoRedoService.saveState(this.getCurrentState());
-
-    // Remove parentId from children
-    const updatedNodes = this.nodes().map((n) => {
-      if (n.parentId === groupId) {
-        const { parentId, ...rest } = n;
-        return { ...rest, selected: true };
-      }
-      return n;
-    });
-
-    // Remove group node
-    this.nodes.set(updatedNodes.filter((n) => n.id !== groupId));
-  }
+  // --- Grouping Operations logic removed (duplicates) ---
 
   addNode(node: Node): void {
     this.undoRedoService.saveState(this.getCurrentState());
@@ -1265,7 +1244,30 @@ export class DiagramStateService {
 
     this.alignmentGuides.set(guides);
 
-    const finalPosition = { x: snappedX, y: snappedY };
+    let finalPosition = { x: snappedX, y: snappedY };
+
+    // Apply strict extent constraint for child nodes
+    // We enforce this if the node has a parent, ensuring it stays within the group.
+    if (node.parentId) {
+      const parent = this.nodes().find(n => n.id === node.parentId);
+      if (parent) {
+        const parentWidth = parent.width || 150;
+        const parentHeight = parent.height || 60;
+        const nodeWidth = node.width || 150;
+        const nodeHeight = node.height || 60;
+
+        const minX = 0;
+        const minY = 0;
+        const maxX = parentWidth - nodeWidth;
+        const maxY = parentHeight - nodeHeight;
+
+        finalPosition = {
+          x: Math.max(minX, Math.min(finalPosition.x, maxX)),
+          y: Math.max(minY, Math.min(finalPosition.y, maxY))
+        };
+      }
+    }
+
     const dx = finalPosition.x - node.position.x;
     const dy = finalPosition.y - node.position.y;
 
@@ -1279,36 +1281,232 @@ export class DiagramStateService {
       return n;
     });
 
-    // If it's a group, move all children recursively
+    // If it's a group, we NO LONGER move children recursively
+    // because children use relative positioning. Moving the parent
+    // implicitly moves the children visually.
+    /*
     if (node.type === 'group') {
       this.moveChildren(id, dx, dy, updatedNodes);
     }
+    */
 
     this.nodes.set(updatedNodes);
   }
 
-  private moveChildren(parentId: string, dx: number, dy: number, nodes: Node[], visited = new Set<string>()): void {
-    if (visited.has(parentId)) {
-      console.warn('Cycle detected in group hierarchy, stopping recursion for', parentId);
-      return;
+  // Determine if a node is a child of another (recursive)
+  isChildOf(childId: string, parentId: string): boolean {
+    const nodes = this.nodes();
+    let current = nodes.find(n => n.id === childId);
+    while (current && current.parentId) {
+      if (current.parentId === parentId) return true;
+      const pid = current.parentId;
+      current = nodes.find(n => n.id === pid);
     }
-    visited.add(parentId);
+    return false;
+  }
 
-    for (let i = 0; i < nodes.length; i++) {
-      if (nodes[i].parentId === parentId) {
-        nodes[i] = {
-          ...nodes[i],
+  groupNodes(nodeIds: string[]): void {
+    if (nodeIds.length === 0) return;
+    this.undoRedoService.saveState(this.getCurrentState());
+
+    const nodes = this.nodes();
+    const selectedNodes = nodes.filter(n => nodeIds.includes(n.id));
+
+    // Calculate bounding box of selected nodes to position the group
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    selectedNodes.forEach(node => {
+      // Use absolute position for calculation
+      const absPos = this.getAbsolutePosition(node, nodes);
+      minX = Math.min(minX, absPos.x);
+      minY = Math.min(minY, absPos.y);
+      maxX = Math.max(maxX, absPos.x + (node.width || 150));
+      maxY = Math.max(maxY, absPos.y + (node.height || 60));
+    });
+
+    // Add padding
+    const padding = 20;
+    minX -= padding;
+    minY -= padding;
+    const groupWidth = (maxX - minX) + padding * 2;
+    const groupHeight = (maxY - minY) + padding * 2;
+
+    const groupNode: Node = {
+      id: uuidv4(),
+      type: 'group',
+      position: { x: minX, y: minY },
+      width: groupWidth,
+      height: groupHeight,
+      label: 'Group',
+      style: { backgroundColor: 'rgba(240, 240, 240, 0.5)' },
+      expanded: true
+    };
+
+    const updatedNodes = nodes.map(node => {
+      if (nodeIds.includes(node.id)) {
+        const absPos = this.getAbsolutePosition(node, nodes);
+        return {
+          ...node,
+          parentId: groupNode.id,
+          extent: 'parent' as 'parent', // Constrain to group
+          // Convert to relative position
           position: {
-            x: nodes[i].position.x + dx,
-            y: nodes[i].position.y + dy,
+            x: absPos.x - groupNode.position.x,
+            y: absPos.y - groupNode.position.y
           },
+          selected: false // Deselect children
         };
-        // Recursively move children of children (nested groups)
-        if (nodes[i].type === 'group') {
-          this.moveChildren(nodes[i].id, dx, dy, nodes, visited);
-        }
+      }
+      return node;
+    });
+
+    this.nodes.set([...updatedNodes, { ...groupNode, selected: true }]);
+  }
+
+  ungroupNodes(nodeIds: string[]): void {
+    if (nodeIds.length === 0) return;
+    this.undoRedoService.saveState(this.getCurrentState());
+
+    const nodes = this.nodes();
+    const updatedNodes = nodes.map(node => {
+      // If node is a child of one of the ungrouped nodes (logic: user selects group to ungroup)
+      // OR if the node itself is selected and has a parent?
+      // Usually 'Ungroup' applies to a Group Node.
+      // Let's assume user calculates 'Ungroup' on the selected node.
+
+      // Scenario 1: User selects Group Node and ungroups -> Children become orphans
+      if (node.parentId && nodeIds.includes(node.parentId)) {
+        const absPos = this.getAbsolutePosition(node, nodes);
+        return {
+          ...node,
+          parentId: undefined,
+          position: absPos
+        };
+      }
+      return node;
+    }).filter(node => !nodeIds.includes(node.id)); // Remove the group nodes
+
+    // What if user selects a Child and says "Ungroup"? (Remove from parent)
+    // React Flow 'ungroup' usually means destroying the group.
+    // Let's support both: if group selected, destroy group. If child selected, detach child.
+
+    // For now, let's implement: If Group Node selected -> Destroy Group, children become root.
+    // If Child Node selected -> Detach from parent, become root.
+
+    // Complex map logic to handle both in one pass:
+    // 1. Identify Groups to destroy
+    // 2. Identify Children to detach
+
+    const groupsToDestroy = new Set(nodes.filter(n => nodeIds.includes(n.id) && n.type === 'group').map(n => n.id));
+    const childrenToDetach = new Set(nodes.filter(n => nodeIds.includes(n.id) && n.parentId).map(n => n.id));
+
+    const finalNodes = nodes.filter(n => !groupsToDestroy.has(n.id)).map(node => {
+      // Case A: This node was a child of a destroyed group
+      if (node.parentId && groupsToDestroy.has(node.parentId)) {
+        const absPos = this.getAbsolutePosition(node, nodes);
+        return { ...node, parentId: undefined, position: absPos };
+      }
+
+      // Case B: This node implies itself to detach
+      if (childrenToDetach.has(node.id)) {
+        const absPos = this.getAbsolutePosition(node, nodes);
+        return { ...node, parentId: undefined, position: absPos };
+      }
+
+      return node;
+    });
+
+    this.nodes.set(finalNodes);
+  }
+
+  // Helper to compute absolute position of a node
+  public getAbsolutePosition(node: Node, allNodes: Node[]): XYPosition {
+    let x = node.position.x;
+    let y = node.position.y;
+    let current = node;
+
+    while (current.parentId) {
+      const parent = allNodes.find(n => n.id === current.parentId);
+      if (parent) {
+        x += parent.position.x;
+        y += parent.position.y;
+        current = parent;
+      } else {
+        // Parent not found, break to prevent infinite loop
+        console.warn(`Parent with id ${current.parentId} not found for node ${current.id}`);
+        break;
       }
     }
+    return { x, y };
+  }
+
+  reparentNode(nodeId: string, newParentId: string | undefined): void {
+    const nodes = this.nodes();
+    const node = nodes.find(n => n.id === nodeId);
+    if (!node || node.parentId === newParentId) return;
+
+    this.undoRedoService.saveState(this.getCurrentState());
+
+    const updatedNodes = nodes.map(n => {
+      if (n.id === nodeId) {
+        let newNode = { ...n, parentId: newParentId };
+
+        // Update extent based on parent existence
+        if (newParentId) {
+          newNode.extent = 'parent' as 'parent';
+        } else {
+          // If detaching, remove extent constraint or set to undefined
+          newNode.extent = undefined;
+        }
+
+        if (newParentId) {
+          // Convert to relative position
+          const parent = nodes.find(p => p.id === newParentId);
+          if (parent) {
+            const parentAbsPos = this.getAbsolutePosition(parent, nodes);
+            const nodeAbsPos = this.getAbsolutePosition(n, nodes);
+
+            // New Relative Position
+            newNode.position = {
+              x: nodeAbsPos.x - parentAbsPos.x,
+              y: nodeAbsPos.y - parentAbsPos.y
+            };
+          }
+        } else {
+          // Convert to absolute position (detaching)
+          // ... logic likely exists below or implicitly handled if already absolute?
+          // Wait, if I am detaching, I need to convert relative (old) to absolute (new).
+          // But reparentNode takes 'newParentId'.
+          // If newParentId is undefined, it means detaching.
+          // Existing logic for detaching usually handles pos conversion?
+          // Let's verify existing logic below.
+
+          if (n.parentId) {
+            // Converting from Child -> Root
+            const absPos = this.getAbsolutePosition(n, nodes);
+            newNode.position = absPos;
+          }
+        }
+        return newNode;
+      }
+      return n;
+    });
+
+    this.nodes.set(updatedNodes);
+  }
+
+
+  // Returns all direct and indirect children of a given node
+  private getAllChildren(parentId: string, allNodes: Node[]): Node[] {
+    const children: Node[] = [];
+    const directChildren = allNodes.filter(n => n.parentId === parentId);
+    children.push(...directChildren);
+
+    for (const child of directChildren) {
+      if (child.type === 'group') {
+        children.push(...this.getAllChildren(child.id, allNodes));
+      }
+    }
+    return children;
   }
 
   // Move multiple nodes (batch movement)
@@ -1334,10 +1532,12 @@ export class DiagramStateService {
       // Update parent node
       currentNodes = currentNodes.map(n => n.id === move.id ? { ...n, position: finalPosition } : n);
 
-      // If group, move children
+      // If group, we rely on implicit movement.
+      /*
       if (node.type === 'group') {
         this.moveChildren(node.id, dx, dy, currentNodes);
       }
+      */
     });
 
     this.nodes.set(currentNodes);
