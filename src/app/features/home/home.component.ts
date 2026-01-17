@@ -67,20 +67,7 @@ import { NgxWorkflowModule, Node, Edge } from 'ngx-workflow';
       </div>
     </section>
     
-    <!-- 2. Trusted / Social Proof (Mock) -->
-    <section class="trusted-section">
-      <div class="container text-center">
-        <p class="trusted-label">TRUSTED BY DEVELOPERS AT</p>
-        <div class="logos-grid">
-           <!-- Text placeholders for logos to avoid image 404s -->
-           <span class="logo-text">ACME Corp</span>
-           <span class="logo-text">GlobalFlow</span>
-           <span class="logo-text">NextGen</span>
-           <span class="logo-text">Stark Industries</span>
-           <span class="logo-text">Wayne Ent</span>
-        </div>
-      </div>
-    </section>
+
 
     <!-- 3. Feature: Performance -->
     <section class="feature-strip">
@@ -314,10 +301,7 @@ import { NgxWorkflowModule, Node, Edge } from 'ngx-workflow';
     }
     .graph-wrapper { flex: 1; position: relative; }
 
-    /* 2. Trusted Section */
-    .trusted-section { padding: 40px 0; border-bottom: 1px solid var(--color-border); }
-    .trusted-label { font-size: 0.75rem; font-weight: 600; color: #9ca3af; letter-spacing: 0.1em; margin-bottom: 24px; }
-    .logos-grid { display: flex; justify-content: center; gap: 48px; opacity: 0.6; grayscale: 100%; font-weight: 700; color: #6b7280; font-size: 1.2rem; }
+
     
     /* Feature Strips */
     .feature-strip { padding: 100px 0; }
