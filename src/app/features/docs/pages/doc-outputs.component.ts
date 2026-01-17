@@ -38,7 +38,7 @@ import { Component } from '@angular/core';
               <td><code>EventEmitter&lt;Edge&gt;</code></td>
               <td>Fires when an edge is clicked.</td>
             </tr>
-            <tr>
+             <tr>
               <td><code>(nodeMouseEnter)</code></td>
               <td><code>EventEmitter&lt;Node&gt;</code></td>
               <td>Fires when mouse enters a node.</td>
@@ -47,6 +47,21 @@ import { Component } from '@angular/core';
               <td><code>(nodeMouseLeave)</code></td>
               <td><code>EventEmitter&lt;Node&gt;</code></td>
               <td>Fires when mouse leaves a node.</td>
+            </tr>
+             <tr>
+              <td><code>(nodeMouseMove)</code></td>
+              <td><code>EventEmitter&lt;NodeEvent&gt;</code></td>
+              <td>Fires when mouse moves over a node.</td>
+            </tr>
+             <tr>
+              <td><code>(edgeMouseEnter)</code></td>
+              <td><code>EventEmitter&lt;Edge&gt;</code></td>
+              <td>Fires when mouse enters an edge.</td>
+            </tr>
+            <tr>
+              <td><code>(edgeMouseLeave)</code></td>
+              <td><code>EventEmitter&lt;Edge&gt;</code></td>
+              <td>Fires when mouse leaves an edge.</td>
             </tr>
           </tbody>
         </table>
@@ -122,6 +137,16 @@ import { Component } from '@angular/core';
               <td><code>(connectEnd)</code></td>
               <td><code>EventEmitter&lt;Handle&gt;</code></td>
               <td>Fires when the user stops dragging a connection line.</td>
+            </tr>
+             <tr>
+              <td><code>(edgeDrop)</code></td>
+              <td><code>EventEmitter&lt;EdgeDropEvent&gt;</code></td>
+              <td>Fires when an edge is dropped on top of another node.</td>
+            </tr>
+            <tr>
+              <td><code>(connectionDrop)</code></td>
+              <td><code>EventEmitter&lt;DropEvent&gt;</code></td>
+              <td>Fires when a connection line is dropped on the canvas.</td>
             </tr>
           </tbody>
         </table>
