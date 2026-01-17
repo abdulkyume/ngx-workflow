@@ -43,7 +43,7 @@ import { RouterOutlet, RouterLink } from '@angular/router';
         <div class="container footer-content">
           <div class="footer-left">
             <span class="logo-sm">ngx-workflow</span>
-            <p class="copyright">© 2025. MIT License.</p>
+            <p class="copyright">© {{ currentYear }}. MIT License.</p>
           </div>
           <div class="footer-links">
              <!-- Simplified footer links -->
@@ -171,6 +171,7 @@ import { RouterOutlet, RouterLink } from '@angular/router';
 })
 export class MainLayoutComponent {
   isOpen = signal(false);
+  currentYear = new Date().getFullYear();
 
   toggleMenu() {
     this.isOpen.update(v => !v);

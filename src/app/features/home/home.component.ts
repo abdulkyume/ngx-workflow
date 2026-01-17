@@ -277,10 +277,10 @@ import { NgxWorkflowModule, Node, Edge } from 'ngx-workflow';
 })
 export class HomeComponent {
   heroNodes = signal<Node[]>([
-    { id: '1', position: { x: 50, y: 150 }, label: 'Source', type: 'default', ports: 1 },
-    { id: '2', position: { x: 300, y: 50 }, label: 'Process A', type: 'default', ports: 2 },
-    { id: '3', position: { x: 300, y: 250 }, label: 'Process B', type: 'default', ports: 2 },
-    { id: '4', position: { x: 600, y: 150 }, label: 'Destination', type: 'default', ports: 1 }
+    { id: '1', position: { x: 50, y: 150 }, label: 'Source', type: 'default', ports: 3 },
+    { id: '2', position: { x: 300, y: 50 }, label: 'Process A', type: 'default', ports: 3 },
+    { id: '3', position: { x: 300, y: 250 }, label: 'Process B', type: 'default', ports: 3 },
+    { id: '4', position: { x: 600, y: 150 }, label: 'Destination', type: 'default', ports: 3 }
   ]);
 
   heroEdges = signal<Edge[]>([
