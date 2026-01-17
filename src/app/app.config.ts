@@ -1,36 +1,16 @@
-import {
-  ApplicationConfig,
-  importProvidersFrom,
-  provideZonelessChangeDetection,
-} from '@angular/core';
-import { CommonModule } from '@angular/common';
-import {
-  NgxWorkflowModule,
-  NGX_WORKFLOW_NODE_TYPES,
-  RoundedRectNodeComponent,
-  DiagramStateService,
-  LayoutService,
-  UndoRedoService,
-} from 'ngx-workflow';
+import { ApplicationConfig, provideBrowserGlobalErrorListeners, provideZonelessChangeDetection } from '@angular/core';
+import { provideHttpClient, withFetch } from '@angular/common/http';
+import { provideRouter } from '@angular/router';
 
 import { routes } from './app.routes';
-import { provideRouter } from '@angular/router';
+import { provideClientHydration, withEventReplay } from '@angular/platform-browser';
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    provideBrowserGlobalErrorListeners(),
     provideZonelessChangeDetection(),
     provideRouter(routes),
-
-    importProvidersFrom(CommonModule, NgxWorkflowModule), // Import NgxFlowModule
-    DiagramStateService,
-    LayoutService,
-    UndoRedoService,
-    {
-      provide: NGX_WORKFLOW_NODE_TYPES,
-      useValue: {
-        'rounded-rect': RoundedRectNodeComponent,
-        // Add other custom node types here for the demo
-      },
-    },
-  ],
+    provideHttpClient(withFetch()),
+    provideClientHydration(withEventReplay())
+  ]
 };
