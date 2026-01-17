@@ -17,8 +17,8 @@ import { Component } from '@angular/core';
         <table>
           <thead>
             <tr>
-              <th width="25%">Input</th>
-              <th width="30%">Type</th>
+              <th width="20%">Input</th>
+              <th width="25%">Type</th>
               <th>Description</th>
             </tr>
           </thead>
@@ -47,9 +47,9 @@ import { Component } from '@angular/core';
         <table>
           <thead>
             <tr>
-              <th width="25%">Input</th>
-              <th width="30%">Type</th>
-              <th>Default</th>
+              <th width="20%">Input</th>
+              <th width="25%">Type</th>
+              <th width="15%">Default</th>
               <th>Description</th>
             </tr>
           </thead>
@@ -70,9 +70,9 @@ import { Component } from '@angular/core';
         <table>
           <thead>
             <tr>
-              <th width="25%">Input</th>
-              <th width="30%">Type</th>
-              <th>Default</th>
+              <th width="20%">Input</th>
+              <th width="25%">Type</th>
+              <th width="15%">Default</th>
               <th>Description</th>
             </tr>
           </thead>
@@ -91,9 +91,9 @@ import { Component } from '@angular/core';
         <table>
           <thead>
             <tr>
-              <th width="25%">Input</th>
-              <th width="30%">Type</th>
-              <th>Default</th>
+              <th width="20%">Input</th>
+              <th width="25%">Type</th>
+              <th width="15%">Default</th>
               <th>Description</th>
             </tr>
           </thead>
@@ -111,12 +111,15 @@ import { Component } from '@angular/core';
     </div>
   `,
   styles: [`
-    .table-wrapper { overflow-x: auto; margin: 1.5rem 0; border: 1px solid var(--color-border); border-radius: 8px; }
-    table { width: 100%; text-align: left; border-collapse: collapse; min-width: 600px; }
-    th { background: var(--color-bg-surface); font-weight: 600; padding: 12px 16px; border-bottom: 1px solid var(--color-border); color: var(--color-text-primary); font-size: 0.9rem; }
-    td { padding: 12px 16px; border-bottom: 1px solid var(--color-border); color: var(--color-text-secondary); font-size: 0.9rem; font-family: var(--font-mono); }
+    .table-wrapper { margin: 1.5rem 0; border: 1px solid var(--color-border); border-radius: 8px; box-shadow: var(--shadow-sm); overflow: hidden; }
+    table { width: 100%; text-align: left; border-collapse: collapse; table-layout: fixed; }
+    th { background: var(--color-bg-surface); font-weight: 600; padding: 12px 16px; border-bottom: 1px solid var(--color-border); color: var(--color-text-primary); font-size: 0.9rem; white-space: nowrap; word-wrap: break-word; }
+    td { padding: 14px 16px; border-bottom: 1px solid var(--color-border); color: var(--color-text-secondary); font-size: 0.9rem; font-family: var(--font-mono); vertical-align: top; word-wrap: break-word; overflow-wrap: break-word; }
     tr:last-child td { border-bottom: none; }
-    code { font-size: 0.85rem; color: var(--color-primary); background: transparent; padding: 0; border: none; }
+    code { font-size: 0.85rem; color: var(--color-primary); background: rgba(37, 99, 235, 0.05); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(37, 99, 235, 0.1); white-space: pre-wrap; word-break: break-all; }
+    
+    /* Override prose width for API pages to fit tables */
+    :host ::ng-deep .prose { max-width: 100%; }
   `]
 })
 export class DocInputsComponent { }
