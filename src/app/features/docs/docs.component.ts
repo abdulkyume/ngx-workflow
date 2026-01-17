@@ -1,10 +1,18 @@
-import { Component } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Component, ElementRef, OnInit, OnDestroy, AfterViewInit, ViewChild, ChangeDetectorRef, Inject, PLATFORM_ID } from '@angular/core';
+import { RouterLink, RouterLinkActive, RouterOutlet, Router, NavigationEnd, Event as RouterEvent } from '@angular/router';
+import { isPlatformBrowser, CommonModule, ViewportScroller } from '@angular/common';
+import { filter, Subscription } from 'rxjs';
+
+interface TocItem {
+  id: string;
+  label: string;
+  level: number; // 2 for h2, 3 for h3
+}
 
 @Component({
   selector: 'app-docs',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule],
   template: `
     <div class="docs-layout container">
       <aside class="docs-sidebar">
@@ -29,18 +37,25 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
         </div>
       </aside>
 
-      <main class="docs-main">
-        <router-outlet></router-outlet>
+      <main class="docs-main" #mainContent>
+        <router-outlet (activate)="onActivate($event)"></router-outlet>
       </main>
       
-      <!-- Right Sidebar (TOC Placeholder) -->
-      <aside class="docs-toc">
+      <!-- Right Sidebar (TOC) -->
+      <aside class="docs-toc" *ngIf="tocItems.length > 0">
         <div class="toc-content">
            <span class="toc-title">On this page</span>
            <ul class="toc-list">
-             <li><a href="javascript:void(0)" class="toc-link">Overview</a></li>
-             <li><a href="javascript:void(0)" class="toc-link">Installation</a></li>
-             <li><a href="javascript:void(0)" class="toc-link">Usage</a></li>
+             <li *ngFor="let item of tocItems">
+               <a 
+                 href="javascript:void(0)" 
+                 class="toc-link"
+                 [class.active]="activeFragment === item.id"
+                 [class.indent]="item.level === 3"
+                 (click)="scrollTo(item.id, $event)">
+                 {{ item.label }}
+               </a>
+             </li>
            </ul>
         </div>
       </aside>
@@ -95,12 +110,14 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
       font-size: 0.75rem; font-weight: 600; color: var(--color-text-primary);
       margin-bottom: 12px; display: block;
     }
-    .toc-list { list-style: none; padding: 0; margin: 0; }
+    .toc-list { list-style: none; padding: 0; margin: 0; position: relative; }
     .toc-link {
       display: block; font-size: 0.85rem; color: var(--color-text-secondary);
       padding: 4px 0; text-decoration: none; transition: color 0.2s;
     }
+    .toc-link.indent { padding-left: 12px; }
     .toc-link:hover { color: var(--color-text-primary); }
+    .toc-link.active { color: var(--color-accent); font-weight: 500; border-left: 2px solid var(--color-accent); padding-left: 10px; margin-left: -12px;}
 
     /* Responsive */
     @media (max-width: 768px) {
@@ -110,4 +127,104 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
     }
   `]
 })
-export class DocsComponent { }
+export class DocsComponent implements OnInit, OnDestroy, AfterViewInit {
+  @ViewChild('mainContent', { static: false }) mainContentRef!: ElementRef;
+
+  tocItems: TocItem[] = [];
+  activeFragment: string | null = null;
+  private observer: IntersectionObserver | null = null;
+  private routerSubscription!: Subscription;
+
+  constructor(
+    private router: Router,
+    @Inject(PLATFORM_ID) private platformId: Object,
+    private cdRef: ChangeDetectorRef,
+    private viewportScroller: ViewportScroller
+  ) { }
+
+  ngOnInit() {
+    this.routerSubscription = this.router.events.pipe(
+      filter(event => event instanceof NavigationEnd)
+    ).subscribe(() => {
+      // Small delay to let router component render
+      setTimeout(() => this.generateToc(), 150);
+    });
+  }
+
+  ngAfterViewInit() {
+    this.generateToc();
+  }
+
+  ngOnDestroy() {
+    if (this.routerSubscription) this.routerSubscription.unsubscribe();
+    if (this.observer) this.observer.disconnect();
+  }
+
+  onActivate(event: any) {
+    // Component active, generate TOC after render
+    setTimeout(() => this.generateToc(), 100);
+  }
+
+  generateToc() {
+    if (!isPlatformBrowser(this.platformId)) return;
+
+    // Safety check if element ref is available
+    if (!this.mainContentRef) return;
+
+    // Use a small timeout to ensure DOM is updated from *ngIf etc
+    setTimeout(() => {
+      const mainEl = this.mainContentRef.nativeElement;
+      // Select all h2 and h3
+      const headers = Array.from(mainEl.querySelectorAll('h2, h3')) as HTMLElement[];
+
+      this.tocItems = [];
+
+      // Disconnect old observer
+      if (this.observer) {
+        this.observer.disconnect();
+      }
+
+      this.observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            this.activeFragment = entry.target.id;
+            this.cdRef.detectChanges();
+          }
+        });
+      }, { rootMargin: '-100px 0px -60% 0px', threshold: 0.1 });
+
+      headers.forEach((header: HTMLElement, index: number) => {
+        // Ensure ID
+        if (!header.id) {
+          const text = header.textContent || `section-${index}`;
+          // more robust slugify
+          header.id = text.toLowerCase()
+            .trim()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/(^-|-$)/g, '');
+        }
+
+        this.tocItems.push({
+          id: header.id,
+          label: header.textContent || '',
+          level: parseInt(header.tagName.substring(1))
+        });
+
+        this.observer?.observe(header);
+      });
+
+      this.cdRef.detectChanges();
+    }, 50);
+  }
+
+  scrollTo(id: string, event: Event) {
+    event.preventDefault();
+    this.activeFragment = id;
+    const element = document.getElementById(id);
+    if (element) {
+      // Offset for sticky header if needed (approx 100px)
+      const y = element.getBoundingClientRect().top + window.scrollY - 120;
+      window.scrollTo({ top: y, behavior: 'smooth' });
+    }
+  }
+}
