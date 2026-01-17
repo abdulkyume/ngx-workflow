@@ -1,108 +1,140 @@
-import { Component, computed, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
-import { FormsModule } from '@angular/forms';
-import { OUTPUT_DOCS, OutputDoc } from '../data/output-docs.data';
+import { Component } from '@angular/core';
 
 @Component({
   selector: 'app-doc-outputs',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule],
   template: `
-    <div class="max-w-7xl mx-auto py-8">
-      <div class="border-b border-gray-200 pb-8 mb-8">
-        <h1 class="text-3xl font-bold text-gray-900 mb-2">Outputs Reference</h1>
-        <p class="text-lg text-gray-600">
-          Events available for building interactive diagrams.
+    <div class="doc-content prose animate-fade-in">
+      <div class="page-header">
+        <h1>Outputs</h1>
+        <p class="lead">
+          Events emitted by the <code>&lt;ngx-workflow-diagram&gt;</code> component.
         </p>
       </div>
 
-      <!-- Search -->
-      <div class="mb-8 max-w-xl">
-        <div class="relative rounded-md shadow-sm">
-          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <svg class="text-gray-400" style="width: 20px; height: 20px;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </div>
-          <input
-            type="text"
-            [(ngModel)]="searchQuery"
-            class="focus:ring-green-500 focus:border-green-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md p-3 border"
-            placeholder="Search outputs..."
-          />
-        </div>
+      <h2>Element Events</h2>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th width="25%">Output</th>
+              <th width="30%">Type</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>(nodeClick)</code></td>
+              <td><code>EventEmitter&lt;Node&gt;</code></td>
+              <td>Fires when a node is clicked.</td>
+            </tr>
+            <tr>
+              <td><code>(nodeDoubleClick)</code></td>
+              <td><code>EventEmitter&lt;Node&gt;</code></td>
+              <td>Fires when a node is double-clicked.</td>
+            </tr>
+            <tr>
+              <td><code>(edgeClick)</code></td>
+              <td><code>EventEmitter&lt;Edge&gt;</code></td>
+              <td>Fires when an edge is clicked.</td>
+            </tr>
+            <tr>
+              <td><code>(nodeMouseEnter)</code></td>
+              <td><code>EventEmitter&lt;Node&gt;</code></td>
+              <td>Fires when mouse enters a node.</td>
+            </tr>
+            <tr>
+              <td><code>(nodeMouseLeave)</code></td>
+              <td><code>EventEmitter&lt;Node&gt;</code></td>
+              <td>Fires when mouse leaves a node.</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
-      <div class="space-y-12">
-        <div *ngFor="let category of categories()">
-          <h2 class="text-xl font-bold text-gray-900 mb-4 px-2 border-l-4 border-green-500 rounded-sm">
-            {{ category }}
-          </h2>
-          
-          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <a *ngFor="let output of getOutputsByCategory(category)" 
-               [routerLink]="['/docs/outputs', output.name]"
-               class="block bg-white overflow-hidden shadow-sm rounded-lg border border-gray-200 hover:border-green-500 hover:shadow-md transition-all duration-200 p-6">
-               
-               <div class="flex items-center justify-between mb-2">
-                 <span class="text-lg font-mono font-bold text-gray-900 truncate group-hover:text-green-600" title="{{ output.name }}">
-                   {{ output.name }}
-                 </span>
-               </div>
-               
-               <div class="mb-3"> 
-                 <span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700 font-mono border border-green-100">
-                   {{ output.type }}
-                 </span>
-               </div>
-               
-               <p class="text-sm text-gray-500 line-clamp-2 min-h-[2.5rem]">
-                 {{ output.description }}
-               </p>
-            </a>
-          </div>
-        </div>
-        
-        <div *ngIf="categories().length === 0" class="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-           <p class="text-gray-500">No outputs found matching "{{ searchQuery() }}"</p>
-           <button (click)="searchQuery.set('')" class="mt-2 text-green-600 hover:text-green-500 font-medium">Clear search</button>
-        </div>
+      <h2>Graph Events</h2>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th width="25%">Output</th>
+              <th width="30%">Type</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+             <tr>
+              <td><code>(nodesChange)</code></td>
+              <td><code>EventEmitter&lt;Node[]&gt;</code></td>
+              <td>Fires when nodes are updated (moved, properties changed).</td>
+            </tr>
+             <tr>
+              <td><code>(edgesChange)</code></td>
+              <td><code>EventEmitter&lt;Edge[]&gt;</code></td>
+              <td>Fires when edges are updated (reconnected, deleted).</td>
+            </tr>
+            <tr>
+              <td><code>(connect)</code></td>
+              <td><code>EventEmitter&lt;Connection&gt;</code></td>
+              <td>Fires when a new connection is successfully created.</td>
+            </tr>
+            <tr>
+              <td><code>(beforeDelete)</code></td>
+              <td><code>EventEmitter&lt;Selection&gt;</code></td>
+              <td>Fires before elements are deleted (allows cancellation).</td>
+            </tr>
+            <tr>
+              <td><code>(contextMenu)</code></td>
+              <td><code>EventEmitter&lt;MenuEvent&gt;</code></td>
+              <td>Fires on right-click on canvas, node, or edge.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>Interaction Events</h2>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th width="25%">Output</th>
+              <th width="30%">Type</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>(paneClick)</code></td>
+              <td><code>EventEmitter&lt;PointerEvent&gt;</code></td>
+              <td>Fires when clicking on the empty canvas background.</td>
+            </tr>
+            <tr>
+              <td><code>(paneScroll)</code></td>
+              <td><code>EventEmitter&lt;WheelEvent&gt;</code></td>
+              <td>Fires when scrolling/gliding on the canvas.</td>
+            </tr>
+            <tr>
+              <td><code>(connectStart)</code></td>
+              <td><code>EventEmitter&lt;Handle&gt;</code></td>
+              <td>Fires when the user starts dragging a connection line.</td>
+            </tr>
+            <tr>
+              <td><code>(connectEnd)</code></td>
+              <td><code>EventEmitter&lt;Handle&gt;</code></td>
+              <td>Fires when the user stops dragging a connection line.</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   `,
   styles: [`
-    :host { display: block; }
+    .table-wrapper { overflow-x: auto; margin: 1.5rem 0; border: 1px solid var(--color-border); border-radius: 8px; }
+    table { width: 100%; text-align: left; border-collapse: collapse; min-width: 600px; }
+    th { background: var(--color-bg-surface); font-weight: 600; padding: 12px 16px; border-bottom: 1px solid var(--color-border); color: var(--color-text-primary); font-size: 0.9rem; }
+    td { padding: 12px 16px; border-bottom: 1px solid var(--color-border); color: var(--color-text-secondary); font-size: 0.9rem; font-family: var(--font-mono); }
+    tr:last-child td { border-bottom: none; }
+    code { font-size: 0.85rem; color: var(--color-primary); background: transparent; padding: 0; border: none; }
   `]
 })
-export class DocOutputsComponent {
-  searchQuery = signal('');
-  allOutputs = signal<OutputDoc[]>(OUTPUT_DOCS);
-
-  filteredOutputs = computed(() => {
-    const query = this.searchQuery().toLowerCase();
-    return this.allOutputs().filter(output =>
-      output.name.toLowerCase().includes(query) ||
-      output.description.toLowerCase().includes(query) ||
-      output.category.toLowerCase().includes(query)
-    );
-  });
-
-  categories = computed(() => {
-    const outputs = this.filteredOutputs();
-    const uniqueCategories = new Set(outputs.map(i => i.category));
-    const order = ['Node Events', 'Edge Events', 'Global Events'];
-    return Array.from(uniqueCategories).sort((a, b) => {
-      const indexA = order.indexOf(a);
-      const indexB = order.indexOf(b);
-      if (indexA !== -1 && indexB !== -1) return indexA - indexB;
-      if (indexA !== -1) return -1;
-      if (indexB !== -1) return 1;
-      return a.localeCompare(b);
-    });
-  });
-
-  getOutputsByCategory(category: string): OutputDoc[] {
-    return this.filteredOutputs().filter(i => i.category === category);
-  }
-}
+export class DocOutputsComponent { }

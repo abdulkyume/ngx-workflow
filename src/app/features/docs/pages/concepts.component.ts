@@ -1,84 +1,131 @@
 import { Component } from '@angular/core';
+import { DocDemoComponent } from '../components/doc-demo.component';
 
 @Component({
-    selector: 'app-doc-concepts',
-    standalone: true,
-    template: `
-    <div class="doc-content animate-fade-in">
-      <h1>Core Concepts</h1>
+  selector: 'app-doc-concepts',
+  standalone: true,
+  imports: [DocDemoComponent],
+  template: `
+    <div class="doc-content prose animate-fade-in">
+      <div class="page-header">
+        <h1>Core Concepts</h1>
+        <p class="lead">
+           Understanding how ngx-workflow thinks about data is key to building complex editors.
+        </p>
+      </div>
+
+      <h2>The Data Model</h2>
       <p>
-        Understanding the data model is key to using ngx-workflow effectively. 
-        The library is "data-driven"—if you update the data, the view updates automatically.
+        The library is <strong>unidirectional</strong>. You provide the <code>nodes</code> and <code>edges</code> signals, 
+        and the library renders them. When a user drags a node, the library updates its internal state 
+        and emits events, but <strong>you</strong> own the source of truth.
       </p>
 
-      <h2>1. Nodes</h2>
-      <p>A <strong>Node</strong> represents a single block in your diagram.</p>
-      <pre><code>interface Node {{ '{' }}
-  id: string;           // Unique identifier
-  position: {{ '{' }}       // X/Y coordinates relative to canvas
-    x: number; 
-    y: number 
-  {{ '}' }};
-  label?: string;       // Default text label
-  type?: string;        // 'default' or custom type key
-  data?: any;           // Custom data payload for your templates
-  ports?: number;       // Port configuration (Bitmask)
-{{ '}' }}</code></pre>
+      <h3>Nodes</h3>
+      <p>A Node is the fundamental building block.</p>
+      
+      <app-doc-demo [code]="nodeCode">
+        <!-- Visual representation of a Node structure -->
+        <div class="concept-visual node-visual">
+           <div class="mock-node bg-white border shadow-sm p-4 rounded">
+             <div class="text-sm font-bold mb-2">My Node (id: '1')</div>
+             <div class="text-xs text-gray-500 font-mono">
+               x: 100, y: 50<br>
+               data: {{ '{' }} ... {{ '}' }}
+             </div>
+             <!-- Mock Handles -->
+             <div class="handle top"></div>
+             <div class="handle right"></div>
+             <div class="handle bottom"></div>
+             <div class="handle left"></div>
+           </div>
+        </div>
+      </app-doc-demo>
 
-      <h3>Port Configuration</h3>
-      <p>Ports determine where edges can connect. We use a <strong>Bitmask</strong> system for efficiency:</p>
+      <h3>Ports & Bitmasks</h3>
+      <p>
+        Instead of defining an array of handles, we use a <strong>Bitmask</strong> to define 
+        which sides of a node can have connections. This is extremely performant for large graphs.
+      </p>
 
-      <div class="table-container">
+      <div class="table-wrapper">
         <table>
-          <thead><tr><th>Position</th><th>Value</th><th>Binary</th></tr></thead>
+          <thead><tr><th>Side</th><th>Value</th><th>Binary</th></tr></thead>
           <tbody>
-            <tr><td><strong>Right</strong></td><td><code>1</code></td><td><code>0001</code></td></tr>
-            <tr><td><strong>Left</strong></td><td><code>2</code></td><td><code>0010</code></td></tr>
-            <tr><td><strong>Top</strong></td><td><code>4</code></td><td><code>0100</code></td></tr>
-            <tr><td><strong>Bottom</strong></td><td><code>8</code></td><td><code>1000</code></td></tr>
+            <tr><td>Right</td><td><code>1</code></td><td><code>0001</code></td></tr>
+            <tr><td>Left</td><td><code>2</code></td><td><code>0010</code></td></tr>
+            <tr><td>Top</td><td><code>4</code></td><td><code>0100</code></td></tr>
+            <tr><td>Bottom</td><td><code>8</code></td><td><code>1000</code></td></tr>
           </tbody>
         </table>
       </div>
 
-      <p><strong>Examples:</strong></p>
-      <ul class="feature-list">
-        <li>Right Only: <code>ports: 1</code></li>
-        <li>Left & Right: <code>ports: 3</code> (1 + 2)</li>
-        <li>All Sides: <code>ports: 15</code> (1 + 2 + 4 + 8)</li>
-      </ul>
-
-      <h2>2. Edges</h2>
-      <p>An <strong>Edge</strong> connects two nodes.</p>
-      <pre><code>interface Edge {{ '{' }}
-  id: string;
-  source: string;       // ID of source node
-  target: string;       // ID of target node
-  sourceHandle?: string;// 'left', 'right', 'top', 'bottom'
-  targetHandle?: string;// 'left', 'right', 'top', 'bottom'
-  animated?: boolean;   // Show flowing animation
-  style?: any;          // SVG styles (stroke, width, etc.)
-{{ '}' }}</code></pre>
+      <div class="info-box">
+        <strong>Tip:</strong> You can combine these! <code>3</code> (1+2) means Left & Right. 
+        <code>15</code> means All Sides.
+      </div>
+      
+      <h2>Edges</h2>
+      <p>Edges connect two nodes via their IDs and (optional) handle IDs.</p>
+      <app-doc-demo [code]="edgeCode">
+         <div class="concept-visual edge-visual">
+            <svg width="200" height="100" style="overflow: visible">
+              <path d="M 20 50 C 100 50, 100 50, 180 50" fill="none" stroke="#2563eb" stroke-width="2" marker-end="url(#arrow)"/>
+              <circle cx="20" cy="50" r="4" fill="#2563eb"/>
+              <circle cx="180" cy="50" r="4" fill="#2563eb"/>
+              <text x="100" y="40" text-anchor="middle" font-size="10" fill="#64748b">Edge (id: 'e1-2')</text>
+            </svg>
+         </div>
+      </app-doc-demo>
     </div>
   `,
-    styles: [`
-    .doc-content { max-width: 800px; line-height: 1.6; }
-    h1 { font-size: 2.5rem; font-weight: 800; margin-bottom: 24px; letter-spacing: -0.02em; }
-    h2 { font-size: 1.75rem; font-weight: 700; margin-top: 48px; margin-bottom: 24px; }
-    h3 { font-size: 1.25rem; font-weight: 600; margin-top: 32px; margin-bottom: 16px; }
-    p { margin-bottom: 16px; color: var(--color-text-secondary); font-size: 1.1rem; }
-    strong { color: var(--color-text-primary); }
-    pre { background: var(--color-bg-surface); padding: 24px; border-radius: 12px; overflow-x: auto; margin-bottom: 24px; border: 1px solid var(--color-border); }
-    code { font-family: var(--font-mono); font-size: 0.9rem; color: var(--color-text-primary); }
-    .feature-list { padding-left: 20px; }
-    .feature-list li { margin-bottom: 8px; color: var(--color-text-secondary); }
-    
-    .table-container { 
-      border: 1px solid var(--color-border); border-radius: 8px; overflow: hidden; margin-bottom: 24px;
+  styles: [`
+    .concept-visual {
+      display: flex; align-items: center; justify-content: center;
+      width: 100%; height: 100%; min-height: 200px;
+      background-size: 20px 20px;
+      background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
     }
-    table { width: 100%; border-collapse: collapse; text-align: left; }
-    th { background: var(--color-bg-surface); font-weight: 600; padding: 12px 16px; border-bottom: 1px solid var(--color-border); }
-    td { padding: 12px 16px; border-bottom: 1px solid var(--color-border); color: var(--color-text-secondary); }
-    tr:last-child td { border-bottom: none; }
+    
+    .mock-node {
+      width: 140px; background: white; border: 1px solid var(--color-border);
+      border-radius: 8px; padding: 12px; position: relative;
+      box-shadow: var(--shadow-sm);
+    }
+    .handle {
+      width: 8px; height: 8px; background: var(--color-text-primary); border-radius: 50%;
+      position: absolute;
+    }
+    .top { top: -4px; left: 50%; transform: translateX(-50%); }
+    .bottom { bottom: -4px; left: 50%; transform: translateX(-50%); }
+    .left { left: -4px; top: 50%; transform: translateY(-50%); }
+    .right { right: -4px; top: 50%; transform: translateY(-50%); }
+    
+    .info-box {
+      background: var(--color-bg-surface); border-left: 4px solid var(--color-accent);
+      padding: 1rem; margin: 1.5rem 0; border-radius: 0 8px 8px 0;
+      color: var(--color-text-secondary);
+    }
+    
+    /* Tables are handled by global .prose, but wrapper helps scrolling */
+    .table-wrapper { overflow-x: auto; margin: 1.5rem 0; border: 1px solid var(--color-border); border-radius: 8px; }
+    table { width: 100%; text-align: left; border-collapse: collapse; }
+    th, td { padding: 12px; border-bottom: 1px solid var(--color-border); }
+    th { background: var(--color-bg-surface); font-weight: 600; color: var(--color-text-primary); }
   `]
 })
-export class DocConceptsComponent { }
+export class DocConceptsComponent {
+  nodeCode = `interface Node {
+  id: string;
+  position: { x: number; y: number };
+  data: any;
+  ports: number; // 1 | 2 | 4 | 8
+}`;
+
+  edgeCode = `interface Edge {
+  id: string;
+  source: string;
+  target: string;
+  animated?: boolean;
+}`;
+}
