@@ -1141,36 +1141,6 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     this.diagramStateService.redo();
   }
 
-  @HostListener('window:keydown.control.c', ['$event'])
-  @HostListener('window:keydown.meta.c', ['$event'])
-  onCopyKeyPress(event: any): void {
-    // Don't prevent default if user is typing in an input
-    if (this.isInputActive(event)) return;
-    this.diagramStateService.copy();
-  }
-
-  @HostListener('window:keydown.control.v', ['$event'])
-  @HostListener('window:keydown.meta.v', ['$event'])
-  onPasteKeyPress(event: any): void {
-    if (this.isInputActive(event)) return;
-    this.diagramStateService.paste();
-  }
-
-  @HostListener('window:keydown.control.x', ['$event'])
-  @HostListener('window:keydown.meta.x', ['$event'])
-  onCutKeyPress(event: any): void {
-    if (this.isInputActive(event)) return;
-    this.diagramStateService.cut();
-  }
-
-  @HostListener('window:keydown.control.d', ['$event'])
-  @HostListener('window:keydown.meta.d', ['$event'])
-  onDuplicateKeyPress(event: any): void {
-    if (this.isInputActive(event)) return;
-    event.preventDefault(); // Prevent browser bookmark
-    this.diagramStateService.duplicate();
-  }
-
   // Duplicate Group/Ungroup listeners removed (superseded by new listeners below)
 
   @HostListener('window:keydown.control.]', ['$event'])
