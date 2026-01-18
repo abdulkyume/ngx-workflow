@@ -53,7 +53,7 @@ We use a standard GitHub flow for contributions:
     -   Ensure you have Node.js (LTS) and Angular CLI installed globally.
     -   Install dependencies: `npm install`
     -   Build the library: `npm run build` (or `ng build ngx-workflow`)
-    -   Run the demo application to test your changes: `npm start` (or `ng serve --project ngx-workflow-demo`)
+    -   Run the demo application to test your changes: `npm start` (or `ng serve --project ngx-workflow-web`)
 5.  **Make Your Changes:**
     -   Write clean, maintainable, and idiomatic Angular/TypeScript code.
     -   Adhere to the existing code style.

@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "ngx-workflow-demo": {
+    "ngx-workflow-web": {
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -24,6 +24,9 @@
             ],
             "styles": [
               "src/styles.css"
+            ],
+            "allowedCommonJsDependencies": [
+              "elkjs"
             ]
           },
           "configurations": {
@@ -55,10 +58,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "ngx-workflow-demo:build:production"
+              "buildTarget": "ngx-workflow-web:build:production"
             },
             "development": {
-              "buildTarget": "ngx-workflow-demo:build:development"
+              "buildTarget": "ngx-workflow-web:build:development"
             }
           },
           "defaultConfiguration": "development"
