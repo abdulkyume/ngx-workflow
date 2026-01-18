@@ -25,7 +25,7 @@ export const routes: Routes = [
                     { path: 'outputs/:id', loadComponent: () => import('./features/docs/pages/doc-output-detail.component').then(m => m.DocOutputDetailComponent) }
                 ]
             },
-            { path: 'sandbox', loadComponent: () => import('./features/sandbox/sandbox.component').then(m => m.SandboxComponent) },
+            // { path: 'sandbox', loadComponent: () => import('./features/sandbox/sandbox.component').then(m => m.SandboxComponent) },
             { path: 'examples', component: ExamplesComponent }
         ]
     },
