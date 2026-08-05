@@ -69,6 +69,8 @@ function getBadgePosition(node: WorkflowNode, position: string | undefined, inde
 import { HandleComponent } from '../handle/handle.component';
 import { HandleRegistryService } from '../../services/handle-registry.service';
 import { LayoutService } from '../../services/layout.service';
+import { UndoRedoService } from '../../services/undo-redo.service';
+import { SearchService } from '../../services/search.service';
 
 @Component({
   selector: 'ngx-workflow-diagram',
@@ -96,6 +98,17 @@ import { LayoutService } from '../../services/layout.service';
       useExisting: forwardRef(() => DiagramComponent),
       multi: true,
     },
+    // Per-diagram instances so multiple <ngx-workflow-diagram> on one page
+    // (e.g. landing hero + preview) do not share / clobber state.
+    DiagramStateService,
+    NodeDragService,
+    SelectionBoxService,
+    CanvasPanZoomService,
+    TouchGestureService,
+    HandleRegistryService,
+    UndoRedoService,
+    ContextMenuService,
+    SearchService,
   ]
 })
 export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor {

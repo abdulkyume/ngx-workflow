@@ -5,19 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.5.0] - 2026-08-05
+## [0.5.1] - 2026-08-05
+
+### Fixed
+- Multiple `<ngx-workflow-diagram>` instances on one page no longer share state (per-diagram providers for state, drag, handles, undo/redo, etc.)
+- Manual port-to-port connecting (handle clicks no longer start node drag)
+- `maxConnectionsPerHandle` input signal was read without `()`, rejecting every manual connection
+- Edges follow live node positions while dragging; proximity auto-connect respects the same validators/limits
+- Controlled `[edges]` sync includes empty `[]` after the last edge is deleted
 
 ### Added
 - `Node.maxConnectionsPerPort` and `handleConfig[port].maxConnections` for per-node / per-port edge limits
 - Properties sidebar fields: **Max connections / port** and **Per-port limits**
 - `ports: 0` option (hide all default handles)
-- Docs site: full Inputs/Outputs catalogs with examples; connection-limits guides on API / Concepts / Customization
 
-### Fixed
-- Manual port-to-port connecting (handle clicks no longer start node drag)
-- `maxConnectionsPerHandle` input signal was read without `()`, rejecting every manual connection
-- Edges follow live node positions while dragging; proximity auto-connect respects the same validators/limits
-- Controlled `[edges]` sync includes empty `[]` after the last edge is deleted
+### Changed
+- CI / `engines` require Node.js **>= 22.22.3** (Angular 22 CLI)
+
+### Notes
+- Connection limit priority: `handleConfig[port].maxConnections` → `maxConnectionsPerPort` → `[maxConnectionsPerHandle]`
+
+## [0.5.0] - 2026-08-05
 
 ### Changed
 - Workspace upgraded to **Angular 22.1**
@@ -27,7 +35,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Notes
 - Angular 14–16 are not supported: control flow and signal `input()`/`output()` require 17.1+
-- Connection limit priority: `handleConfig[port].maxConnections` → `maxConnectionsPerPort` → `[maxConnectionsPerHandle]`
 
 ## [0.4.2] - 2026-08-05
 

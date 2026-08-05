@@ -47,7 +47,8 @@ describe('DiagramComponent Complete 100% Coverage Suite', () => {
 
     fixture = TestBed.createComponent(DiagramComponent);
     component = fixture.componentInstance;
-    diagramState = TestBed.inject(DiagramStateService);
+    // Diagram provides its own DiagramStateService — use the component injector
+    diagramState = fixture.debugElement.injector.get(DiagramStateService);
     fixture.componentRef.setInput('nodes', [n1, n2]);
     fixture.componentRef.setInput('edges', [e1]);
     diagramState.nodes.set([n1, n2]);

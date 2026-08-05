@@ -1,4 +1,4 @@
-import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { NgxWorkflowModule, Node, Edge } from 'ngx-workflow';
 
@@ -103,13 +103,15 @@ interface DiagramPreset {
             <!-- Canvas Viewport -->
             <div class="editor-content">
               <ngx-workflow-diagram
-                [nodes]="activePreset().nodes"
-                [edges]="getEdgesWithAnim()"
+                [nodes]="heroNodes()"
+                [edges]="heroEdges()"
                 [showBackground]="true"
                 [backgroundVariant]="bgVariant()"
                 [showZoomControls]="true"
                 [showMinimap]="true"
                 [showLayoutControls]="true"
+                (nodesChange)="heroNodes.set($event)"
+                (edgesChange)="onHeroEdgesChange($event)"
               ></ngx-workflow-diagram>
             </div>
           </div>
@@ -171,11 +173,13 @@ interface DiagramPreset {
             </div>
             <div class="preview-canvas">
               <ngx-workflow-diagram
-                [nodes]="sampleCodeNodes"
-                [edges]="sampleCodeEdges"
+                [nodes]="sampleCodeNodes()"
+                [edges]="sampleCodeEdges()"
                 [showBackground]="true"
                 backgroundVariant="dots"
                 [showZoomControls]="true"
+                (nodesChange)="sampleCodeNodes.set($event)"
+                (edgesChange)="sampleCodeEdges.set($event)"
               ></ngx-workflow-diagram>
             </div>
           </div>
@@ -973,17 +977,33 @@ export class HomeComponent {
 
   activePreset = signal<DiagramPreset>(this.presets[0]);
 
-  // Code preview sample data
-  sampleCodeNodes: Node[] = [
+  /** Live hero graph state (cloned from preset so drag/connect can update) */
+  heroNodes = signal<Node[]>(this.cloneNodes(this.presets[0].nodes));
+  private heroBaseEdges = signal<Edge[]>(this.cloneEdges(this.presets[0].edges));
+  heroEdges = computed(() => {
+    const animated = this.animatedEdges();
+    return this.heroBaseEdges().map(e => ({ ...e, animated }));
+  });
+
+  // Code preview sample data (own diagram instance — must not share hero state)
+  sampleCodeNodes = signal<Node[]>([
     { id: '1', label: 'Input Trigger', position: { x: 40, y: 120 }, ports: 2 },
     { id: '2', label: 'Data Processing', position: { x: 260, y: 120 }, ports: 4 },
     { id: '3', label: 'Database Storage', position: { x: 500, y: 120 }, ports: 2 }
-  ];
+  ]);
 
-  sampleCodeEdges: Edge[] = [
+  sampleCodeEdges = signal<Edge[]>([
     { id: 'e1-2', source: '1', target: '2', sourceHandle: 'right', targetHandle: 'left', animated: true },
     { id: 'e2-3', source: '2', target: '3', sourceHandle: 'right', targetHandle: 'left' }
-  ];
+  ]);
+
+  private cloneNodes(nodes: Node[]): Node[] {
+    return nodes.map(n => ({ ...n, position: { ...n.position } }));
+  }
+
+  private cloneEdges(edges: Edge[]): Edge[] {
+    return edges.map(e => ({ ...e }));
+  }
 
   setPkg(mgr: 'npm' | 'pnpm' | 'yarn') {
     this.pkgManager.set(mgr);
@@ -1005,6 +1025,13 @@ export class HomeComponent {
 
   selectPreset(preset: DiagramPreset) {
     this.activePreset.set(preset);
+    this.heroNodes.set(this.cloneNodes(preset.nodes));
+    this.heroBaseEdges.set(this.cloneEdges(preset.edges));
+  }
+
+  onHeroEdgesChange(edges: Edge[]) {
+    // Persist structure without the ephemeral animated flag from the computed view
+    this.heroBaseEdges.set(edges.map(({ animated, ...rest }) => rest));
   }
 
   toggleAnimated() {
@@ -1016,13 +1043,5 @@ export class HomeComponent {
     if (current === 'dots') this.bgVariant.set('lines');
     else if (current === 'lines') this.bgVariant.set('cross');
     else this.bgVariant.set('dots');
-  }
-
-  getEdgesWithAnim(): Edge[] {
-    const isAnim = this.animatedEdges();
-    return this.activePreset().edges.map(e => ({
-      ...e,
-      animated: isAnim
-    }));
   }
 }

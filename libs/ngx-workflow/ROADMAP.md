@@ -1,6 +1,6 @@
 # ngx-workflow Roadmap
 
-## Currently Available (v0.5.0)
+## Currently Available (v0.5.1)
 
 ### Core Features
 - Node grouping with parent/child relationships
