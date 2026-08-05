@@ -22,6 +22,7 @@ import { LayoutAlignmentControlsComponent } from '../layout-alignment-controls/l
 import { ThemeService, ColorMode } from '../../services/theme.service';
 import { ExportService } from '../../services/export.service';
 import { ExportControlsComponent } from '../export-controls/export-controls.component';
+import { UndoRedoControlsComponent } from '../undo-redo-controls/undo-redo-controls.component';
 import { AutoSaveService } from '../../services/auto-save.service';
 import { TouchGestureService } from '../../services/touch-gesture.service';
 import { CanvasPanZoomService } from '../../services/canvas-pan-zoom.service';
@@ -86,6 +87,7 @@ import { LayoutService } from '../../services/layout.service';
     ContextMenuComponent,
     ExportControlsComponent,
     LayoutAlignmentControlsComponent,
+    UndoRedoControlsComponent,
     HandleComponent
   ],
   providers: [
@@ -137,9 +139,10 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
   readonly initialEdges = input<Edge[]>([]);
   readonly initialViewport = input<Viewport | undefined>(undefined);
 
-  // Inputs for binding (sync with service via effect)
+  // Inputs for binding (sync with service via effect).
+  // `undefined` = uncontrolled (diagram owns state); array (including []) = controlled by parent.
   readonly nodes = input<WorkflowNode[]>([]);
-  readonly edges = input<Edge[]>([]);
+  readonly edges = input<Edge[] | undefined>(undefined);
 
   readonly showZoomControls = input<boolean>(true);
   readonly minZoom = input<number>(0.1);
@@ -219,6 +222,11 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
 
   // Deletion control event
   readonly beforeDelete = output<{ nodes: WorkflowNode[]; edges: Edge[]; cancel: () => void }>();
+
+  // Import feedback
+  readonly importError = output<{ message: string; error?: unknown }>();
+  readonly importNotification = signal<string | null>(null);
+  private importNotificationTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Connection validation callback
   readonly validateConnection = input<((connection: {
@@ -361,6 +369,26 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
     })));
   }
 
+  /**
+   * Live node positions from diagram state (not the possibly-stale [nodes] input).
+   * Required so edges track nodes while dragging — nodesChange is deferred until drag end.
+   */
+  private getLiveNodes(): WorkflowNode[] {
+    return this.viewNodes ? this.viewNodes() : this.diagramStateService.nodes();
+  }
+
+  /** True when this edge is attached to a node currently being dragged. */
+  private isEdgeAttachedToDrag(edge: Edge | TempEdge): boolean {
+    if (!this.isDraggingNode || !('source' in edge) || !('target' in edge)) {
+      return false;
+    }
+    const draggingIds = this.nodeDragService.draggingNodes.map((n) => n.id);
+    if (draggingIds.length === 0 && this.nodeDragService.draggingNode) {
+      draggingIds.push(this.nodeDragService.draggingNode.id);
+    }
+    return draggingIds.includes(edge.source) || draggingIds.includes(edge.target);
+  }
+
 
 
   getBadgeTransform(node: WorkflowNode, badge: any, index: number): string {
@@ -382,11 +410,24 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
       return;
     }
 
-    // Ignore if clicking on a handle or resize handle
+    // Ignore if clicking on a handle or resize handle.
+    // Target is often an inner <circle>, so use closest() — not classList on the target.
     const target = event.target as HTMLElement;
-    if (target.classList.contains('ngx-workflow__handle') ||
+    const handleEl = target.closest('.ngx-workflow__handle') as HTMLElement | null;
+    if (handleEl) {
+      // Fallback if the handle host listener did not run (SVG component edge cases)
+      const handleId =
+        handleEl.getAttribute('data-handleid') ||
+        handleEl.dataset?.['handleid'] ||
+        undefined;
+      this.startConnecting(event, handleEl, node.id, handleId);
+      return;
+    }
+    if (
       target.classList.contains('ngx-workflow__resize-handle') ||
-      target.closest('.nodrag')) { // Check for nodrag class
+      target.closest('.ngx-workflow__resize-handle') ||
+      target.closest('.nodrag')
+    ) {
       return;
     }
 
@@ -504,7 +545,7 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
       type = 'edge';
       const edgeId = edgeElement.dataset['id'];
       if (edgeId) {
-        item = this.edges().find(e => e.id === edgeId);
+        item = this.diagramStateService.edges().find(e => e.id === edgeId);
       }
     }
 
@@ -664,8 +705,8 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
    * Validates and removes edges that are no longer connected to valid ports
    */
   private validateEdgesForNode(node: WorkflowNode): void {
-    const edges = this.edges();
-    const ports = node.ports || 4; // Default to 4 (all)
+    const edges = this.diagramStateService.edges();
+    const ports = node.ports ?? 4; // Default to 4 (all); 0 = none
     const validHandles = new Set<string>();
 
     if (ports === 1 || ports === 2 || ports === 4) validHandles.add('top');
@@ -733,8 +774,11 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
     sourceHandleId?: string,
     targetHandleId?: string
   ): boolean {
+    // Use live service edges — [edges] input can lag behind deletes until the parent syncs
+    const liveEdges = this.diagramStateService.edges();
+
     // Prevent duplicate edges between same source and target (exact match including handles)
-    const existing = this.edges().find(e =>
+    const existing = liveEdges.find(e =>
       e.source === sourceId &&
       e.target === targetId &&
       (e.sourceHandle || '') === (sourceHandleId || '') &&
@@ -742,10 +786,6 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
     );
 
     if (existing) {
-      console.warn('isValidConnection: Duplicate prevented', {
-        sourceId, targetId, sourceHandleId, targetHandleId,
-        existingEdge: existing
-      });
       return false;
     }
 
@@ -813,11 +853,15 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
   private checkPortValidity(nodeId: string, handleId: string | undefined): boolean {
     if (!handleId) return true; // Center connection (if allowed) or no handle specified
 
-    const node = this.nodes().find(n => n.id === nodeId);
+    const node = this.getLiveNodes().find(n => n.id === nodeId);
     if (!node) return false;
 
-    const ports = node.ports || 4; // Default to 4 (all)
+    const ports = node.ports ?? 4; // Default to 4 (all); 0 = none
 
+    // 0: No ports
+    if (ports === 0) {
+      return false;
+    }
     // 1: Top
     if (ports === 1) {
       return handleId === 'top';
@@ -836,35 +880,41 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
 
   /**
    * Check if a handle has reached its maximum connection limit.
-   * Supports both global and per-handle configuration.
+   * Priority: handleConfig[handle].maxConnections → node.maxConnectionsPerPort
+   * → data.handleConfig (legacy) → diagram [maxConnectionsPerHandle]
    */
   private checkConnectionLimits(
     nodeId: string,
     handleId: string | undefined,
     type: 'source' | 'target'
   ): boolean {
-    const node = this.nodes().find(n => n.id === nodeId);
+    const node = this.getLiveNodes().find(n => n.id === nodeId);
     if (!node) return true;
 
-    // Get per-handle limit from node data
-    const handleConfig = node.data?.handleConfig?.[handleId || ''];
-    const handleLimit = handleConfig?.maxConnections;
+    const handleKey = handleId || '';
+    const handleLimit =
+      node.handleConfig?.[handleKey]?.maxConnections ??
+      (typeof node.handleConfig?.[handleKey]?.isConnectable === 'number'
+        ? node.handleConfig[handleKey].isConnectable as number
+        : undefined) ??
+      node.maxConnectionsPerPort ??
+      node.data?.handleConfig?.[handleKey]?.maxConnections;
 
-    // Determine effective limit (per-handle overrides global)
+    // maxConnectionsPerHandle is an input signal — must call it
     const limit = handleLimit !== undefined
       ? handleLimit
-      : this.maxConnectionsPerHandle;
+      : this.maxConnectionsPerHandle();
 
     // If no limit set, allow connection
     if (limit === undefined) return true;
 
-    // Count existing connections for this handle
-    const connectionCount = this.edges().filter(edge => {
+    // Count existing connections for this handle (live state)
+    // Count both as source and as target so the port's total edges is capped
+    const connectionCount = this.diagramStateService.edges().filter(edge => {
       if (type === 'source') {
-        return edge.source === nodeId && edge.sourceHandle === handleId;
-      } else {
-        return edge.target === nodeId && edge.targetHandle === handleId;
+        return edge.source === nodeId && (edge.sourceHandle || '') === handleKey;
       }
+      return edge.target === nodeId && (edge.targetHandle || '') === handleKey;
     }).length;
 
     return connectionCount < limit;
@@ -946,8 +996,9 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
     });
 
     effect(() => {
+      // Controlled mode only: sync parent edges, including [] after the last edge is deleted
       const inputEdges = this.edges();
-      if (inputEdges && inputEdges.length > 0) {
+      if (inputEdges !== undefined) {
         this.diagramStateService.edges.set(inputEdges);
       }
     });
@@ -1101,6 +1152,10 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
 
   ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
+    if (this.importNotificationTimer) {
+      clearTimeout(this.importNotificationTimer);
+      this.importNotificationTimer = null;
+    }
     if (this.resizeObserver) {
       this.resizeObserver.disconnect();
     }
@@ -1445,7 +1500,6 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
 
 
   onPointerMove(event: PointerEvent): void {
-    // console.log('onPointerMove', { dragging: this.isDraggingNode, connecting: this.isConnecting, resizing: this.isResizing });
     if (this.isResizing) {
       this.resize(event);
     } else if (this.isUpdatingEdge) {
@@ -1494,12 +1548,43 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
    */
   onHandlePointerDown(event: PointerEvent, node: WorkflowNode, handleId: string): void {
     const handleElement = (event.currentTarget as HTMLElement);
-    this.startConnecting(event, handleElement);
+    this.startConnecting(event, handleElement, node.id, handleId);
   }
 
-  private startConnecting(event: PointerEvent, handleElement: HTMLElement): void {
+  private startConnecting(
+    event: PointerEvent,
+    handleElement: HTMLElement,
+    nodeId?: string,
+    handleId?: string
+  ): void {
     event.stopPropagation();
     event.preventDefault();
+
+    // Port drag must not also start a node drag
+    if (this.nodeDragService.isDraggingNode) {
+      this.nodeDragService.stopDraggingNode(event);
+    }
+
+    const resolvedNodeId =
+      nodeId ||
+      handleElement.getAttribute('data-nodeid') ||
+      handleElement.dataset?.['nodeid'] ||
+      undefined;
+    const resolvedHandleId =
+      handleId ||
+      handleElement.getAttribute('data-handleid') ||
+      handleElement.dataset?.['handleid'] ||
+      undefined;
+
+    if (!resolvedNodeId) {
+      return;
+    }
+
+    // Replace any in-progress connection preview
+    if (this.currentPreviewEdgeId) {
+      this.diagramStateService.removeEdge(this.currentPreviewEdgeId);
+      this.currentPreviewEdgeId = null;
+    }
 
     this.isConnecting = true;
     // Track start position to prevent accidental clicks triggering drops
@@ -1513,18 +1598,13 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
       }
     }
 
-    const nodeId = handleElement.dataset['nodeid'];
-    const handleId = handleElement.dataset['handleid'];
-
-    if (!nodeId) return;
-
-    this.connectingSourceNodeId = nodeId;
-    this.connectingSourceHandleId = handleId;
+    this.connectingSourceNodeId = resolvedNodeId;
+    this.connectingSourceHandleId = resolvedHandleId;
 
     // Emit connectStart event
-    this.connectStart.emit({ nodeId, handleId });
+    this.connectStart.emit({ nodeId: resolvedNodeId, handleId: resolvedHandleId });
 
-    const previewEdgeId = `preview - ${uuidv4()} `;
+    const previewEdgeId = `preview-${uuidv4()}`;
     this.currentPreviewEdgeId = previewEdgeId;
 
     const viewport = this.viewport();
@@ -1537,8 +1617,8 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
 
     const newTempEdge: TempEdge = {
       id: previewEdgeId,
-      source: nodeId,
-      sourceHandle: handleId,
+      source: resolvedNodeId,
+      sourceHandle: resolvedHandleId,
       target: 'preview-target',
       targetHandle: undefined,
       type: 'straight',
@@ -1570,7 +1650,7 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
       // Scale detection radius with zoom so it works reliably at any zoom level
       let minDistance = Math.max(35, 35 / viewport.zoom);
 
-      const nodes = this.nodes();
+      const nodes = this.getLiveNodes();
 
       // First pass: check handle proximity (precise snapping)
       for (const node of nodes) {
@@ -1667,14 +1747,15 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
     if (this.currentTargetHandle && this.connectingSourceNodeId) {
       const sourceId = this.connectingSourceNodeId;
       const targetId = this.currentTargetHandle.nodeId;
+      const targetHandleId = this.currentTargetHandle.handleId;
 
-      if (this.isValidConnection(sourceId, targetId, this.connectingSourceHandleId, this.currentTargetHandle.handleId)) {
+      if (this.isValidConnection(sourceId, targetId, this.connectingSourceHandleId, targetHandleId)) {
         const newEdge: Edge = {
           id: uuidv4(),
           source: sourceId,
           sourceHandle: this.connectingSourceHandleId,
           target: targetId,
-          targetHandle: this.currentTargetHandle.handleId,
+          targetHandle: targetHandleId,
           // type: 'bezier', // Removed to use default smart routing
         };
         this.diagramStateService.addEdge(newEdge);
@@ -1682,12 +1763,12 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
         // Emit connectEnd event for successful connection
         this.connectEnd.emit({
           nodeId: targetId,
-          handleId: this.currentTargetHandle.handleId
+          handleId: targetHandleId
         });
       } else {
         // Visual feedback for invalid connection: shake the specific target handle port
         const targetHandleEl = this.el.nativeElement.querySelector(
-          `.ngx-workflow__handle[data-nodeid="${targetId}"][data-handleid="${this.currentTargetHandle.handleId}"]`
+          `.ngx-workflow__handle[data-nodeid="${targetId}"][data-handleid="${targetHandleId}"]`
         );
         if (targetHandleEl) {
           this.renderer.addClass(targetHandleEl, 'ngx-workflow__handle--invalid-shake');
@@ -1697,7 +1778,7 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
         // Emit connectEnd with target node (connection rejected)
         this.connectEnd.emit({
           nodeId: targetId,
-          handleId: this.currentTargetHandle.handleId
+          handleId: targetHandleId
         });
       }
     } else if (this.connectingSourceNodeId && !this.currentTargetHandle) {
@@ -1745,7 +1826,7 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
   }
 
   private checkProximityConnect(node: WorkflowNode, currentPosition: { x: number, y: number }): void {
-    const nodes = this.nodes();
+    const nodes = this.getLiveNodes();
 
     // Calculate Absolute Position of the dragged node
     let nodeAbsX = currentPosition.x;
@@ -1870,13 +1951,10 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
 
 
 
-        // Check if edge already exists
-        const edgeExists = this.diagramStateService.edges().some(e =>
-          e.source === source && e.target === target &&
-          e.sourceHandle === sourceHandle && e.targetHandle === targetHandle
-        );
+        // Respect connection limits / validators (same rules as manual connect)
+        const canConnect = this.isValidConnection(source, target, sourceHandle, targetHandle);
 
-        if (!edgeExists) {
+        if (canConnect) {
           this.proximityCandidate = { source, target, sourceHandle, targetHandle };
           this.diagramStateService.addTempEdge({
             id: previewId,
@@ -1961,9 +2039,12 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
 
   private stopDraggingNode(event: PointerEvent): void {
     const draggedNodes = [...this.nodeDragService.draggingNodes];
+    const primaryDragged = this.nodeDragService.draggingNode;
     this.stopAutoPan();
     this.nodeDragService.stopDraggingNode(event);
-    this.updatePathFinder(this.nodes());
+    // Use live service state — [nodes] input is stale until we emit nodesChange
+    const liveNodes = this.diagramStateService.nodes();
+    this.updatePathFinder(liveNodes);
     draggedNodes.forEach(node => {
       this.checkReparenting(node);
     });
@@ -1971,7 +2052,7 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
     this.hoveredGroupId.set(null); // Clear group hover state
 
     // Commit Proximity Connection
-    if (this.proximityCandidate && this.draggingNode) {
+    if (this.proximityCandidate && primaryDragged) {
       // Create real edge
       const newEdge: Edge = {
         id: uuidv4(),
@@ -1994,13 +2075,13 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
       this.proximityCandidate = null;
     }
 
-    // Emit the final state after drag is complete
-    this.nodesChange.emit(this.nodes());
+    // Emit the final live state after drag is complete
+    this.nodesChange.emit(this.diagramStateService.nodes());
   }
 
   private checkReparenting(node: WorkflowNode): void {
     // Find if the node is dropped onto a group
-    const nodes = this.nodes();
+    const nodes = this.getLiveNodes();
     const nodeAbsPos = this.diagramStateService.getAbsolutePosition(node, nodes);
 
     const nodeRect = {
@@ -2369,7 +2450,7 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
   // --- Edge Logic ---
 
   getEdgePath(edge: Edge | TempEdge, isTemporary: boolean = false): string {
-    const nodes = this.nodes();
+    const nodes = this.getLiveNodes();
     let sourcePos: XYPosition;
     let targetPos: XYPosition;
 
@@ -2396,33 +2477,10 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
       return getWaypointPath(sourcePos, targetPos, edge.waypoints);
     }
 
-    // Use smart routing if type is 'smart' or not specified (default)
-    // But respect explicit 'straight' type if user wants simple straight line
-    if ((edge.type === 'smart' || !edge.type) && !isTemporary) {
-      const cacheKey = `${edge.id}-${sourcePos.x},${sourcePos.y}-${targetPos.x},${targetPos.y}`;
-
-      if (this.pathCache.has(cacheKey)) {
-        return this.pathCache.get(cacheKey)!;
-      }
-
-      try {
-        if (!this._pathFinder) {
-          this.updatePathFinder(this.nodes());
-        }
-        const path = this._pathFinder!.findPath(sourcePos, targetPos);
-        const d = getSmartEdgePath(path);
-        this.pathCache.set(cacheKey, d);
-        return d;
-      } catch (e) {
-        console.warn('Pathfinding failed, falling back to straight path', e);
-        return getStraightPath(sourcePos, targetPos);
-      }
-    }
-
     // Calculate curvature offset for parallel edges between same source & target nodes
     let curvatureOffset = 0;
     if (!isTemporary && 'source' in edge && 'target' in edge) {
-      const allEdges = this.edges();
+      const allEdges = this.diagramStateService.edges();
       const nodePairKey = [edge.source, edge.target].sort().join('::');
       const parallelEdges = allEdges.filter(
         (e) => [e.source, e.target].sort().join('::') === nodePairKey
@@ -2432,6 +2490,33 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
         if (edgeIndex !== -1) {
           curvatureOffset = (edgeIndex - (parallelEdges.length - 1) / 2) * 35;
         }
+      }
+    }
+
+    // Use smart routing if type is 'smart' or not specified (default).
+    // Only edges attached to the dragged node(s) use a bezier fallback — other edges keep their path.
+    if ((edge.type === 'smart' || !edge.type) && !isTemporary) {
+      if (this.isEdgeAttachedToDrag(edge)) {
+        return getBezierPath(sourcePos, targetPos, curvatureOffset);
+      }
+
+      const cacheKey = `${edge.id}-${sourcePos.x},${sourcePos.y}-${targetPos.x},${targetPos.y}`;
+
+      if (this.pathCache.has(cacheKey)) {
+        return this.pathCache.get(cacheKey)!;
+      }
+
+      try {
+        if (!this._pathFinder) {
+          this.updatePathFinder(this.getLiveNodes());
+        }
+        const path = this._pathFinder!.findPath(sourcePos, targetPos);
+        const d = getSmartEdgePath(path);
+        this.pathCache.set(cacheKey, d);
+        return d;
+      } catch (e) {
+        console.warn('Pathfinding failed, falling back to straight path', e);
+        return getStraightPath(sourcePos, targetPos);
       }
     }
 
@@ -2455,7 +2540,7 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
   }
 
   getEdgeLabelPosition(edge: Edge): XYPosition {
-    const nodes = this.nodes();
+    const nodes = this.getLiveNodes();
     const sourceNode = getNode(edge.source, nodes);
     const targetNode = getNode(edge.target, nodes);
 
@@ -2466,16 +2551,8 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
     const sourcePos = this.getHandleAbsolutePosition(sourceNode, edge.sourceHandle);
     const targetPos = this.getHandleAbsolutePosition(targetNode, edge.targetHandle);
 
-    if (edge.type === 'smart' || !edge.type) {
+    if ((edge.type === 'smart' || !edge.type) && !this.isEdgeAttachedToDrag(edge)) {
       try {
-        // For label position, we can re-use the cached path if available, 
-        // but we need the points, not the string. 
-        // For now, let's just re-calculate or maybe cache points too?
-        // Re-calculating for label might be okay if getEdgePath is cached, 
-        // but ideally we cache the points.
-        // Let's optimize this later if needed, or cache points instead of string.
-
-        // Optimization: Cache points instead of string
         const cacheKey = `${edge.id}-${sourcePos.x},${sourcePos.y}-${targetPos.x},${targetPos.y}-points`;
         let path: XYPosition[];
 
@@ -2483,7 +2560,7 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
           path = this.pathPointsCache.get(cacheKey)!;
         } else {
           if (!this._pathFinder) {
-            this.updatePathFinder(this.nodes());
+            this.updatePathFinder(this.getLiveNodes());
           }
           path = this._pathFinder!.findPath(sourcePos, targetPos);
           this.pathPointsCache.set(cacheKey, path);
@@ -2803,13 +2880,16 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
         // Basic validation
         if (state.nodes && state.edges && state.viewport) {
           this.setDiagramState(state);
+          this.showImportNotification('Diagram imported successfully.');
         } else {
-          console.error('Invalid diagram JSON format');
-          // TODO: Show user notification
+          const message = 'Invalid diagram JSON format. Expected nodes, edges, and viewport.';
+          console.error(message);
+          this.emitImportError(message);
         }
       } catch (error) {
-        console.error('Error parsing JSON', error);
-        // TODO: Show user notification
+        const message = 'Failed to parse diagram JSON file.';
+        console.error(message, error);
+        this.emitImportError(message, error);
       }
     };
 
@@ -2823,6 +2903,32 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  }
+
+  private emitImportError(message: string, error?: unknown): void {
+    this.importError.emit({ message, error });
+    this.showImportNotification(message);
+  }
+
+  private showImportNotification(message: string): void {
+    this.importNotification.set(message);
+    if (this.importNotificationTimer) {
+      clearTimeout(this.importNotificationTimer);
+    }
+    this.importNotificationTimer = setTimeout(() => {
+      this.importNotification.set(null);
+      this.importNotificationTimer = null;
+      this.cdRef.markForCheck();
+    }, 4000);
+    this.cdRef.markForCheck();
+  }
+
+  dismissImportNotification(): void {
+    this.importNotification.set(null);
+    if (this.importNotificationTimer) {
+      clearTimeout(this.importNotificationTimer);
+      this.importNotificationTimer = null;
+    }
   }
 
   onSearch(event: Event): void {
@@ -3011,7 +3117,7 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
    * Move keyboard focus to a connected node via edges.
    */
   private focusConnectedNode(node: WorkflowNode, direction: 'outgoing' | 'incoming'): void {
-    const edges = this.edges();
+    const edges = this.diagramStateService.edges();
     let targetId: string | undefined;
 
     if (direction === 'outgoing') {
@@ -3330,8 +3436,9 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
 
   // Helper method for handle position
   getHandleAbsolutePosition(node: WorkflowNode, handleId: string | undefined): XYPosition {
-    // Get absolute position of the node (recurses up parents)
-    const absPos = this.diagramStateService.getAbsolutePosition(node, this.nodes());
+    // Prefer computed absolute render position (keeps edges in sync while dragging)
+    const absPos = node._renderPosition
+      ?? this.diagramStateService.getAbsolutePosition(node, this.getLiveNodes());
 
     const nodeWidth = node.width || 170;
     const nodeHeight = node.height || 60;
@@ -3437,8 +3544,8 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
   }
 
   async onApplyLayout(algorithm: 'auto' | 'force' | 'hierarchical' | 'circular') {
-    const nodes = this.nodes();
-    const edges = this.edges();
+    const nodes = this.getLiveNodes();
+    const edges = this.diagramStateService.edges();
     let layoutedNodes: WorkflowNode[] = [];
 
     // Show loading state?

@@ -1,5 +1,5 @@
-import { Component, Input, OnInit, ChangeDetectorRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, Input, OnInit, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
+
 import { FormsModule } from '@angular/forms';
 import { DiagramComponent } from '../diagram/diagram.component';
 import { VersionSnapshot } from '../../models/version.model';
@@ -7,8 +7,9 @@ import { VersionSnapshot } from '../../models/version.model';
 @Component({
     selector: 'ngx-workflow-version-history',
     standalone: true,
-    imports: [CommonModule, FormsModule],
+    imports: [FormsModule],
     templateUrl: './version-history.component.html',
+    changeDetection: ChangeDetectionStrategy.OnPush,
     styleUrls: ['./version-history.component.scss']
 })
 export class VersionHistoryComponent implements OnInit {

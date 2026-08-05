@@ -1130,7 +1130,6 @@ export class DiagramStateService {
   }
 
   moveNode(id: string, newPosition: XYPosition): void {
-    // console.log('moveNode', id, newPosition);
     const node = this.nodes().find((n) => n.id === id);
     if (!node) return;
 

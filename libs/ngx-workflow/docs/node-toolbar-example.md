@@ -22,15 +22,16 @@ import { CommonModule } from '@angular/common';
         (nodesChange)="onNodesChange($event)">
         
         <!-- Toolbar for each selected node -->
-        <ngx-workflow-node-toolbar 
-          *ngFor="let node of selectedNodes"
-          [nodeId]="node.id" 
-          position="top"
-          align="center">
-          <button (click)="deleteNode(node.id)" title="Delete Node">🗑️</button>
-          <button (click)="duplicateNode(node.id)" title="Duplicate Node">📋</button>
-          <button (click)="editNode(node.id)" title="Edit Node">✏️</button>
-        </ngx-workflow-node-toolbar>
+        @for (node of selectedNodes; track node.id) {
+          <ngx-workflow-node-toolbar
+            [nodeId]="node.id"
+            position="top"
+            align="center">
+            <button (click)="deleteNode(node.id)" title="Delete Node">🗑️</button>
+            <button (click)="duplicateNode(node.id)" title="Duplicate Node">📋</button>
+            <button (click)="editNode(node.id)" title="Edit Node">✏️</button>
+          </ngx-workflow-node-toolbar>
+        }
 
       </ngx-workflow-diagram>
     </div>

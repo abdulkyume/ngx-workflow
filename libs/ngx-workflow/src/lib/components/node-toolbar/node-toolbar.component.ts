@@ -9,7 +9,7 @@ import {
     ViewChild,
     AfterViewInit,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { DiagramStateService } from '../../services/diagram-state.service';
 import { Node } from '../../models';
 
@@ -19,7 +19,7 @@ export type ToolbarAlign = 'start' | 'center' | 'end';
 @Component({
     selector: 'ngx-workflow-node-toolbar',
     standalone: true,
-    imports: [CommonModule],
+    imports: [],
     templateUrl: './node-toolbar.component.html',
     styleUrls: ['./node-toolbar.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,

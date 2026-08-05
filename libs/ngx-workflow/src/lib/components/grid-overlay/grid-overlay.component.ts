@@ -1,10 +1,10 @@
 import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 
 @Component({
     selector: 'ngx-workflow-grid-overlay',
     standalone: true,
-    imports: [CommonModule],
+    imports: [],
     template: `
     <svg class="ngx-workflow__grid-overlay" [attr.viewBox]="'0 0 ' + width + ' ' + height">
       <defs>

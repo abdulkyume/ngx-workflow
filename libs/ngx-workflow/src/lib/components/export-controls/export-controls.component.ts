@@ -1,10 +1,10 @@
 import { Component, ChangeDetectionStrategy, Output, EventEmitter } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 
 @Component({
     selector: 'ngx-workflow-export-controls',
     standalone: true,
-    imports: [CommonModule],
+    imports: [],
     templateUrl: './export-controls.component.html',
     styleUrls: ['./export-controls.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush

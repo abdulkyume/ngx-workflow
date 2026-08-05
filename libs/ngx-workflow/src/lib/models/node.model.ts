@@ -53,8 +53,16 @@ export interface Node<T = any> {
   handleConfig?: {
     [handleId: string]: {
       isConnectable?: boolean | number | ((node: Node, connectedEdges: any[]) => boolean);
+      /** Max edges allowed on this specific port (overrides maxConnectionsPerPort / global) */
+      maxConnections?: number;
     }
   };
+  /**
+   * Max edges allowed on each port of this node.
+   * Overridden per port by handleConfig[handleId].maxConnections.
+   * Falls back to diagram [maxConnectionsPerHandle] when unset.
+   */
+  maxConnectionsPerPort?: number;
   easyConnect?: boolean; // If true, dragging from node body starts connection (unless on .drag-handle)
-  ports?: number; // 1: Top, 2: Top/Bottom, 3: Left/Right, 4: All
+  ports?: number; // 0: None, 1: Top, 2: Top/Bottom, 3: Left/Right, 4: All (default)
 }

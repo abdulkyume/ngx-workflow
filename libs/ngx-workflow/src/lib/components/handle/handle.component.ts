@@ -4,7 +4,13 @@ import { HandleRegistryService, ConnectableLimit } from '../../services/handle-r
 @Component({
     selector: 'g[ngx-workflow-handle], ngx-workflow-handle',
     template: '<ng-content></ng-content>',
-    standalone: true
+    standalone: true,
+    host: {
+        class: 'ngx-workflow__handle',
+        '[attr.data-nodeid]': 'nodeId()',
+        '[attr.data-handleid]': 'handleId()',
+        '[attr.data-type]': 'type()',
+    },
 })
 export class HandleComponent implements OnDestroy {
     private handleRegistry = inject(HandleRegistryService);

@@ -1,24 +1,31 @@
 <div class="ngx-workflow-palette" [class.horizontal]="orientation === 'horizontal'">
-  <div class="ngx-workflow-palette__header" *ngIf="title">
-    <span class="ngx-workflow-palette__title">{{ title }}</span>
-  </div>
+  @if (title) {
+    <div class="ngx-workflow-palette__header">
+      <span class="ngx-workflow-palette__title">{{ title }}</span>
+    </div>
+  }
 
   <div class="ngx-workflow-palette__items">
-    <div
-      *ngFor="let item of items"
-      class="ngx-workflow-palette__item"
-      draggable="true"
-      (dragstart)="onDragStart($event, item)"
-    >
-      <div class="ngx-workflow-palette__item-icon" *ngIf="item.icon">
-        {{ item.icon }}
-      </div>
-      <div class="ngx-workflow-palette__item-content">
-        <div class="ngx-workflow-palette__item-label">{{ item.label }}</div>
-        <div class="ngx-workflow-palette__item-desc" *ngIf="item.description">
-          {{ item.description }}
+    @for (item of items; track item.type) {
+      <div
+        class="ngx-workflow-palette__item"
+        draggable="true"
+        (dragstart)="onDragStart($event, item)"
+        >
+        @if (item.icon) {
+          <div class="ngx-workflow-palette__item-icon">
+            {{ item.icon }}
+          </div>
+        }
+        <div class="ngx-workflow-palette__item-content">
+          <div class="ngx-workflow-palette__item-label">{{ item.label }}</div>
+          @if (item.description) {
+            <div class="ngx-workflow-palette__item-desc">
+              {{ item.description }}
+            </div>
+          }
         </div>
       </div>
-    </div>
+    }
   </div>
 </div>

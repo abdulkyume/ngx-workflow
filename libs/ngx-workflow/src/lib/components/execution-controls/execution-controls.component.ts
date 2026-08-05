@@ -1,11 +1,11 @@
 import { Component, ChangeDetectionStrategy, inject, Input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ExecutionSimulatorService } from '../../services/execution-simulator.service';
 
 @Component({
   selector: 'ngx-workflow-execution-controls',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './execution-controls.component.html',
   styleUrls: ['./execution-controls.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

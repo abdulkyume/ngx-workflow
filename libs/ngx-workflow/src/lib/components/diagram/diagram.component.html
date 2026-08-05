@@ -1,8 +1,12 @@
 <div class="ngx-workflow__container" [attr.data-lod]="lodLevel" role="application" aria-label="Workflow diagram canvas" (dragover)="onDragOver($event)" (drop)="onDrop($event)">
-  <ngx-workflow-background *ngIf="showBackground()" [variant]="backgroundVariant()" [gap]="backgroundGap()"
-    [size]="backgroundSize()" [color]="backgroundColor()" [backgroundColor]="backgroundBgColor()"
+  @if (showBackground()) {
+    <ngx-workflow-background [variant]="backgroundVariant()" [gap]="backgroundGap()"
+      [size]="backgroundSize()" [color]="backgroundColor()" [backgroundColor]="backgroundBgColor()"
     [backgroundImage]="backgroundImage()"></ngx-workflow-background>
-  <ngx-workflow-grid-overlay *ngIf="showGrid()" [gridSize]="gridSize()"></ngx-workflow-grid-overlay>
+  }
+  @if (showGrid()) {
+    <ngx-workflow-grid-overlay [gridSize]="gridSize()"></ngx-workflow-grid-overlay>
+  }
   <svg #svg class="ngx-workflow__diagram" role="graphics-document" aria-roledescription="workflow diagram"
     (wheel)="onWheel($event)" (pointerdown)="onPointerDown($event)"
     (pointermove)="onPointerMove($event)" (pointerup)="onPointerUp($event)" (pointerleave)="onPointerUp($event)"
@@ -37,120 +41,140 @@
 
     <g class="ngx-workflow__viewport" [attr.transform]="transform">
       <!-- Group Backgrounds (Layer 1: Bottom) -->
-      <g *ngFor="let node of sortedNodes(); trackBy: trackByNodeId">
-        <g *ngIf="node.type === 'group'"
-          [attr.transform]="'translate(' + (node._renderPosition?.x ?? node.position.x) + ',' + (node._renderPosition?.y ?? node.position.y) + ')'"
-          (pointerdown)="onNodePointerDown($event, node)" (dblclick)="onNodeDoubleClick($event, node)"
-          (mouseenter)="onNodeMouseEnter($event, node)" (mouseleave)="onNodeMouseLeave($event, node)"
-          (mousemove)="onNodeMouseMove($event, node)" class="ngx-workflow__group-node --background-layer"
-          [class.ngx-workflow__group-node--hover]="hoveredGroupId() === node.id">
-          <!-- Only the background rect -->
-          <rect [attr.width]="node.width" [attr.height]="node.height" rx="4" ry="4"
-            [style.fill]="node.style?.['backgroundColor'] || 'rgba(240, 240, 240, 0.5)'"
-            [style.stroke]="node.selected ? '#2563eb' : (node.style?.['borderColor'] || '#e5e7eb')"
-            [style.stroke-width]="node.selected ? 2 : 1"></rect>
+      @for (node of sortedNodes(); track node.id) {
+        <g>
+          @if (node.type === 'group') {
+            <g
+              [attr.transform]="'translate(' + (node._renderPosition?.x ?? node.position.x) + ',' + (node._renderPosition?.y ?? node.position.y) + ')'"
+              (pointerdown)="onNodePointerDown($event, node)" (dblclick)="onNodeDoubleClick($event, node)"
+              (mouseenter)="onNodeMouseEnter($event, node)" (mouseleave)="onNodeMouseLeave($event, node)"
+              (mousemove)="onNodeMouseMove($event, node)" class="ngx-workflow__group-node --background-layer"
+              [class.ngx-workflow__group-node--hover]="hoveredGroupId() === node.id">
+              <!-- Only the background rect -->
+              <rect [attr.width]="node.width" [attr.height]="node.height" rx="4" ry="4"
+                [style.fill]="node.style?.['backgroundColor'] || 'rgba(240, 240, 240, 0.5)'"
+                [style.stroke]="node.selected ? '#2563eb' : (node.style?.['borderColor'] || '#e5e7eb')"
+              [style.stroke-width]="node.selected ? 2 : 1"></rect>
+            </g>
+          }
         </g>
-      </g>
+      }
 
       <!-- Edges (Layer 2: Middle) -->
-      <g *ngFor="let edge of filteredEdges(); trackBy: trackByEdgeId" [class.selected]="edge.selected"
-        [class.animated]="edge.animated && edge.animationType !== 'dot'" [class.hidden]="edge.hidden"
-        [class.animated]="edge.animated && (edge.animationType === 'flow' || edge.animationType === 'both')"
-        [class.hidden]="edge.hidden" [class.shadow]="edge.shadow" class="ngx-workflow__edge"
-        role="img" [attr.aria-label]="getEdgeAriaLabel(edge)"
-        (click)="onEdgeClick($event, edge)" (dblclick)="onEdgeDoubleClick($event, edge)"
-        (mouseenter)="onEdgeMouseEnter($event, edge)" (mouseleave)="onEdgeMouseLeave($event, edge)">
-        <!-- Edge path with markers -->
-        <path [attr.id]="'edge-path-' + edge.id" [attr.d]="getEdgePath(edge)" class="ngx-workflow__edge-path"
-          [style]="edge.style" [class.dashed-type]="edge.type === 'dashed'"
-          [attr.marker-start]="getMarkerUrl(edge.markerStart)" [attr.marker-end]="getMarkerUrl(edge.markerEnd)"
-          [style.strokeDasharray]="edge.style?.['strokeDasharray'] || (edge.type === 'dashed' ? '5,5' : '')"
-          [style.animationDuration]="edge.animationDuration || '1s'">
-        </path>
+      @for (edge of filteredEdges(); track edge.id) {
+        <g [class.selected]="edge.selected"
+          [class.animated]="edge.animated && edge.animationType !== 'dot'" [class.hidden]="edge.hidden"
+          [class.animated]="edge.animated && (edge.animationType === 'flow' || edge.animationType === 'both')"
+          [class.hidden]="edge.hidden" [class.shadow]="edge.shadow" class="ngx-workflow__edge"
+          role="img" [attr.aria-label]="getEdgeAriaLabel(edge)"
+          (click)="onEdgeClick($event, edge)" (dblclick)="onEdgeDoubleClick($event, edge)"
+          (mouseenter)="onEdgeMouseEnter($event, edge)" (mouseleave)="onEdgeMouseLeave($event, edge)">
+          <!-- Edge path with markers -->
+          <path [attr.id]="'edge-path-' + edge.id" [attr.d]="getEdgePath(edge)" class="ngx-workflow__edge-path"
+            [style]="edge.style" [class.dashed-type]="edge.type === 'dashed'"
+            [attr.marker-start]="getMarkerUrl(edge.markerStart)" [attr.marker-end]="getMarkerUrl(edge.markerEnd)"
+            [style.strokeDasharray]="edge.style?.['strokeDasharray'] || (edge.type === 'dashed' ? '5,5' : '')"
+            [style.animationDuration]="edge.animationDuration || '1s'">
+          </path>
+          <!-- SVG Motion Animation (Dot) -->
+          @if (edge.animated && (edge.animationType === 'dot' || edge.animationType === 'both')) {
+            <circle r="4"
+              [attr.fill]="edge.animationStyle?.['fill'] || '#3b82f6'">
+              <animateMotion [attr.dur]="edge.animationDuration || '2s'" repeatCount="indefinite">
+                <mpath [attr.href]="'#edge-path-' + edge.id"></mpath>
+              </animateMotion>
+            </circle>
+          }
+          <!-- Invisible hitbox for easier clicking -->
+          <path [attr.d]="getEdgePath(edge)" class="ngx-workflow__edge-hitbox"></path>
+          <!-- Edge label -->
+          @if (edge.label || edge.data?.labelContent || editingEdgeId === edge.id) {
+            <g class="ngx-workflow__edge-label">
+              <!-- Editing mode (input field) -->
+              @if (editingEdgeId === edge.id) {
+                <foreignObject [attr.x]="getEdgeLabelPosition(edge).x - 50"
+                  [attr.y]="getEdgeLabelPosition(edge).y - 15" width="100" height="30">
+                  <input #edgeLabelInput type="text" [value]="edge.label || ''" (blur)="onEdgeLabelBlur(edge)"
+                    (keydown.enter)="onEdgeLabelBlur(edge)" (input)="onEdgeLabelInput($event)"
+                    class="ngx-workflow__edge-label-input" autofocus>
+                  </foreignObject>
+                }
+                <!-- Custom template mode (Angular component) -->
+                @if (editingEdgeId !== edge.id && edgeLabelTemplate) {
+                  <foreignObject
+                    [attr.x]="getEdgeLabelPosition(edge).x - 75" [attr.y]="getEdgeLabelPosition(edge).y - 20" width="150"
+                    height="40" style="pointer-events: none;">
+                    <div xmlns="http://www.w3.org/1999/xhtml" class="edge-label-content">
+                      <ng-container *ngTemplateOutlet="edgeLabelTemplate; context: { $implicit: edge, edge: edge }">
+                      </ng-container>
+                    </div>
+                  </foreignObject>
+                }
+                <!-- Fallback to text mode -->
+                @if (editingEdgeId !== edge.id && !edgeLabelTemplate && edge.label) {
+                  <text
+                    [attr.x]="getEdgeLabelPosition(edge).x" [attr.y]="getEdgeLabelPosition(edge).y" text-anchor="middle"
+                    dominant-baseline="middle" class="ngx-workflow__edge-label-text" [style]="edge.labelStyle">
+                    <!-- Label background -->
+                    @if (edge.labelBgStyle) {
+                      <tspan class="ngx-workflow__edge-label-bg" [style]="edge.labelBgStyle"></tspan>
+                    }
+                    {{ edge.label }}
+                  </text>
+                }
+              </g>
+            }
+            <!-- Edge Update Handles -->
+            @if (edge.selected && edgeReconnectable()) {
+              <g>
+                <!-- Source Handle -->
+                <circle class="ngx-workflow__edge-reconnect-handle" [attr.cx]="getEdgeHandlePosition(edge, 'source').x"
+                  [attr.cy]="getEdgeHandlePosition(edge, 'source').y" r="8" fill="#3b82f6" stroke="white" stroke-width="2"
+                  style="cursor: grab; pointer-events: all;" (pointerdown)="startUpdatingEdge($event, edge, 'source')">
+                </circle>
+                <!-- Target Handle -->
+                <circle class="ngx-workflow__edge-reconnect-handle" [attr.cx]="getEdgeHandlePosition(edge, 'target').x"
+                  [attr.cy]="getEdgeHandlePosition(edge, 'target').y" r="8" fill="#3b82f6" stroke="white" stroke-width="2"
+                  style="cursor: grab; pointer-events: all;" (pointerdown)="startUpdatingEdge($event, edge, 'target')">
+                </circle>
+              </g>
+            }
+          </g>
+        }
 
-        <!-- SVG Motion Animation (Dot) -->
-        <circle *ngIf="edge.animated && (edge.animationType === 'dot' || edge.animationType === 'both')" r="4"
-          [attr.fill]="edge.animationStyle?.['fill'] || '#3b82f6'">
-          <animateMotion [attr.dur]="edge.animationDuration || '2s'" repeatCount="indefinite">
-            <mpath [attr.href]="'#edge-path-' + edge.id"></mpath>
-          </animateMotion>
-        </circle>
-        <!-- Invisible hitbox for easier clicking -->
-        <path [attr.d]="getEdgePath(edge)" class="ngx-workflow__edge-hitbox"></path>
+        <!-- Render temporary edges (previews) -->
+        @for (tempEdge of tempEdges(); track tempEdge.id) {
+          <g [class.animated]="tempEdge.animated"
+            class="ngx-workflow__edge">
+            <path [attr.d]="getEdgePath(tempEdge, true)" class="ngx-workflow__edge-path" [style]="tempEdge.style"></path>
+          </g>
+        }
 
-        <!-- Edge label -->
-        <g *ngIf="edge.label || edge.data?.labelContent || editingEdgeId === edge.id" class="ngx-workflow__edge-label">
-          <!-- Editing mode (input field) -->
-          <foreignObject *ngIf="editingEdgeId === edge.id" [attr.x]="getEdgeLabelPosition(edge).x - 50"
-            [attr.y]="getEdgeLabelPosition(edge).y - 15" width="100" height="30">
-            <input #edgeLabelInput type="text" [value]="edge.label || ''" (blur)="onEdgeLabelBlur(edge)"
-              (keydown.enter)="onEdgeLabelBlur(edge)" (input)="onEdgeLabelInput($event)"
-              class="ngx-workflow__edge-label-input" autofocus>
-          </foreignObject>
+        <!-- Selection Box (Rubber Band) -->
+        @if (isBoxSelecting) {
+          <rect class="ngx-workflow__selection-box" [attr.x]="getSelectionBox().x"
+            [attr.y]="getSelectionBox().y" [attr.width]="getSelectionBox().width"
+            [attr.height]="getSelectionBox().height" aria-hidden="true" />
+        }
 
-          <!-- Custom template mode (Angular component) -->
-          <foreignObject *ngIf="editingEdgeId !== edge.id && edgeLabelTemplate"
-            [attr.x]="getEdgeLabelPosition(edge).x - 75" [attr.y]="getEdgeLabelPosition(edge).y - 20" width="150"
-            height="40" style="pointer-events: none;">
-            <div xmlns="http://www.w3.org/1999/xhtml" class="edge-label-content">
-              <ng-container *ngTemplateOutlet="edgeLabelTemplate; context: { $implicit: edge, edge: edge }">
-              </ng-container>
-            </div>
-          </foreignObject>
-
-          <!-- Fallback to text mode -->
-          <text *ngIf="editingEdgeId !== edge.id && !edgeLabelTemplate && edge.label"
-            [attr.x]="getEdgeLabelPosition(edge).x" [attr.y]="getEdgeLabelPosition(edge).y" text-anchor="middle"
-            dominant-baseline="middle" class="ngx-workflow__edge-label-text" [style]="edge.labelStyle">
-            <!-- Label background -->
-            <tspan *ngIf="edge.labelBgStyle" class="ngx-workflow__edge-label-bg" [style]="edge.labelBgStyle"></tspan>
-            {{ edge.label }}
-          </text>
-        </g>
-
-        <!-- Edge Update Handles -->
-        <g *ngIf="edge.selected && edgeReconnectable()">
-          <!-- Source Handle -->
-          <circle class="ngx-workflow__edge-reconnect-handle" [attr.cx]="getEdgeHandlePosition(edge, 'source').x"
-            [attr.cy]="getEdgeHandlePosition(edge, 'source').y" r="8" fill="#3b82f6" stroke="white" stroke-width="2"
-            style="cursor: grab; pointer-events: all;" (pointerdown)="startUpdatingEdge($event, edge, 'source')">
-          </circle>
-          <!-- Target Handle -->
-          <circle class="ngx-workflow__edge-reconnect-handle" [attr.cx]="getEdgeHandlePosition(edge, 'target').x"
-            [attr.cy]="getEdgeHandlePosition(edge, 'target').y" r="8" fill="#3b82f6" stroke="white" stroke-width="2"
-            style="cursor: grab; pointer-events: all;" (pointerdown)="startUpdatingEdge($event, edge, 'target')">
-          </circle>
-        </g>
-      </g>
-
-      <!-- Render temporary edges (previews) -->
-      <g *ngFor="let tempEdge of tempEdges(); trackBy: trackByEdgeId" [class.animated]="tempEdge.animated"
-        class="ngx-workflow__edge">
-        <path [attr.d]="getEdgePath(tempEdge, true)" class="ngx-workflow__edge-path" [style]="tempEdge.style"></path>
-      </g>
-
-      <!-- Selection Box (Rubber Band) -->
-      <rect *ngIf="isBoxSelecting" class="ngx-workflow__selection-box" [attr.x]="getSelectionBox().x"
-        [attr.y]="getSelectionBox().y" [attr.width]="getSelectionBox().width"
-        [attr.height]="getSelectionBox().height" aria-hidden="true" />
-
-      <!-- Nodes -->
-      <g *ngFor="let node of sortedNodes(); trackBy: trackByNodeId" class="ngx-workflow__node" [attr.data-id]="node.id"
-        [attr.transform]="'translate(' + (node._renderPosition?.x ?? node.position.x) + ',' + (node._renderPosition?.y ?? node.position.y) + ')'"
-        role="button" tabindex="0"
-        [attr.aria-label]="getNodeAriaLabel(node)"
-        [attr.aria-selected]="node.selected || false"
-        [class.ngx-workflow__node--focused]="focusedNodeId() === node.id"
-        (pointerdown)="onNodePointerDown($event, node)" (dblclick)="onNodeDoubleClick($event, node)"
-        (mouseenter)="onNodeMouseEnter($event, node)" (mouseleave)="onNodeMouseLeave($event, node)"
-        (mousemove)="onNodeMouseMove($event, node)"
-        (focus)="onNodeFocus(node)" (blur)="onNodeBlur(node)"
-        (keydown)="onNodeKeyDown($event, node)">
-
-        <!-- Custom Node Template -->
-        <foreignObject *ngIf="isCustomNode(node)" [attr.width]="node.width || defaultNodeWidth"
-          [attr.height]="node.height || defaultNodeHeight" style="overflow: visible;">
-          <div xmlns="http://www.w3.org/1999/xhtml" style="width: 100%; height: 100%;">
+        <!-- Nodes -->
+        @for (node of sortedNodes(); track node.id) {
+          <g class="ngx-workflow__node" [attr.data-id]="node.id"
+            [attr.transform]="'translate(' + (node._renderPosition?.x ?? node.position.x) + ',' + (node._renderPosition?.y ?? node.position.y) + ')'"
+            role="button" tabindex="0"
+            [attr.aria-label]="getNodeAriaLabel(node)"
+            [attr.aria-selected]="node.selected || false"
+            [class.ngx-workflow__node--focused]="focusedNodeId() === node.id"
+            (pointerdown)="onNodePointerDown($event, node)" (dblclick)="onNodeDoubleClick($event, node)"
+            (mouseenter)="onNodeMouseEnter($event, node)" (mouseleave)="onNodeMouseLeave($event, node)"
+            (mousemove)="onNodeMouseMove($event, node)"
+            (focus)="onNodeFocus(node)" (blur)="onNodeBlur(node)"
+            (keydown)="onNodeKeyDown($event, node)">
+            <!-- Custom Node Template -->
+            @if (isCustomNode(node)) {
+              <foreignObject [attr.width]="node.width || defaultNodeWidth"
+                [attr.height]="node.height || defaultNodeHeight" style="overflow: visible;">
+                <div xmlns="http://www.w3.org/1999/xhtml" style="width: 100%; height: 100%;">
             <ng-container *ngComponentOutlet="getCustomNodeComponent(node.type); inputs: { 
               id: node.id, 
               data: node.data, 
@@ -162,192 +186,230 @@
               ports: node.ports,
               label: node.label
             }"></ng-container>
-          </div>
-        </foreignObject>
-
-        <!-- Default Node Template (Rect + Text) -->
-        <g *ngIf="!isCustomNode(node) && node.type !== 'group'">
-          <!-- Node outline and background (visual + dragging) -->
-          <rect [attr.width]="node.width || defaultNodeWidth" [attr.height]="node.height || defaultNodeHeight" rx="3"
-            ry="3" class="ngx-workflow__node-rect"
-            [style.filter]="node.shadow === true ? 'drop-shadow(0 10px 15px rgba(0,0,0,0.2))' : (node.shadow || null)"
-            [style.stroke-dasharray]="node.borderStyle === 'dashed' ? '5,5' : (node.borderStyle === 'dotted' ? '2,2' : null)"
-            [style.stroke]="node.borderColor" [style.stroke-width]="node.borderWidth"
-            [style.fill]="node.style?.['backgroundColor'] || 'var(--ngx-workflow-surface, #ffffff)'"></rect>
-
-          <!-- Node Badges -->
-          <g *ngIf="node.badges?.length">
-            <g *ngFor="let badge of node.badges; let i = index" class="ngx-workflow__node-badge"
-              [attr.transform]="getBadgeTransform(node, badge, i)">
-              <circle r="10" [attr.fill]="badge.backgroundColor || '#ef4444'" [attr.stroke]="'#ffffff'"
-                stroke-width="2">
-              </circle>
-              <text dy="0.3em" text-anchor="middle" font-size="10px" font-weight="bold"
-                [attr.fill]="badge.color || '#ffffff'">{{ badge.content }}</text>
-            </g>
+                </div>
+              </foreignObject>
+            }
+            <!-- Default Node Template (Rect + Text) -->
+            @if (!isCustomNode(node) && node.type !== 'group') {
+              <g>
+                <!-- Node outline and background (visual + dragging) -->
+                <rect [attr.width]="node.width || defaultNodeWidth" [attr.height]="node.height || defaultNodeHeight" rx="3"
+                  ry="3" class="ngx-workflow__node-rect"
+                  [style.filter]="node.shadow === true ? 'drop-shadow(0 10px 15px rgba(0,0,0,0.2))' : (node.shadow || null)"
+                  [style.stroke-dasharray]="node.borderStyle === 'dashed' ? '5,5' : (node.borderStyle === 'dotted' ? '2,2' : null)"
+                  [style.stroke]="node.borderColor" [style.stroke-width]="node.borderWidth"
+                [style.fill]="node.style?.['backgroundColor'] || 'var(--ngx-workflow-surface, #ffffff)'"></rect>
+                <!-- Node Badges -->
+                @if (node.badges?.length) {
+                  <g>
+                    @for (badge of node.badges; track $index; let i = $index) {
+                      <g class="ngx-workflow__node-badge"
+                        [attr.transform]="getBadgeTransform(node, badge, i)">
+                        <circle r="10" [attr.fill]="badge.backgroundColor || '#ef4444'" [attr.stroke]="'#ffffff'"
+                          stroke-width="2">
+                        </circle>
+                        <text dy="0.3em" text-anchor="middle" font-size="10px" font-weight="bold"
+                        [attr.fill]="badge.color || '#ffffff'">{{ badge.content }}</text>
+                      </g>
+                    }
+                  </g>
+                }
+                <!-- Node Label -->
+                <text [attr.x]="(node.width || defaultNodeWidth) / 2" [attr.y]="(node.height || defaultNodeHeight) / 2"
+                  text-anchor="middle" dominant-baseline="middle" class="ngx-workflow__node-label"
+                  [style.fill]="node.style?.['color'] || 'var(--ngx-workflow-text-primary)'">
+                  {{ node.label }}
+                </text>
+              </g>
+            }
+            <!-- Only render default handles if NOT custom node? Or maybe keep them?
+            Usually custom nodes implement their own handles.
+            Let's allow default handles to show only if NOT custom node for now to start clean.
+            -->
+            @if (!isCustomNode(node)) {
+              <ng-container>
+                <!-- Top Handle (ports: 1, 2, 4; undefined defaults to 4; 0 = none) -->
+                @if ((node.ports ?? 4) === 1 || (node.ports ?? 4) === 2 || (node.ports ?? 4) === 4) {
+                  <g ngx-workflow-handle
+                    class="ngx-workflow__handle ngx-workflow__handle--source ngx-workflow__handle--target"
+                    [attr.data-nodeid]="node.id" data-handleid="top" [attr.data-type]="'source'" [nodeId]="node.id"
+                    handleId="top" type="source" [isConnectable]="node.handleConfig?.['top']?.isConnectable"
+                    (pointerdown)="onHandlePointerDown($event, node, 'top')">
+                    <!-- Hit area -->
+                    <circle [attr.cx]="(node.width || defaultNodeWidth) / 2" cy="-10" r="20" fill="transparent"
+                    pointer-events="all"></circle>
+                    <!-- Visual -->
+                    <circle [attr.cx]="(node.width || defaultNodeWidth) / 2" [attr.cy]="0" r="6"
+                      class="ngx-workflow__handle-circle">
+                    </circle>
+                  </g>
+                }
+                <!-- Right Handle -->
+                @if ((node.ports ?? 4) === 3 || (node.ports ?? 4) === 4) {
+                  <g ngx-workflow-handle
+                    class="ngx-workflow__handle ngx-workflow__handle--source ngx-workflow__handle--target"
+                    [attr.data-nodeid]="node.id" data-handleid="right" [attr.data-type]="'source'" [nodeId]="node.id"
+                    handleId="right" type="source" [isConnectable]="node.handleConfig?.['right']?.isConnectable"
+                    (pointerdown)="onHandlePointerDown($event, node, 'right')">
+                    <!-- Hit area -->
+                    <circle [attr.cx]="(node.width || defaultNodeWidth) + 10" [attr.cy]="(node.height || defaultNodeHeight) / 2"
+                      r="20" fill="transparent" pointer-events="all">
+                    </circle>
+                    <!-- Visual -->
+                    <circle [attr.cx]="(node.width || defaultNodeWidth)" [attr.cy]="(node.height || defaultNodeHeight) / 2"
+                    r="6" class="ngx-workflow__handle-circle"></circle>
+                  </g>
+                }
+                <!-- Bottom Handle -->
+                @if ((node.ports ?? 4) === 2 || (node.ports ?? 4) === 4) {
+                  <g ngx-workflow-handle
+                    class="ngx-workflow__handle ngx-workflow__handle--source ngx-workflow__handle--target"
+                    [attr.data-nodeid]="node.id" data-handleid="bottom" [attr.data-type]="'source'" [nodeId]="node.id"
+                    handleId="bottom" type="source" [isConnectable]="node.handleConfig?.['bottom']?.isConnectable"
+                    (pointerdown)="onHandlePointerDown($event, node, 'bottom')">
+                    <!-- Hit area -->
+                    <circle [attr.cx]="(node.width || defaultNodeWidth) / 2" [attr.cy]="(node.height || defaultNodeHeight) + 10"
+                      r="20" fill="transparent" pointer-events="all">
+                    </circle>
+                    <!-- Visual -->
+                    <circle [attr.cx]="(node.width || defaultNodeWidth) / 2" [attr.cy]="(node.height || defaultNodeHeight)"
+                    r="6" class="ngx-workflow__handle-circle"></circle>
+                  </g>
+                }
+                <!-- Left Handle -->
+                @if ((node.ports ?? 4) === 3 || (node.ports ?? 4) === 4) {
+                  <g ngx-workflow-handle
+                    class="ngx-workflow__handle ngx-workflow__handle--source ngx-workflow__handle--target"
+                    [attr.data-nodeid]="node.id" data-handleid="left" [attr.data-type]="'source'" [nodeId]="node.id"
+                    handleId="left" type="source" [isConnectable]="node.handleConfig?.['left']?.isConnectable"
+                    (pointerdown)="onHandlePointerDown($event, node, 'left')">
+                    <!-- Hit area -->
+                    <circle cx="-10" [attr.cy]="(node.height || defaultNodeHeight) / 2" r="20" fill="transparent"
+                    pointer-events="all"></circle>
+                    <!-- Visual -->
+                    <circle cx="0" [attr.cy]="(node.height || defaultNodeHeight) / 2" r="6" class="ngx-workflow__handle-circle">
+                    </circle>
+                  </g>
+                }
+              </ng-container>
+            }
+            <!-- Resize Handles (HTML implementation to ensure they are on top of custom nodes) -->
+            @if (node.selected && (node.resizable !== false) && nodesResizable()) {
+              <foreignObject
+                [attr.width]="node.width || defaultNodeWidth" [attr.height]="node.height || defaultNodeHeight"
+                style="overflow: visible; pointer-events: none;">
+                <div style="position: relative; width: 100%; height: 100%; pointer-events: none;">
+                  <!-- NW Handle -->
+                  <div class="ngx-workflow__resize-handle" data-handle="nw"
+                    style="position: absolute; top: -5px; left: -5px; width: 10px; height: 10px; cursor: nw-resize; pointer-events: auto;"
+                  (pointerdown)="startResizing($event, node, 'nw')"></div>
+                  <!-- NE Handle -->
+                  <div class="ngx-workflow__resize-handle" data-handle="ne"
+                    style="position: absolute; top: -5px; right: -5px; width: 10px; height: 10px; cursor: ne-resize; pointer-events: auto;"
+                  (pointerdown)="startResizing($event, node, 'ne')"></div>
+                  <!-- SW Handle -->
+                  <div class="ngx-workflow__resize-handle" data-handle="sw"
+                    style="position: absolute; bottom: -5px; left: -5px; width: 10px; height: 10px; cursor: sw-resize; pointer-events: auto;"
+                  (pointerdown)="startResizing($event, node, 'sw')"></div>
+                  <!-- SE Handle -->
+                  <div class="ngx-workflow__resize-handle" data-handle="se"
+                    style="position: absolute; bottom: -5px; right: -5px; width: 10px; height: 10px; cursor: se-resize; pointer-events: auto;"
+                  (pointerdown)="startResizing($event, node, 'se')"></div>
+                </div>
+              </foreignObject>
+            }
+            <!-- Group Node Template (Layer 3: Top - Content Only) -->
+            @if (node.type === 'group') {
+              <g class="ngx-workflow__group-node">
+                <!-- Background moved to Layer 1, but we keep a transparent hit area or just rely on content?
+                actually Layer 1 handles interactions for the body.
+                We just need Header and Content here.
+                -->
+                <!-- Header -->
+                <rect [attr.width]="node.width" height="30" class="ngx-workflow__group-header" rx="4" ry="4"></rect>
+                <text [attr.x]="10" [attr.y]="20" class="ngx-workflow__group-label">{{ node.label }}</text>
+                <!-- Expand/Collapse Toggle -->
+                <g class="ngx-workflow__group-toggle" [attr.transform]="'translate(' + (node.width! - 25) + ', 5)'"
+                  (click)="toggleGroup($event, node)">
+                  <rect width="20" height="20" rx="4" class="ngx-workflow__group-toggle-bg"></rect>
+                  <path [attr.d]="node.expanded ? 'M 5 10 L 15 10' : 'M 5 10 L 15 10 M 10 5 L 10 15'"
+                  class="ngx-workflow__group-toggle-icon"></path>
+                </g>
+              </g>
+            }
           </g>
+        }
 
-          <!-- Node Label -->
-          <text [attr.x]="(node.width || defaultNodeWidth) / 2" [attr.y]="(node.height || defaultNodeHeight) / 2"
-            text-anchor="middle" dominant-baseline="middle" class="ngx-workflow__node-label"
-            [style.fill]="node.style?.['color'] || 'var(--ngx-workflow-text-primary)'">
-            {{ node.label }}
-          </text>
-        </g>
-
-        <!-- Only render default handles if NOT custom node? Or maybe keep them? 
-             Usually custom nodes implement their own handles.
-             Let's allow default handles to show only if NOT custom node for now to start clean.
-        -->
-        <ng-container *ngIf="!isCustomNode(node)">
-          <!-- Top Handle -->
-          <g *ngIf="!node.ports || node.ports === 1 || node.ports === 2 || node.ports === 4" ngx-workflow-handle
-            class="ngx-workflow__handle ngx-workflow__handle--source ngx-workflow__handle--target"
-            [attr.data-nodeid]="node.id" data-handleid="top" [attr.data-type]="'source'" [nodeId]="node.id"
-            handleId="top" type="source" [isConnectable]="node.handleConfig?.['top']?.isConnectable"
-            (pointerdown)="onHandlePointerDown($event, node, 'top')">
-            <!-- Hit area -->
-            <circle [attr.cx]="(node.width || defaultNodeWidth) / 2" cy="-10" r="20" fill="transparent"
-              pointer-events="all"></circle>
-            <!-- Visual -->
-            <circle [attr.cx]="(node.width || defaultNodeWidth) / 2" [attr.cy]="0" r="6"
-              class="ngx-workflow__handle-circle">
-            </circle>
+        <!-- Alignment Guides -->
+        @for (guide of alignmentGuides(); track guide.type + '-' + guide.position) {
+          <g class="ngx-workflow__alignment-guide">
+            @if (guide.type === 'horizontal') {
+              <line [attr.x1]="guide.start" [attr.y1]="guide.position"
+                [attr.x2]="guide.end" [attr.y2]="guide.position" />
+            }
+            @if (guide.type === 'vertical') {
+              <line [attr.x1]="guide.position" [attr.y1]="guide.start"
+                [attr.x2]="guide.position" [attr.y2]="guide.end" />
+            }
           </g>
-
-          <!-- Right Handle -->
-          <g *ngIf="!node.ports || node.ports === 3 || node.ports === 4" ngx-workflow-handle
-            class="ngx-workflow__handle ngx-workflow__handle--source ngx-workflow__handle--target"
-            [attr.data-nodeid]="node.id" data-handleid="right" [attr.data-type]="'source'" [nodeId]="node.id"
-            handleId="right" type="source" [isConnectable]="node.handleConfig?.['right']?.isConnectable"
-            (pointerdown)="onHandlePointerDown($event, node, 'right')">
-            <!-- Hit area -->
-            <circle [attr.cx]="(node.width || defaultNodeWidth) + 10" [attr.cy]="(node.height || defaultNodeHeight) / 2"
-              r="20" fill="transparent" pointer-events="all">
-            </circle>
-            <!-- Visual -->
-            <circle [attr.cx]="(node.width || defaultNodeWidth)" [attr.cy]="(node.height || defaultNodeHeight) / 2"
-              r="6" class="ngx-workflow__handle-circle"></circle>
-          </g>
-          <!-- Bottom Handle -->
-          <g *ngIf="!node.ports || node.ports === 2 || node.ports === 4" ngx-workflow-handle
-            class="ngx-workflow__handle ngx-workflow__handle--source ngx-workflow__handle--target"
-            [attr.data-nodeid]="node.id" data-handleid="bottom" [attr.data-type]="'source'" [nodeId]="node.id"
-            handleId="bottom" type="source" [isConnectable]="node.handleConfig?.['bottom']?.isConnectable"
-            (pointerdown)="onHandlePointerDown($event, node, 'bottom')">
-            <!-- Hit area -->
-            <circle [attr.cx]="(node.width || defaultNodeWidth) / 2" [attr.cy]="(node.height || defaultNodeHeight) + 10"
-              r="20" fill="transparent" pointer-events="all">
-            </circle>
-            <!-- Visual -->
-            <circle [attr.cx]="(node.width || defaultNodeWidth) / 2" [attr.cy]="(node.height || defaultNodeHeight)"
-              r="6" class="ngx-workflow__handle-circle"></circle>
-          </g>
-          <!-- Left Handle -->
-          <g *ngIf="!node.ports || node.ports === 3 || node.ports === 4" ngx-workflow-handle
-            class="ngx-workflow__handle ngx-workflow__handle--source ngx-workflow__handle--target"
-            [attr.data-nodeid]="node.id" data-handleid="left" [attr.data-type]="'source'" [nodeId]="node.id"
-            handleId="left" type="source" [isConnectable]="node.handleConfig?.['left']?.isConnectable"
-            (pointerdown)="onHandlePointerDown($event, node, 'left')">
-            <!-- Hit area -->
-            <circle cx="-10" [attr.cy]="(node.height || defaultNodeHeight) / 2" r="20" fill="transparent"
-              pointer-events="all"></circle>
-            <!-- Visual -->
-            <circle cx="0" [attr.cy]="(node.height || defaultNodeHeight) / 2" r="6" class="ngx-workflow__handle-circle">
-            </circle>
-          </g>
-        </ng-container>
-
-        <!-- Resize Handles (HTML implementation to ensure they are on top of custom nodes) -->
-        <foreignObject *ngIf="node.selected && (node.resizable !== false) && nodesResizable()"
-          [attr.width]="node.width || defaultNodeWidth" [attr.height]="node.height || defaultNodeHeight"
-          style="overflow: visible; pointer-events: none;">
-          <div style="position: relative; width: 100%; height: 100%; pointer-events: none;">
-            <!-- NW Handle -->
-            <div class="ngx-workflow__resize-handle" data-handle="nw"
-              style="position: absolute; top: -5px; left: -5px; width: 10px; height: 10px; cursor: nw-resize; pointer-events: auto;"
-              (pointerdown)="startResizing($event, node, 'nw')"></div>
-            <!-- NE Handle -->
-            <div class="ngx-workflow__resize-handle" data-handle="ne"
-              style="position: absolute; top: -5px; right: -5px; width: 10px; height: 10px; cursor: ne-resize; pointer-events: auto;"
-              (pointerdown)="startResizing($event, node, 'ne')"></div>
-            <!-- SW Handle -->
-            <div class="ngx-workflow__resize-handle" data-handle="sw"
-              style="position: absolute; bottom: -5px; left: -5px; width: 10px; height: 10px; cursor: sw-resize; pointer-events: auto;"
-              (pointerdown)="startResizing($event, node, 'sw')"></div>
-            <!-- SE Handle -->
-            <div class="ngx-workflow__resize-handle" data-handle="se"
-              style="position: absolute; bottom: -5px; right: -5px; width: 10px; height: 10px; cursor: se-resize; pointer-events: auto;"
-              (pointerdown)="startResizing($event, node, 'se')"></div>
-          </div>
-        </foreignObject>
-
-        <!-- Group Node Template (Layer 3: Top - Content Only) -->
-        <g *ngIf="node.type === 'group'" class="ngx-workflow__group-node">
-          <!-- Background moved to Layer 1, but we keep a transparent hit area or just rely on content? 
-               actually Layer 1 handles interactions for the body.
-               We just need Header and Content here.
-          -->
-
-          <!-- Header -->
-          <rect [attr.width]="node.width" height="30" class="ngx-workflow__group-header" rx="4" ry="4"></rect>
-          <text [attr.x]="10" [attr.y]="20" class="ngx-workflow__group-label">{{ node.label }}</text>
-
-          <!-- Expand/Collapse Toggle -->
-          <g class="ngx-workflow__group-toggle" [attr.transform]="'translate(' + (node.width! - 25) + ', 5)'"
-            (click)="toggleGroup($event, node)">
-            <rect width="20" height="20" rx="4" class="ngx-workflow__group-toggle-bg"></rect>
-            <path [attr.d]="node.expanded ? 'M 5 10 L 15 10' : 'M 5 10 L 15 10 M 10 5 L 10 15'"
-              class="ngx-workflow__group-toggle-icon"></path>
-          </g>
-        </g>
+        }
       </g>
 
-      <!-- Alignment Guides -->
-      <g *ngFor="let guide of alignmentGuides()" class="ngx-workflow__alignment-guide">
-        <line *ngIf="guide.type === 'horizontal'" [attr.x1]="guide.start" [attr.y1]="guide.position"
-          [attr.x2]="guide.end" [attr.y2]="guide.position" />
-        <line *ngIf="guide.type === 'vertical'" [attr.x1]="guide.position" [attr.y1]="guide.start"
-          [attr.x2]="guide.position" [attr.y2]="guide.end" />
-      </g>
-    </g>
-
-  </svg>
+    </svg>
 
 
-  <!-- Unified Top Bar -->
-  <div class="ngx-workflow__top-bar">
-    <ngx-workflow-search-controls [nodes]="nodes()" (searchResults)="onSearchResults($event)"
-      (resultSelected)="onSearchResultSelected($event)" (close)="onSearchClose()">
-    </ngx-workflow-search-controls>
+    <!-- Unified Top Bar -->
+    <div class="ngx-workflow__top-bar">
+      <ngx-workflow-search-controls [nodes]="nodes()" (searchResults)="onSearchResults($event)"
+        (resultSelected)="onSearchResultSelected($event)" (close)="onSearchClose()">
+      </ngx-workflow-search-controls>
 
-    <div class="divider"></div>
+      <div class="divider"></div>
 
-    <ngx-workflow-layout-alignment-controls *ngIf="showLayoutControls()"
-      (applyLayout)="onApplyLayout($any($event))"></ngx-workflow-layout-alignment-controls>
+      @if (showLayoutControls()) {
+        <ngx-workflow-layout-alignment-controls
+        (applyLayout)="onApplyLayout($any($event))"></ngx-workflow-layout-alignment-controls>
+      }
 
-    <div class="divider"></div>
+      <div class="divider"></div>
 
-    <ngx-workflow-export-controls *ngIf="showExportControls()" (exportJSON)="exportToJSON()"
-      (importJSON)="triggerImport()">
-    </ngx-workflow-export-controls>
-  </div>
+      @if (showExportControls()) {
+        <ngx-workflow-export-controls (exportJSON)="exportToJSON()"
+          (importJSON)="triggerImport()">
+        </ngx-workflow-export-controls>
+      }
+    </div>
 
-  <ngx-workflow-minimap *ngIf="showMinimap()"></ngx-workflow-minimap>
+    @if (showMinimap()) {
+      <ngx-workflow-minimap></ngx-workflow-minimap>
+    }
 
-  <ngx-workflow-zoom-controls *ngIf="showZoomControls()" [zoom]="viewport().zoom" [minZoom]="minZoom()" [maxZoom]="maxZoom()"
-    (zoomIn)="onZoomChange(viewport().zoom + 0.1)" (zoomOut)="onZoomChange(viewport().zoom - 0.1)"
-    (fitView)="onZoomChange(1)" (resetZoom)="onZoomChange(1)"></ngx-workflow-zoom-controls>
+    @if (showUndoRedoControls()) {
+      <ngx-workflow-undo-redo-controls></ngx-workflow-undo-redo-controls>
+    }
 
-  <ngx-workflow-properties-sidebar [node]="selectedNodeForEditing" [edge]="selectedEdgeForEditing"
-    (close)="closeSidebar()" (change)="onPropertiesChange($event)"
+    @if (showZoomControls()) {
+      <ngx-workflow-zoom-controls [zoom]="viewport().zoom" [minZoom]="minZoom()" [maxZoom]="maxZoom()"
+        (zoomIn)="onZoomChange(viewport().zoom + 0.1)" (zoomOut)="onZoomChange(viewport().zoom - 0.1)"
+      (fitView)="fitView()" (resetZoom)="onZoomChange(1)"></ngx-workflow-zoom-controls>
+    }
+
+    @if (importNotification(); as notice) {
+      <div class="ngx-workflow__import-notification" role="status" aria-live="polite">
+        <span>{{ notice }}</span>
+        <button type="button" class="ngx-workflow__import-notification-dismiss" (click)="dismissImportNotification()" aria-label="Dismiss notification">×</button>
+      </div>
+    }
+
+    <ngx-workflow-properties-sidebar [node]="selectedNodeForEditing" [edge]="selectedEdgeForEditing"
+      (close)="closeSidebar()" (change)="onPropertiesChange($event)"
     (edgeChange)="onEdgePropertiesChange($event)"></ngx-workflow-properties-sidebar>
 
-  <!-- Node Toolbars (projected content) -->
-  <ng-content select="ngx-workflow-node-toolbar"></ng-content>
+    <!-- Node Toolbars (projected content) -->
+    <ng-content select="ngx-workflow-node-toolbar"></ng-content>
 
-  <!-- Panels (projected content) -->
-  <ng-content select="ngx-workflow-panel"></ng-content>
+    <!-- Panels (projected content) -->
+    <ng-content select="ngx-workflow-panel"></ng-content>
 
-  <ngx-workflow-context-menu></ngx-workflow-context-menu>
-</div>
+    <ngx-workflow-context-menu></ngx-workflow-context-menu>
+  </div>

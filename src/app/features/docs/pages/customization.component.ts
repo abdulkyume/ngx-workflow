@@ -1,10 +1,11 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-doc-customization',
   standalone: true,
   imports: [RouterLink],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <article class="prose">
       <span class="badge badge-accent">Customization</span>
@@ -50,7 +51,29 @@ export class CustomCardNodeComponent &#123;
   data = input.required&lt;any&gt;();
 &#125;</code></pre>
 
-      <h2 id="custom-edge-styles">2. Custom Edge Styling & Animations</h2>
+      <h2 id="connection-limits">2. Connection Limits on Ports</h2>
+      <p>
+        Cap edges per port on default or custom nodes. Number values on
+        <code>isConnectable</code> also act as a max connection count.
+      </p>
+
+      <pre><code>nodes = signal([
+  &#123;
+    id: 'card-1',
+    type: 'card',
+    position: &#123; x: 100, y: 80 &#125;,
+    maxConnectionsPerPort: 1,
+    handleConfig: &#123;
+      'output-port': &#123; maxConnections: 2, isConnectable: true &#125;,
+      'input-port': &#123; maxConnections: 1 &#125;
+    &#125;
+  &#125;
+]);
+
+// Or globally for every port in the diagram:
+// &lt;ngx-workflow-diagram [maxConnectionsPerHandle]="1" /&gt;</code></pre>
+
+      <h2 id="custom-edge-styles">3. Custom Edge Styling & Animations</h2>
       <p>
         Customize stroke colors, dash arrays, glow effects, or edge markers directly via edge properties:
       </p>
@@ -69,7 +92,7 @@ export class CustomCardNodeComponent &#123;
   &#125;
 ]);</code></pre>
 
-      <h2 id="css-variables">3. CSS Theme Customization Tokens</h2>
+      <h2 id="css-variables">4. CSS Theme Customization Tokens</h2>
       <p>
         Override default CSS variables in your application stylesheet to match your corporate design system:
       </p>

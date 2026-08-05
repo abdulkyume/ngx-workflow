@@ -135,8 +135,17 @@ export class NodeDragService {
       this.dragAnimationFrameId = null;
     }
 
-    if (this.draggingNode && this.diagramStateService) {
-      this.diagramStateService.onDragEnd(this.draggingNode);
+    const dragged = this.draggingNode;
+
+    // Clear drag flag before onDragEnd so subscribers can flush pathfinder / nodesChange
+    this.isDraggingNode = false;
+    this.draggingNode = null;
+    this.draggingNodes = [];
+    this.startNodePositions.clear();
+    this.collidingNodeIds = [];
+
+    if (dragged && this.diagramStateService) {
+      this.diagramStateService.onDragEnd(dragged);
     }
 
     if (event && event.pointerId !== undefined && this.svgRef) {
@@ -148,11 +157,5 @@ export class NodeDragService {
         // Safe fallback
       }
     }
-
-    this.isDraggingNode = false;
-    this.draggingNode = null;
-    this.draggingNodes = [];
-    this.startNodePositions.clear();
-    this.collidingNodeIds = [];
   }
 }

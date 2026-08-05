@@ -1,10 +1,11 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-doc-concepts',
   standalone: true,
   imports: [RouterLink],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <article class="prose">
       <span class="badge badge-accent">Core Architecture</span>
@@ -44,16 +45,29 @@ DOM_Y = (Graph_Y * Zoom) + Pan_Y</code></pre>
         When users drag nodes, <code>ngx-workflow</code> automatically converts mouse offset events back into graph space coordinates, taking the current zoom level and pan offset into account.
       </p>
 
-      <h2 id="handles-registry">3. Handle Registry & Port Calculation</h2>
+      <h2 id="handles-registry">3. Handles, Ports & Connecting</h2>
       <p>
-        Connections originate and terminate at <strong>Handles</strong> (ports). Handles register their exact DOM bounds with <code>HandleRegistryService</code> whenever node positions change or canvas zoom updates:
+        Connections originate and terminate at <strong>Handles</strong> (ports). Default nodes expose
+        <code>top</code> / <code>right</code> / <code>bottom</code> / <code>left</code> based on
+        <code>node.ports</code> (<code>0</code>=none … <code>4</code>=all).
       </p>
 
       <ul>
-        <li><code>left</code> / <code>right</code> / <code>top</code> / <code>bottom</code> position presets.</li>
-        <li>Automatic path tangent calculation for Bezier curve handles.</li>
-        <li>Support for multiple input/output ports per node side.</li>
+        <li><strong>Manual connect:</strong> drag from one port to another — a preview edge follows the pointer.</li>
+        <li><strong>Auto-connect:</strong> drag a node near another (within <code>[proximityThreshold]</code>) to snap a link.</li>
+        <li><strong>Limits:</strong> <code>handleConfig[port].maxConnections</code> → <code>maxConnectionsPerPort</code> → <code>[maxConnectionsPerHandle]</code>.</li>
+        <li>Handles register with <code>HandleRegistryService</code> for typed <code>dataType</code> checks and connectability.</li>
       </ul>
+
+      <pre><code>// Manual + limited connections
+&lt;ngx-workflow-diagram
+  [nodes]="nodes()"
+  [edges]="edges()"
+  [maxConnectionsPerHandle]="2"
+  (connectStart)="..."
+  (connect)="..."
+  (edgesChange)="edges.set($event)"
+/&gt;</code></pre>
 
       <h2 id="auto-layout">4. ELK.js Auto-Layout Engine</h2>
       <p>

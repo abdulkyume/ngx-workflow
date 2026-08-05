@@ -54,6 +54,8 @@ describe('PropertiesSidebarComponent', () => {
     component.updateLabelColor('#000');
     component.updateShapeType('circle');
     component.updatePorts(2);
+    component.updateMaxConnectionsPerPort(1);
+    component.updatePortMaxConnections('top', 1);
 
     component.updateEdgeLabel('test');
     component.updateEdgeType('straight');
@@ -105,6 +107,17 @@ describe('PropertiesSidebarComponent', () => {
 
     component.updatePorts(4);
     expect(component.change.emit).toHaveBeenCalledWith({ ports: 4 });
+
+    component.updateMaxConnectionsPerPort(2);
+    expect(component.change.emit).toHaveBeenCalledWith({ maxConnectionsPerPort: 2 });
+
+    component.updateMaxConnectionsPerPort('');
+    expect(component.change.emit).toHaveBeenCalledWith({ maxConnectionsPerPort: undefined });
+
+    component.updatePortMaxConnections('top', 1);
+    expect(component.change.emit).toHaveBeenCalledWith({
+      handleConfig: { top: { maxConnections: 1 } }
+    });
   });
 
   it('should emit edge changes when updating edge properties', () => {

@@ -98,15 +98,16 @@ export class AppComponent {
   [initialEdges]="edges">
   
   <!-- Toolbar for each selected node -->
-  <ngx-workflow-node-toolbar 
-    *ngFor="let node of selectedNodes"
-    [nodeId]="node.id" 
-    position="top"
-    align="center">
-    <button (click)="deleteNode(node.id)">🗑️</button>
-    <button (click)="duplicateNode(node.id)">📋</button>
-    <button (click)="editNode(node.id)">✏️</button>
-  </ngx-workflow-node-toolbar>
+  @for (node of selectedNodes; track node.id) {
+    <ngx-workflow-node-toolbar
+      [nodeId]="node.id"
+      position="top"
+      align="center">
+      <button (click)="deleteNode(node.id)">🗑️</button>
+      <button (click)="duplicateNode(node.id)">📋</button>
+      <button (click)="editNode(node.id)">✏️</button>
+    </ngx-workflow-node-toolbar>
+  }
 
 </ngx-workflow-diagram>
 ```
@@ -404,20 +405,22 @@ Icon-only buttons take less space and work well at all zoom levels:
 
 ```html
 <!-- Input nodes: toolbar on right -->
-<ngx-workflow-node-toolbar 
-  *ngIf="node.type === 'input'"
-  [nodeId]="node.id" 
-  position="right">
-  ...
-</ngx-workflow-node-toolbar>
+@if (node.type === 'input') {
+  <ngx-workflow-node-toolbar
+    [nodeId]="node.id"
+    position="right">
+    ...
+  </ngx-workflow-node-toolbar>
+}
 
 <!-- Output nodes: toolbar on left -->
-<ngx-workflow-node-toolbar 
-  *ngIf="node.type === 'output'"
-  [nodeId]="node.id" 
-  position="left">
-  ...
-</ngx-workflow-node-toolbar>
+@if (node.type === 'output') {
+  <ngx-workflow-node-toolbar
+    [nodeId]="node.id"
+    position="left">
+    ...
+  </ngx-workflow-node-toolbar>
+}
 ```
 
 ### 3. Adjust Offset for Better Spacing
@@ -444,11 +447,11 @@ get selectedNodes() {
 
 ```html
 <!-- Template -->
-<ngx-workflow-node-toolbar 
-  *ngFor="let node of selectedNodes"
-  [nodeId]="node.id">
-  <button (click)="performAction(node.id)">Action</button>
-</ngx-workflow-node-toolbar>
+@for (node of selectedNodes; track node.id) {
+  <ngx-workflow-node-toolbar [nodeId]="node.id">
+    <button (click)="performAction(node.id)">Action</button>
+  </ngx-workflow-node-toolbar>
+}
 ```
 
 ---
@@ -506,13 +509,14 @@ If you were using the properties sidebar for node actions, you can migrate to to
 
 **After** (Node Toolbar):
 ```html
-<ngx-workflow-node-toolbar 
-  *ngFor="let node of selectedNodes"
-  [nodeId]="node.id"
-  position="top">
-  <button (click)="editNode(node.id)">Edit</button>
-  <button (click)="deleteNode(node.id)">Delete</button>
-</ngx-workflow-node-toolbar>
+@for (node of selectedNodes; track node.id) {
+  <ngx-workflow-node-toolbar
+    [nodeId]="node.id"
+    position="top">
+    <button (click)="editNode(node.id)">Edit</button>
+    <button (click)="deleteNode(node.id)">Delete</button>
+  </ngx-workflow-node-toolbar>
+}
 ```
 
 **Benefits**:
@@ -538,10 +542,10 @@ The Node Toolbar Component works in all modern browsers:
 
 - Toolbars use `OnPush` change detection for optimal performance
 - Positioning calculations are done with computed signals (reactive)
-- Only visible toolbars are rendered (conditional with `*ngIf`)
+- Only visible toolbars are rendered (conditional with `@if`)
 - No performance impact when toolbars are hidden
 
-**Recommendation**: For diagrams with 100+ nodes, use `*ngFor` with `selectedNodes` instead of creating a toolbar for every node.
+**Recommendation**: For diagrams with 100+ nodes, use `@for` with `selectedNodes` instead of creating a toolbar for every node.
 
 ---
 

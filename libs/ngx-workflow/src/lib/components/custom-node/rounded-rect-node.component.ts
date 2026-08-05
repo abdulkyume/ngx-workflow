@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, Input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { Node } from '../../models/node.model';
 
 @Component({
@@ -37,7 +37,7 @@ import { Node } from '../../models/node.model';
   `],
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true,
-  imports: [CommonModule]
+  imports: []
 })
 export class RoundedRectNodeComponent {
   @Input() node!: Node;

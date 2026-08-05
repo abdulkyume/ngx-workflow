@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, Input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 
 export interface PaletteItem {
   type: string;
@@ -15,7 +15,7 @@ export interface PaletteItem {
 @Component({
   selector: 'ngx-workflow-palette',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './palette.component.html',
   styleUrls: ['./palette.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

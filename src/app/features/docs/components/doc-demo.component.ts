@@ -1,10 +1,10 @@
-import { Component, Input, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, Input, signal, ChangeDetectionStrategy } from '@angular/core';
+
 
 @Component({
     selector: 'app-doc-demo',
     standalone: true,
-    imports: [CommonModule],
+    imports: [],
     template: `
     <div class="demo-wrapper">
       <div class="demo-header">
@@ -37,6 +37,7 @@ import { CommonModule } from '@angular/common';
       </div>
     </div>
   `,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     styles: [`
     .demo-wrapper {
       border: 1px solid var(--color-border);

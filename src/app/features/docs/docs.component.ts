@@ -1,6 +1,6 @@
-import { Component, ElementRef, OnInit, OnDestroy, AfterViewInit, ViewChild, ChangeDetectorRef, Inject, PLATFORM_ID, signal } from '@angular/core';
+import { Component, ElementRef, OnInit, OnDestroy, AfterViewInit, ViewChild, ChangeDetectorRef, Inject, PLATFORM_ID, signal, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet, Router, NavigationEnd } from '@angular/router';
-import { isPlatformBrowser, CommonModule, ViewportScroller } from '@angular/common';
+import { isPlatformBrowser, ViewportScroller } from '@angular/common';
 import { filter, Subscription } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 
@@ -13,82 +13,87 @@ interface TocItem {
 @Component({
   selector: 'app-docs',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule, FormsModule],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, FormsModule],
   template: `
     <div class="docs-layout container">
       <!-- Left Sidebar Navigation -->
       <aside class="docs-sidebar">
         <div class="sidebar-search">
-          <input 
-            type="text" 
-            placeholder="Filter documentation..." 
-            [ngModel]="searchQuery()" 
+          <input
+            type="text"
+            placeholder="Filter documentation..."
+            [ngModel]="searchQuery()"
             (ngModelChange)="searchQuery.set($event)"
             class="search-input"/>
-        </div>
-
-        <div class="sidebar-content">
-          @if (shouldShow('getting started') || shouldShow('intro')) {
-            <div class="nav-group">
-              <h4 class="group-title">Getting Started</h4>
-              <a routerLink="/docs/intro" routerLinkActive="active" class="nav-item">Introduction & Setup</a>
+          </div>
+    
+          <div class="sidebar-content">
+            @if (shouldShow('getting started') || shouldShow('intro')) {
+              <div class="nav-group">
+                <h4 class="group-title">Getting Started</h4>
+                <a routerLink="/docs/intro" routerLinkActive="active" class="nav-item">Introduction & Setup</a>
+              </div>
+            }
+    
+            @if (shouldShow('concepts') || shouldShow('api') || shouldShow('customization')) {
+              <div class="nav-group">
+                <h4 class="group-title">Core Architecture</h4>
+                @if (shouldShow('concepts')) {
+                  <a routerLink="/docs/concepts" routerLinkActive="active" class="nav-item">Signals & State Model</a>
+                }
+                @if (shouldShow('api')) {
+                  <a routerLink="/docs/api" routerLinkActive="active" class="nav-item">API Reference</a>
+                }
+                @if (shouldShow('customization')) {
+                  <a routerLink="/docs/customization" routerLinkActive="active" class="nav-item">Custom Nodes & Edges</a>
+                }
+              </div>
+            }
+    
+            @if (shouldShow('inputs') || shouldShow('outputs')) {
+              <div class="nav-group">
+                <h4 class="group-title">Component Reference</h4>
+                @if (shouldShow('inputs')) {
+                  <a routerLink="/docs/inputs" routerLinkActive="active" class="nav-item">Input Properties</a>
+                }
+                @if (shouldShow('outputs')) {
+                  <a routerLink="/docs/outputs" routerLinkActive="active" class="nav-item">Outputs & Events</a>
+                }
+              </div>
+            }
+          </div>
+        </aside>
+    
+        <!-- Main Docs Content Area -->
+        <main class="docs-main" #mainContent>
+          <router-outlet (activate)="onActivate($event)"></router-outlet>
+        </main>
+    
+        <!-- Right Sidebar (On This Page TOC) -->
+        @if (tocItems.length > 0) {
+          <aside class="docs-toc">
+            <div class="toc-content glass-panel">
+              <span class="toc-title">On this page</span>
+              <ul class="toc-list">
+                @for (item of tocItems; track item) {
+                  <li>
+                    <a
+                      href="javascript:void(0)"
+                      class="toc-link"
+                      [class.active]="activeFragment === item.id"
+                      [class.indent]="item.level === 3"
+                      (click)="scrollTo(item.id, $event)">
+                      {{ item.label }}
+                    </a>
+                  </li>
+                }
+              </ul>
             </div>
-          }
-
-          @if (shouldShow('concepts') || shouldShow('api') || shouldShow('customization')) {
-            <div class="nav-group">
-              <h4 class="group-title">Core Architecture</h4>
-              @if (shouldShow('concepts')) {
-                <a routerLink="/docs/concepts" routerLinkActive="active" class="nav-item">Signals & State Model</a>
-              }
-              @if (shouldShow('api')) {
-                <a routerLink="/docs/api" routerLinkActive="active" class="nav-item">API Reference</a>
-              }
-              @if (shouldShow('customization')) {
-                <a routerLink="/docs/customization" routerLinkActive="active" class="nav-item">Custom Nodes & Edges</a>
-              }
-            </div>
-          }
-
-          @if (shouldShow('inputs') || shouldShow('outputs')) {
-            <div class="nav-group">
-              <h4 class="group-title">Component Reference</h4>
-              @if (shouldShow('inputs')) {
-                <a routerLink="/docs/inputs" routerLinkActive="active" class="nav-item">Input Properties</a>
-              }
-              @if (shouldShow('outputs')) {
-                <a routerLink="/docs/outputs" routerLinkActive="active" class="nav-item">Outputs & Events</a>
-              }
-            </div>
-          }
-        </div>
-      </aside>
-
-      <!-- Main Docs Content Area -->
-      <main class="docs-main" #mainContent>
-        <router-outlet (activate)="onActivate($event)"></router-outlet>
-      </main>
-      
-      <!-- Right Sidebar (On This Page TOC) -->
-      <aside class="docs-toc" *ngIf="tocItems.length > 0">
-        <div class="toc-content glass-panel">
-          <span class="toc-title">On this page</span>
-          <ul class="toc-list">
-            <li *ngFor="let item of tocItems">
-              <a 
-                href="javascript:void(0)" 
-                class="toc-link"
-                [class.active]="activeFragment === item.id"
-                [class.indent]="item.level === 3"
-                (click)="scrollTo(item.id, $event)">
-                {{ item.label }}
-              </a>
-            </li>
-          </ul>
-        </div>
-      </aside>
-    </div>
-  `,
+          </aside>
+        }
+      </div>
+    `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [`
     .docs-layout {
       display: grid;

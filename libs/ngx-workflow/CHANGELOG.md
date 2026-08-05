@@ -5,99 +5,104 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.0] - 2025-12-08
-
-### 🎉 Major Feature Release
-
-This release adds 8 powerful new features to enhance your workflow diagram experience!
+## [0.5.0] - 2026-08-05
 
 ### Added
-
-#### Before Delete Hook
-- New `beforeDelete` event emitter for controlling deletion operations
-- Supports cancellation via `event.cancel()` callback
-- Allows user confirmation before deleting nodes/edges
-
-#### Z-Index Layer Management
-- New `zIndexMode` input (`'default'` | `'layered'`)
-- Keyboard shortcuts for layer management:
-  - `Ctrl/Cmd + ]` - Bring to front
-  - `Ctrl/Cmd + [` - Send to back
-  - `Ctrl/Cmd + Shift + ]` - Raise layer
-  - `Ctrl/Cmd + Shift + [` - Lower layer
-- Context menu integration for z-index operations
-- Node stacking order control with visual feedback
-
-#### Connection Limits
-- New `maxConnectionsPerHandle` input for global connection limits
-- Per-handle configuration via `node.data.handleConfig`
-- Automatic validation during connection creation
-- Prevents invalid connections based on limits
-
-#### Edge Label Components
-- Support for custom Angular components as edge labels
-- New `edgeLabelTemplate` content child for template reference
-- Full component lifecycle support
-- Backward compatible with text-based labels
-- Interactive elements support (buttons, inputs, etc.)
-
-#### Batch Operations
-- New `DiagramStateService` methods:
-  - `selectAll()` - Select all nodes
-  - `deselectAll()` - Clear selection
-  - `deleteAll()` - Delete all nodes and edges
-  - `alignNodes(alignment)` - Align selected nodes (6 modes)
-  - `distributeNodes(axis)` - Evenly distribute nodes (2 axes)
-- Keyboard shortcut `Ctrl/Cmd + A` for select all
-- Alignment modes: left, right, center, top, bottom, middle
-- Distribution modes: horizontal, vertical
-
-#### Mini-Map Enhancements
-- New `showNodeColors` input for displaying node colors
-- Selection highlighting with glow effects
-- Pulse animation on viewport indicator
-- Enhanced hover effects
-- Better visual hierarchy
-
-#### Node Collision Detection
-- New `preventNodeOverlap` input to enable collision detection
-- New `nodeSpacing` input for configurable spacing (default: 10px)
-- Visual feedback with red border and shake animation
-- AABB (Axis-Aligned Bounding Box) collision algorithm
-- Real-time collision detection during drag
-- Auto-clear on drag end
-
-#### Additional Events
-- `nodeMouseEnter` - Mouse entered node
-- `nodeMouseLeave` - Mouse left node  
-- `nodeMouseMove` - Mouse moved over node
-- `edgeMouseEnter` - Mouse entered edge
-- `edgeMouseLeave` - Mouse left edge
-- `paneClick` - Canvas clicked
-- `paneScroll` - Canvas scrolled
-- `connectStart` - Connection drag started
-- `connectEnd` - Connection drag ended
-- `connectionDrop` - Connection dropped
+- `Node.maxConnectionsPerPort` and `handleConfig[port].maxConnections` for per-node / per-port edge limits
+- Properties sidebar fields: **Max connections / port** and **Per-port limits**
+- `ports: 0` option (hide all default handles)
+- Docs site: full Inputs/Outputs catalogs with examples; connection-limits guides on API / Concepts / Customization
 
 ### Fixed
-
-- Fixed `foreignObject` blocking mouse events on edges with custom label components
-- Fixed `toObservable()` injection context error (NG0203)
-- Improved edge interaction when using custom label components
-
-### Documentation
-
-- Comprehensive README.md with complete API reference
-- New FEATURES.md with detailed usage examples
-- Updated keyboard shortcuts documentation
-- Added interface definitions for all types
-- Complete input/output documentation organized by category
+- Manual port-to-port connecting (handle clicks no longer start node drag)
+- `maxConnectionsPerHandle` input signal was read without `()`, rejecting every manual connection
+- Edges follow live node positions while dragging; proximity auto-connect respects the same validators/limits
+- Controlled `[edges]` sync includes empty `[]` after the last edge is deleted
 
 ### Changed
+- Workspace upgraded to **Angular 22.1**
+- Peer dependencies set to `@angular/core|common|forms` **`>=17.1.0 <23.0.0`** (Angular 17.1 through 22)
+- Migrated all library and demo templates from `*ngIf` / `*ngFor` to built-in `@if` / `@for` control flow
+- Demo site header no longer shows a hardcoded package version badge
 
-- Edge label rendering now supports both templates and text
-- Improved visual feedback for all interactions
-- Enhanced context menu with z-index operations
+### Notes
+- Angular 14–16 are not supported: control flow and signal `input()`/`output()` require 17.1+
+- Connection limit priority: `handleConfig[port].maxConnections` → `maxConnectionsPerPort` → `[maxConnectionsPerHandle]`
+
+## [0.4.2] - 2026-08-05
+
+### Fixed
+- Export `HandleComponent` from the public API and `NgxWorkflowModule` so custom nodes can use `<ngx-workflow-handle>`
+- Wire `showUndoRedoControls` into the diagram shell (controls were documented but never rendered)
+- Zoom controls **Fit View** now calls `fitView()` instead of resetting zoom to `1`
+- Add `@angular/forms` peer dependency (required by CVA, validators, and form-bound UI)
+- Restore Canvas Studio (`/sandbox`) demo route previously gitignored/missing
+- Surface JSON import failures via `importError` output and an inline notification
+
+### Changed
+- Peer dependency floor set to Angular `>=17.1.0` (signal `input()` / `output()`)
+- Export additional services (`AutoSaveService`, `SearchService`, `ContextMenuService`, `HandleRegistryService`) and `version.model`
+- Export `VersionHistoryComponent`, `ContextMenuComponent`, `GridOverlayComponent`, and `RoundedRectNodeComponent` from `NgxWorkflowModule`
+- Documentation scrub: remove Dagre/`BaseEdge`/`NgxFlowModule` claims; document `edgeReconnectable` and ELK layouts accurately
+
+### Added
+- GitHub Actions CI (library build, tests, demo build, format check)
+- Root scripts: `build:lib`, `build:web`, `test:lib`, `lint`, `format`, `pack:lib`
+
+## [0.4.1] - 2026-01-18
+
+### Added
+- Execution simulator controls and status tracking
+- Mermaid and React Flow adapters
+- Node palette stencil panel
+- Typed port/`dataType` validation on handles
+- Manual edge waypoints
+- Reactive forms `ControlValueAccessor` support and graph validators
+
+### Changed
+- Packaging and documentation updates for the 0.4.x line
+
+## [0.4.0] - 2025-12-20
+
+### Added
+- Smart edge routing (`type: 'smart'`) with obstacle avoidance
+- Touch gesture support (pinch-zoom, two-finger pan)
+- Collapsible groups / nested sub-flows
+- Parallel edge offsetting
+- Performance virtualization (off-screen culling)
+
+## [0.3.0] - 2025-12-15
+
+### Added
+- Search controls (`Ctrl+F`)
+- Properties sidebar for node/edge editing
+- Auto-save + version history helpers
+- Theme/`colorMode` support
+- Export controls UI (PNG, SVG, clipboard, JSON import/export)
+
+## [0.2.0] - 2025-12-12
+
+### Added
+- Enhanced multi-selection and alignment guides
+- Layout alignment controls (ELK + force/hierarchical/circular helpers)
+- Keyboard navigation improvements
+- Context menu actions
+
+## [0.1.0] - 2025-12-08
+
+### Added
+- Before delete hook
+- Z-index layer management
+- Connection limits
+- Edge label components
+- Batch operations (`selectAll`, `alignNodes`, `distributeNodes`, …)
+- Mini-map enhancements
+- Node collision detection
+- Additional interaction events (`nodeMouseEnter`, `paneClick`, `connectStart`, …)
+
+### Fixed
+- `foreignObject` blocking mouse events on edges with custom label components
+- `toObservable()` injection context error (NG0203)
 
 ## [0.0.2] - Previous Release
 
@@ -107,34 +112,20 @@ Initial public release with core functionality.
 
 ## Migration Guide
 
+### From 0.4.x to 0.5.0
+
+- Requires Angular **17.1+** (through 22); Angular 14–16 are unsupported
+- Consumer apps should prefer `@if` / `@for` when copying library examples
+- No breaking public TypeScript API changes beyond the peer range clarification
+
+### From 0.4.1 to 0.4.2
+
+- Ensure `@angular/forms` is installed (now a peer dependency)
+- Prefer Angular 17.1+
+- Rename any documented `edgeReconnection` bindings to **`edgeReconnectable`**
+- Use `fitView()` method (there is no `fitView` input)
+- Import `HandleComponent` from `ngx-workflow` for custom nodes
+
 ### From 0.0.x to 0.1.0
 
-All changes are **backward compatible**. New features are opt-in via inputs.
-
-#### Enable New Features
-
-```typescript
-<!-- Before Delete Hook -->
-<ngx-workflow-diagram (beforeDelete)="onBeforeDelete($event)">
-</ngx-workflow-diagram>
-
-<!-- Z-Index Management -->
-<ngx-workflow-diagram [zIndexMode]="'layered'">
-</ngx-workflow-diagram>
-
-<!-- Connection Limits -->
-<ngx-workflow-diagram [maxConnectionsPerHandle]="1">
-</ngx-workflow-diagram>
-
-<!-- Collision Detection -->
-<ngx-workflow-diagram 
-  [preventNodeOverlap]="true"
-  [nodeSpacing]="10">
-</ngx-workflow-diagram>
-
-<!-- Mini-Map with Colors -->
-<ngx-workflow-minimap [showNodeColors]="true">
-</ngx-workflow-minimap>
-```
-
-No breaking changes - existing code continues to work without modification.
+All 0.1.0 changes were backward compatible and opt-in via inputs.

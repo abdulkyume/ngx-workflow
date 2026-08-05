@@ -1,17 +1,18 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-doc-intro',
   standalone: true,
   imports: [RouterLink],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <article class="prose">
       <span class="badge badge-accent">Getting Started</span>
       <h1>Introduction to ngx-workflow</h1>
       
       <p class="lead text-muted">
-        <strong>ngx-workflow</strong> is a high-performance, developer-first flowchart and graph diagram library built specifically for <strong>Angular 18+ and Signals</strong>.
+        <strong>ngx-workflow</strong> is a high-performance, developer-first flowchart and graph diagram library built for <strong>Angular 17.1–22 and Signals</strong>.
       </p>
 
       <div class="callout callout-info">

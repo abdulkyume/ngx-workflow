@@ -7,6 +7,7 @@ export * from './lib/ngx-workflow.module';
 // Components
 export * from './lib/components/diagram/diagram.component';
 export * from './lib/components/custom-node/rounded-rect-node.component';
+export * from './lib/components/handle/handle.component';
 export * from './lib/components/node-toolbar/node-toolbar.component';
 export * from './lib/components/undo-redo-controls/undo-redo-controls.component';
 export * from './lib/components/version-history/version-history.component';
@@ -35,12 +36,17 @@ export * from './lib/services/canvas-pan-zoom.service';
 export * from './lib/services/node-drag.service';
 export * from './lib/services/selection-box.service';
 export * from './lib/services/execution-simulator.service';
+export * from './lib/services/auto-save.service';
+export * from './lib/services/search.service';
+export * from './lib/services/context-menu.service';
+export * from './lib/services/handle-registry.service';
 
 // Models
 export * from './lib/models/node.model';
 export * from './lib/models/edge.model';
 export * from './lib/models/viewport.model';
 export * from './lib/models/diagram.model';
+export * from './lib/models/version.model';
 
 // Adapters
 export * from './lib/adapters/mermaid-adapter';

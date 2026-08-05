@@ -1,12 +1,12 @@
 import { Component, ChangeDetectionStrategy, Input, ElementRef, NgZone, OnDestroy, computed, Signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { DiagramStateService } from '../../services/diagram-state.service';
 import { Node, Viewport } from '../../models';
 
 @Component({
   selector: 'ngx-workflow-minimap',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './minimap.component.html',
   styleUrls: ['./minimap.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush

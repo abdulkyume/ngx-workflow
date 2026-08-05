@@ -1,4 +1,4 @@
-import { Component, signal, OnInit, Inject, PLATFORM_ID } from '@angular/core';
+import { Component, signal, OnInit, Inject, PLATFORM_ID, ChangeDetectionStrategy } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { isPlatformBrowser } from '@angular/common';
 import { ThemeService } from 'ngx-workflow';
@@ -27,7 +27,6 @@ import { ThemeService } from 'ngx-workflow';
               </svg>
             </div>
             <span class="logo-text">ngx-workflow</span>
-            <span class="badge badge-accent">v0.4.1</span>
           </a>
           
           <!-- Mobile Menu Button -->
@@ -136,6 +135,7 @@ import { ThemeService } from 'ngx-workflow';
       </footer>
     </div>
   `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [`
     .layout {
       min-height: 100vh;

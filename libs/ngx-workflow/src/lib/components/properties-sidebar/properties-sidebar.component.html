@@ -1,190 +1,207 @@
 <div class="ngx-workflow__sidebar" [class.open]="!!node || !!edge">
-    <div class="ngx-workflow__sidebar-header">
-        <h3>Properties</h3>
-        <button class="ngx-workflow__close-btn" (click)="close.emit()">×</button>
-    </div>
+  <div class="ngx-workflow__sidebar-header">
+    <h3>Properties</h3>
+    <button class="ngx-workflow__close-btn" (click)="close.emit()">×</button>
+  </div>
 
-    <div class="ngx-workflow__sidebar-content" *ngIf="node">
+  @if (node) {
+    <div class="ngx-workflow__sidebar-content">
+      <div class="ngx-workflow__form-group">
+        <label>ID</label>
+        <input type="text" [value]="node.id" disabled class="ngx-workflow__input disabled">
+      </div>
+      <div class="ngx-workflow__form-group">
+        <label>Label</label>
+        <input type="text" [ngModel]="node.label" (ngModelChange)="updateLabel($event)" class="ngx-workflow__input">
+      </div>
+      <div class="ngx-workflow__form-group">
+        <label>Shape</label>
+        <select [ngModel]="node.type === 'shape' ? (node.data?.type || 'rectangle') : 'default'"
+          (ngModelChange)="updateShapeType($event)" class="ngx-workflow__input">
+          @for (s of shapes; track s) {
+            <option [value]="s">{{ s | titlecase }}</option>
+          }
+        </select>
+      </div>
+      <div class="ngx-workflow__form-group">
+        <label>Ports</label>
+        <select [ngModel]="node.ports ?? 4" (ngModelChange)="updatePorts($event)" class="ngx-workflow__input">
+          <option [ngValue]="0">None</option>
+          <option [ngValue]="1">1 - Top</option>
+          <option [ngValue]="2">2 - Top, Bottom</option>
+          <option [ngValue]="3">3 - Left, Right</option>
+          <option [ngValue]="4">4 - All</option>
+        </select>
+      </div>
+      <div class="ngx-workflow__form-group">
+        <label>Max connections / port</label>
+        <input type="number" min="1" step="1" placeholder="Unlimited"
+          [ngModel]="node.maxConnectionsPerPort ?? null"
+          (ngModelChange)="updateMaxConnectionsPerPort($event)"
+          class="ngx-workflow__input">
+        <span class="ngx-workflow__field-hint">Default limit for every port on this node</span>
+      </div>
+      @if (getActivePorts().length > 0) {
         <div class="ngx-workflow__form-group">
-            <label>ID</label>
-            <input type="text" [value]="node.id" disabled class="ngx-workflow__input disabled">
-        </div>
-
-        <div class="ngx-workflow__form-group">
-            <label>Label</label>
-            <input type="text" [ngModel]="node.label" (ngModelChange)="updateLabel($event)" class="ngx-workflow__input">
-        </div>
-
-        <div class="ngx-workflow__form-group">
-            <label>Shape</label>
-            <select [ngModel]="node.type === 'shape' ? (node.data?.type || 'rectangle') : 'default'"
-                (ngModelChange)="updateShapeType($event)" class="ngx-workflow__input">
-                <option *ngFor="let s of shapes" [value]="s">{{ s | titlecase }}</option>
-            </select>
-        </div>
-
-        <div class="ngx-workflow__form-group">
-            <label>Ports</label>
-            <select [ngModel]="node.ports || 4" (ngModelChange)="updatePorts($event)" class="ngx-workflow__input">
-                <option [value]="1">1 - Top</option>
-                <option [value]="2">2 - Top, Bottom</option>
-                <option [value]="3">3 - Left, Right</option>
-                <option [value]="4">4 - All</option>
-            </select>
-        </div>
-
-        <div class="ngx-workflow__form-group">
-            <label>Background Color</label>
-            <input type="color" [ngModel]="node.style?.['backgroundColor'] || '#ffffff'"
-                (ngModelChange)="updateBackgroundColor($event)" class="ngx-workflow__input"
-                style="height: 40px; padding: 2px;">
-        </div>
-
-        <div class="ngx-workflow__form-group">
-            <label>Text Color</label>
-            <input type="color" [ngModel]="node.style?.['color'] || '#000000'"
-                (ngModelChange)="updateLabelColor($event)" class="ngx-workflow__input"
-                style="height: 40px; padding: 2px;">
-        </div>
-
-        <div class="ngx-workflow__form-row">
-            <div class="ngx-workflow__form-group">
-                <label>X</label>
-                <input type="number" [ngModel]="node.position.x" (ngModelChange)="updateX($event)"
-                    class="ngx-workflow__input">
+          <label>Per-port limits</label>
+          <span class="ngx-workflow__field-hint">Override the default for a specific port</span>
+          @for (port of getActivePorts(); track port) {
+            <div class="ngx-workflow__form-row ngx-workflow__port-limit-row">
+              <label class="ngx-workflow__port-limit-label">{{ port | titlecase }}</label>
+              <input type="number" min="1" step="1" placeholder="Default"
+                [ngModel]="getPortMaxConnections(port)"
+                (ngModelChange)="updatePortMaxConnections(port, $event)"
+                class="ngx-workflow__input">
             </div>
+          }
+        </div>
+      }
+      <div class="ngx-workflow__form-group">
+        <label>Background Color</label>
+        <input type="color" [ngModel]="node.style?.['backgroundColor'] || '#ffffff'"
+          (ngModelChange)="updateBackgroundColor($event)" class="ngx-workflow__input"
+          style="height: 40px; padding: 2px;">
+        </div>
+        <div class="ngx-workflow__form-group">
+          <label>Text Color</label>
+          <input type="color" [ngModel]="node.style?.['color'] || '#000000'"
+            (ngModelChange)="updateLabelColor($event)" class="ngx-workflow__input"
+            style="height: 40px; padding: 2px;">
+          </div>
+          <div class="ngx-workflow__form-row">
             <div class="ngx-workflow__form-group">
+              <label>X</label>
+              <input type="number" [ngModel]="node.position.x" (ngModelChange)="updateX($event)"
+                class="ngx-workflow__input">
+              </div>
+              <div class="ngx-workflow__form-group">
                 <label>Y</label>
                 <input type="number" [ngModel]="node.position.y" (ngModelChange)="updateY($event)"
+                  class="ngx-workflow__input">
+                </div>
+              </div>
+              <div class="ngx-workflow__form-row">
+                <div class="ngx-workflow__form-group">
+                  <label>Width</label>
+                  <input type="number" [ngModel]="node.width || 170" (ngModelChange)="updateWidth($event)"
                     class="ngx-workflow__input">
-            </div>
-        </div>
+                  </div>
+                  <div class="ngx-workflow__form-group">
+                    <label>Height</label>
+                    <input type="number" [ngModel]="node.height || 60" (ngModelChange)="updateHeight($event)"
+                      class="ngx-workflow__input">
+                    </div>
+                  </div>
+                </div>
+              }
 
-        <div class="ngx-workflow__form-row">
-            <div class="ngx-workflow__form-group">
-                <label>Width</label>
-                <input type="number" [ngModel]="node.width || 170" (ngModelChange)="updateWidth($event)"
-                    class="ngx-workflow__input">
-            </div>
-            <div class="ngx-workflow__form-group">
-                <label>Height</label>
-                <input type="number" [ngModel]="node.height || 60" (ngModelChange)="updateHeight($event)"
-                    class="ngx-workflow__input">
-            </div>
-        </div>
-    </div>
-
-    <div class="ngx-workflow__sidebar-content" *ngIf="edge">
-        <div class="ngx-workflow__form-group">
-            <label>ID</label>
-            <input type="text" [value]="edge.id" disabled class="ngx-workflow__input disabled">
-        </div>
-
-        <div class="ngx-workflow__form-group">
-            <label>Label</label>
-            <input type="text" [ngModel]="edge.label" (ngModelChange)="updateEdgeLabel($event)"
-                class="ngx-workflow__input">
-        </div>
-
-        <div class="ngx-workflow__form-group">
-            <label>Type</label>
-            <select [ngModel]="edge.type || 'bezier'" (ngModelChange)="updateEdgeType($event)"
-                class="ngx-workflow__input">
-                <option value="bezier">Bezier</option>
-                <option value="straight">Straight</option>
-                <option value="dashed">Dashed</option>
-                <option value="step">Step</option>
-                <option value="smoothstep">Smooth Step</option>
-                <option value="smart">Smart</option>
-            </select>
-        </div>
-
-        <div class="ngx-workflow__form-group" style="flex-direction: row; align-items: center; gap: 10px;">
-            <input type="checkbox" [ngModel]="edge.animated" (ngModelChange)="updateEdgeAnimated($event)"
-                id="edge-animated">
-            <label for="edge-animated" style="margin: 0;">Animated</label>
-        </div>
-
-        <div class="ngx-workflow__form-group" *ngIf="edge.animated">
-            <label>Animation Type</label>
-            <select [ngModel]="edge.animationType || 'flow'" (ngModelChange)="updateEdgeAnimationType($event)"
-                class="ngx-workflow__input">
-                <option value="flow">Flow (Dashed)</option>
-                <option value="dot">Dot (Moving Circle)</option>
-                <option value="both">Both</option>
-            </select>
-        </div>
-
-        <div class="ngx-workflow__form-group" *ngIf="edge.animated">
-            <label>Animation Speed</label>
-            <select [ngModel]="edge.animationDuration || '2s'" (ngModelChange)="updateEdgeAnimationDuration($event)"
-                class="ngx-workflow__input">
-                <option value="0.5s">Fast (0.5s)</option>
-                <option value="1s">Medium (1s)</option>
-                <option value="2s">Normal (2s)</option>
-                <option value="5s">Slow (5s)</option>
-                <option value="10s">Very Slow (10s)</option>
-            </select>
-        </div>
-
-        <div class="ngx-workflow__form-group"
-            *ngIf="edge.animated && (edge.animationType === 'dot' || edge.animationType === 'both')">
-            <label>Animation Color</label>
-            <input type="color" [ngModel]="edge.animationStyle?.['fill'] || '#3b82f6'"
-                (ngModelChange)="updateEdgeAnimationColor($event)" class="ngx-workflow__input"
-                style="height: 40px; padding: 2px;">
-        </div>
-
-        <div class="ngx-workflow__form-group">
-            <label>Color</label>
-            <input type="color" [ngModel]="edge.style?.['stroke'] || '#b1b1b7'"
-                (ngModelChange)="updateEdgeColor($event)" class="ngx-workflow__input"
-                style="height: 40px; padding: 2px;">
-        </div>
-
-        <div class="ngx-workflow__form-group">
-            <label>Label Color</label>
-            <input type="color" [ngModel]="edge.labelStyle?.['fill'] || '#000000'"
-                (ngModelChange)="updateEdgeLabelColor($event)" class="ngx-workflow__input"
-                style="height: 40px; padding: 2px;">
-        </div>
-
-        <div class="ngx-workflow__form-group">
-            <label>Stroke Width</label>
-            <input type="number" [ngModel]="edge.style?.['strokeWidth'] || 2" (ngModelChange)="updateEdgeWidth($event)"
-                class="ngx-workflow__input">
-        </div>
-
-        <div class="ngx-workflow__form-group">
-            <label>Line Style</label>
-            <select [ngModel]="edge.style?.['strokeDasharray'] || ''" (ngModelChange)="updateEdgeStrokeStyle($event)"
-                class="ngx-workflow__input">
-                <option value="">Solid</option>
-                <option value="5,5">Dashed</option>
-                <option value="2,2">Dotted</option>
-            </select>
-        </div>
-
-        <div class="ngx-workflow__form-group">
-            <label>Marker Start</label>
-            <select [ngModel]="edge.markerStart || ''" (ngModelChange)="updateEdgeMarkerStart($event)"
-                class="ngx-workflow__input">
-                <option value="">None</option>
-                <option value="arrow">Arrow</option>
-                <option value="arrowclosed">Arrow (Filled)</option>
-                <option value="dot">Dot</option>
-            </select>
-        </div>
-
-        <div class="ngx-workflow__form-group">
-            <label>Marker End</label>
-            <select [ngModel]="edge.markerEnd || ''" (ngModelChange)="updateEdgeMarkerEnd($event)"
-                class="ngx-workflow__input">
-                <option value="">None</option>
-                <option value="arrow">Arrow</option>
-                <option value="arrowclosed">Arrow (Filled)</option>
-                <option value="dot">Dot</option>
-            </select>
-        </div>
-    </div>
-</div>
+              @if (edge) {
+                <div class="ngx-workflow__sidebar-content">
+                  <div class="ngx-workflow__form-group">
+                    <label>ID</label>
+                    <input type="text" [value]="edge.id" disabled class="ngx-workflow__input disabled">
+                  </div>
+                  <div class="ngx-workflow__form-group">
+                    <label>Label</label>
+                    <input type="text" [ngModel]="edge.label" (ngModelChange)="updateEdgeLabel($event)"
+                      class="ngx-workflow__input">
+                    </div>
+                    <div class="ngx-workflow__form-group">
+                      <label>Type</label>
+                      <select [ngModel]="edge.type || 'bezier'" (ngModelChange)="updateEdgeType($event)"
+                        class="ngx-workflow__input">
+                        <option value="bezier">Bezier</option>
+                        <option value="straight">Straight</option>
+                        <option value="dashed">Dashed</option>
+                        <option value="step">Step</option>
+                        <option value="smoothstep">Smooth Step</option>
+                        <option value="smart">Smart</option>
+                      </select>
+                    </div>
+                    <div class="ngx-workflow__form-group" style="flex-direction: row; align-items: center; gap: 10px;">
+                      <input type="checkbox" [ngModel]="edge.animated" (ngModelChange)="updateEdgeAnimated($event)"
+                        id="edge-animated">
+                        <label for="edge-animated" style="margin: 0;">Animated</label>
+                      </div>
+                      @if (edge.animated) {
+                        <div class="ngx-workflow__form-group">
+                          <label>Animation Type</label>
+                          <select [ngModel]="edge.animationType || 'flow'" (ngModelChange)="updateEdgeAnimationType($event)"
+                            class="ngx-workflow__input">
+                            <option value="flow">Flow (Dashed)</option>
+                            <option value="dot">Dot (Moving Circle)</option>
+                            <option value="both">Both</option>
+                          </select>
+                        </div>
+                      }
+                      @if (edge.animated) {
+                        <div class="ngx-workflow__form-group">
+                          <label>Animation Speed</label>
+                          <select [ngModel]="edge.animationDuration || '2s'" (ngModelChange)="updateEdgeAnimationDuration($event)"
+                            class="ngx-workflow__input">
+                            <option value="0.5s">Fast (0.5s)</option>
+                            <option value="1s">Medium (1s)</option>
+                            <option value="2s">Normal (2s)</option>
+                            <option value="5s">Slow (5s)</option>
+                            <option value="10s">Very Slow (10s)</option>
+                          </select>
+                        </div>
+                      }
+                      @if (edge.animated && (edge.animationType === 'dot' || edge.animationType === 'both')) {
+                        <div class="ngx-workflow__form-group"
+                          >
+                          <label>Animation Color</label>
+                          <input type="color" [ngModel]="edge.animationStyle?.['fill'] || '#3b82f6'"
+                            (ngModelChange)="updateEdgeAnimationColor($event)" class="ngx-workflow__input"
+                            style="height: 40px; padding: 2px;">
+                          </div>
+                        }
+                        <div class="ngx-workflow__form-group">
+                          <label>Color</label>
+                          <input type="color" [ngModel]="edge.style?.['stroke'] || '#b1b1b7'"
+                            (ngModelChange)="updateEdgeColor($event)" class="ngx-workflow__input"
+                            style="height: 40px; padding: 2px;">
+                          </div>
+                          <div class="ngx-workflow__form-group">
+                            <label>Label Color</label>
+                            <input type="color" [ngModel]="edge.labelStyle?.['fill'] || '#000000'"
+                              (ngModelChange)="updateEdgeLabelColor($event)" class="ngx-workflow__input"
+                              style="height: 40px; padding: 2px;">
+                            </div>
+                            <div class="ngx-workflow__form-group">
+                              <label>Stroke Width</label>
+                              <input type="number" [ngModel]="edge.style?.['strokeWidth'] || 2" (ngModelChange)="updateEdgeWidth($event)"
+                                class="ngx-workflow__input">
+                              </div>
+                              <div class="ngx-workflow__form-group">
+                                <label>Line Style</label>
+                                <select [ngModel]="edge.style?.['strokeDasharray'] || ''" (ngModelChange)="updateEdgeStrokeStyle($event)"
+                                  class="ngx-workflow__input">
+                                  <option value="">Solid</option>
+                                  <option value="5,5">Dashed</option>
+                                  <option value="2,2">Dotted</option>
+                                </select>
+                              </div>
+                              <div class="ngx-workflow__form-group">
+                                <label>Marker Start</label>
+                                <select [ngModel]="edge.markerStart || ''" (ngModelChange)="updateEdgeMarkerStart($event)"
+                                  class="ngx-workflow__input">
+                                  <option value="">None</option>
+                                  <option value="arrow">Arrow</option>
+                                  <option value="arrowclosed">Arrow (Filled)</option>
+                                  <option value="dot">Dot</option>
+                                </select>
+                              </div>
+                              <div class="ngx-workflow__form-group">
+                                <label>Marker End</label>
+                                <select [ngModel]="edge.markerEnd || ''" (ngModelChange)="updateEdgeMarkerEnd($event)"
+                                  class="ngx-workflow__input">
+                                  <option value="">None</option>
+                                  <option value="arrow">Arrow</option>
+                                  <option value="arrowclosed">Arrow (Filled)</option>
+                                  <option value="dot">Dot</option>
+                                </select>
+                              </div>
+                            </div>
+                          }
+                        </div>

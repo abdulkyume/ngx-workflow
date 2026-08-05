@@ -68,16 +68,30 @@ Restrict maximum connections per handle.
 </ngx-workflow-diagram>
 ```
 
-### Per-Handle Configuration
+### Per-Node / Per-Port Configuration
 
 ```typescript
-node.data = {
+const node = {
+  id: '1',
+  position: { x: 0, y: 0 },
+  ports: 4, // 0=None, 1=Top, 2=Top/Bottom, 3=Left/Right, 4=All
+  // Default limit for every port on this node
+  maxConnectionsPerPort: 2,
+  // Optional per-port overrides
   handleConfig: {
-    'output-1': { maxConnections: 1 },
-    'input-1': { maxConnections: 3 }
+    top: { maxConnections: 1 },
+    bottom: { maxConnections: 3 }
   }
-}
+};
 ```
+
+**Priority:** `handleConfig[port].maxConnections` → `node.maxConnectionsPerPort` → `[maxConnectionsPerHandle]`.
+
+Also editable in the properties sidebar when a node is selected (**Max connections / port**, **Per-port limits**).
+
+### Manual port-to-port connect
+
+Drag from a handle circle to another node’s handle. Listen with `(connect)`, `(connectStart)`, `(connectEnd)`, or keep edges in sync via `(edgesChange)`. Dropping on empty canvas emits `(edgeDrop)`.
 
 ---
 
@@ -93,9 +107,11 @@ Use custom Angular components for edge labels.
     <div class="custom-label">
       <button (click)="editEdge(edge)">✏️</button>
       <span>{{ edge.label }}</span>
-      <span *ngIf="edge.data?.priority" class="badge">
-        {{ edge.data.priority }}
-      </span>
+      @if (edge.data?.priority) {
+        <span class="badge">
+          {{ edge.data.priority }}
+        </span>
+      }
     </div>
   </ng-template>
 </ngx-workflow-diagram>

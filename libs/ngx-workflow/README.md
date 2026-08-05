@@ -5,7 +5,7 @@
 
 A powerful, highly customizable Angular library for building interactive node-based editors, flow charts, and diagrams. Built with Angular Signals for high performance and reactivity.
 
-![Demo Screenshot](https://raw.githubusercontent.com/abdulkyume/ngx-workflow/main/assets/demo.png)
+> Live demo: clone the repo and run `npm start`, then open **Examples** or **Canvas Studio** (`/sandbox`).
 
 ## 🚀 Features
 
@@ -22,7 +22,7 @@ A powerful, highly customizable Angular library for building interactive node-ba
 - **Customizable**: Fully custom node and edge templates
 - **Rich UI**: Built-in minimap, background patterns, controls, alignment, and equal distribution tools
 - **Parallel Edge Offsetting**: Automatic curvature spacing for multi-edges between identical node pairs
-- **Layouts**: Automatic layout support via Dagre and ELK
+- **Layouts**: Automatic layout support via ELK (plus force, hierarchical, and circular helpers)
 - **History**: Robust Undo/Redo history stack with Ctrl+Z/Ctrl+Shift+Z
 - **Theming**: Explicit `colorMode` and CSS variables for easy styling with dark mode support
 - **Smart Alignment**: Visual alignment guides and drag snapping
@@ -77,9 +77,7 @@ A powerful, highly customizable Angular library for building interactive node-ba
 npm install ngx-workflow
 ```
 
-```bash
-npm install ngx-workflow
-```
+Peer dependencies: `@angular/core`, `@angular/common`, and `@angular/forms` (**Angular 17.1 through 22**).
 
 ## 🏁 Quick Start
 
@@ -148,8 +146,8 @@ The main component for rendering the workflow.
 | `backgroundSize` | `number` | `1` | Size of background pattern elements. |
 | `backgroundColor` | `string` | `'#81818a'` | Color of the background pattern dots/lines. |
 | `backgroundBgColor` | `string` | `'#f0f0f0'` | Background color of the canvas itself. |
-| `fitView` | `boolean` | `false` | Automatically fit all nodes in view on load. |
 | `connectionValidator` | `(source: string, target: string) => boolean` | `undefined` | Custom function to validate connections globally. |
+| `validateConnection` | `(connection) => boolean` | `undefined` | Richer connection validation including handle ids. |
 | `nodesResizable` | `boolean` | `true` | Global toggle to enable/disable node resizing. |
 | `snapToGrid` | `boolean` | `false` | Enable snap-to-grid for node positioning. |
 | `gridSize` | `number` | `20` | Grid size in pixels for snap-to-grid. |
@@ -160,7 +158,7 @@ The main component for rendering the workflow.
 | `zIndexMode` | `'default' \| 'layered'` | `'default'` | Strategy for node z-indexing. |
 | `preventNodeOverlap` | `boolean` | `false` | Enable collision detection to prevent partial overlaps. |
 | `nodeSpacing` | `number` | `10` | Minimum spacing between nodes when `preventNodeOverlap` is true. |
-| `edgeReconnection` | `boolean` | `false` | Allow dragging edge endpoints to reconnect them. |
+| `edgeReconnectable` | `boolean` | `false` | Allow dragging edge endpoints to reconnect them. |
 | `autoSave` | `boolean` | `false` | Enable auto-saving of diagram state to localStorage. |
 | `autoSaveInterval` | `number` | `1000` | throttled auto-save interval in ms. |
 | `autoPanOnNodeDrag` | `boolean` | `true` | Pan canvas automatically when dragging node near edge. |
@@ -169,7 +167,35 @@ The main component for rendering the workflow.
 | `autoPanEdgeThreshold` | `number` | `50` | Distance in pixels from edge to trigger auto-pan. |
 | `defsTemplate` | `TemplateRef<any>` | `undefined` | Angular template containing SVG `<defs>` (markers, etc). |
 | `edgeTemplate` | `TemplateRef<any>` | `undefined` | Custom template for rendering edges. |
-| `maxConnectionsPerHandle` | `number` | `undefined` | Global limit for connections per handle. |
+| `maxConnectionsPerHandle` | `number` | `undefined` | Global max edges per port. Overridden by `node.maxConnectionsPerPort` and `handleConfig[port].maxConnections`. |
+| `proximityThreshold` | `number` | `200` | Distance for auto-connect when dragging nodes near each other. |
+| `showGrid` | `boolean` | `false` | Show grid overlay. |
+| `nodeTypes` | `Record<string, Type>` | `{}` | Custom node type → component map. |
+| `initialNodes` / `initialEdges` | `Node[]` / `Edge[]` | `[]` | Seed graph on first init (uncontrolled). |
+| `maxVersions` | `number` | `10` | Max auto-save version snapshots. |
+
+#### Connection limits example
+
+```typescript
+<ngx-workflow-diagram
+  [nodes]="nodes()"
+  [edges]="edges()"
+  [maxConnectionsPerHandle]="2"
+  (nodesChange)="nodes.set($event)"
+  (edgesChange)="edges.set($event)"
+  (connect)="onConnect($event)"
+/>
+
+nodes.set([{
+  id: 'a',
+  position: { x: 0, y: 0 },
+  ports: 4,
+  maxConnectionsPerPort: 1,
+  handleConfig: { bottom: { maxConnections: 3 } }
+}]);
+```
+
+Priority: `handleConfig[port].maxConnections` → `maxConnectionsPerPort` → `[maxConnectionsPerHandle]`. Also editable in the properties sidebar.
 
 #### Methods
 
@@ -189,19 +215,23 @@ You can access these methods via `@ViewChild(DiagramComponent)`:
 
 | Name | Type | Description |
 |------|------|-------------|
-| `nodeClick` | `EventEmitter<Node>` | Emitted when a node is clicked. |
-| `nodeDoubleClick` | `EventEmitter<Node>` | Emitted when a node is double-clicked. |
-| `edgeClick` | `EventEmitter<Edge>` | Emitted when an edge is clicked. |
-| `connect` | `EventEmitter<Connection>` | Emitted when a new connection is created. |
-| `nodesChange` | `EventEmitter<Node[]>` | Emitted when the nodes array changes (move, add, delete). |
-| `edgesChange` | `EventEmitter<Edge[]>` | Emitted when the edges array changes. |
-| `paneClick` | `EventEmitter<MouseEvent>` | Emitted when the empty canvas is clicked. |
-| `contextMenu` | `EventEmitter<Event>` | Emitted on right-click. |
-| `beforeDelete` | `EventEmitter<{nodes, edges, cancel}>` | cancellable event before deletion. |
-| `nodeMouseEnter` | `EventEmitter<Node>` | Emitted when mouse enters a node. |
-| `nodeMouseLeave` | `EventEmitter<Node>` | Emitted when mouse leaves a node. |
-| `edgeMouseEnter` | `EventEmitter<Edge>` | Emitted when mouse enters an edge. |
-| `edgeMouseLeave` | `EventEmitter<Edge>` | Emitted when mouse leaves an edge. |
+| `nodeClick` | `output<Node>` | Emitted when a node is clicked. |
+| `nodeDoubleClick` | `output<Node>` | Emitted when a node is double-clicked. |
+| `edgeClick` | `output<Edge>` | Emitted when an edge is clicked. |
+| `connect` | `output<{source, target, sourceHandle?, targetHandle?}>` | New port-to-port connection created. |
+| `connectStart` / `connectEnd` | `output<{nodeId, handleId?}>` | Connection drag lifecycle. |
+| `edgeDrop` | `output<{sourceNodeId, sourceHandleId, position}>` | Connection dropped on empty canvas. |
+| `connectionDrop` | `output<{position, event, sourceNodeId, sourceHandleId?}>` | Connection drop with pointer details. |
+| `nodesChange` | `output<Node[]>` | Nodes moved, added, deleted, or edited. |
+| `edgesChange` | `output<Edge[]>` | Edges added, reconnected, or deleted. |
+| `paneClick` | `output<{event, position}>` | Empty canvas click (graph-space position). |
+| `paneScroll` | `output<WheelEvent>` | Wheel scroll on the canvas. |
+| `contextMenu` | `output<{type, item?, event}>` | Right-click on canvas / node / edge. |
+| `beforeDelete` | `output<{nodes, edges, cancel}>` | Cancellable delete. |
+| `importError` | `output<{message, error?}>` | JSON import failure. |
+| `nodeMouseEnter` / `nodeMouseLeave` | `output<Node>` | Pointer enter/leave node. |
+| `nodeMouseMove` | `output<{node, event}>` | Pointer move over a node. |
+| `edgeMouseEnter` / `edgeMouseLeave` | `output<Edge>` | Pointer enter/leave edge. |
 
 ### Interfaces
 
@@ -231,7 +261,14 @@ interface Node {
   borderWidth?: number;
 
   // Behavior
-  ports?: 1 | 2 | 3 | 4;   // Default handle configuration (1=Top, 4=All)
+  ports?: 0 | 1 | 2 | 3 | 4; // 0=None, 1=Top, 2=Top/Bottom, 3=Left/Right, 4=All
+  maxConnectionsPerPort?: number; // Default max edges per port on this node
+  handleConfig?: {
+    [handleId: string]: {
+      isConnectable?: boolean | number | ((node: Node, edges: Edge[]) => boolean);
+      maxConnections?: number; // Override for this port
+    };
+  };
   easyConnect?: boolean;   // Drag from node body to connect
   
   // Visuals
@@ -344,9 +381,9 @@ export class FormDemoComponent {
 ```
 
 ### Custom Edges
-Similar to nodes, you can register custom edge types.
+Similar to nodes, you can register custom edge components via the edge types token. Built-in path types include `bezier`, `straight`, `step`, `smoothstep`, and `smart` (obstacle-avoiding).
 
-1.  **Create Edge Component**: It must extend `BaseEdge`.
+1.  **Create Edge Component**: A standalone component that accepts an `edge` input (`EdgeComponentType`).
 2.  **Register Token**:
     ```typescript
     import { NGX_WORKFLOW_EDGE_TYPES } from 'ngx-workflow';

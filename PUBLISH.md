@@ -56,7 +56,7 @@ To be a strong competitor to React Flow, consider adding the following features 
 
 *   **Sub-Flows**: Fully recursive nested flows.
 *   **Custom Edge Types**: Easier API for creating custom edges with HTML/SVG content.
-*   **Layout Engine**: Built-in integration with Dagre or ElkJS for auto-layout (currently manual or via service).
+*   **Layout Engine**: ELK integration plus force/hierarchical/circular helpers (shipped).
 *   **Minimap & Controls**: (Already implemented! ✅)
 *   **Accessibility**: Continue improving keyboard navigation and ARIA labels.
-*   **Documentation**: Create a dedicated documentation site (e.g., using Storybook or Docusaurus) with interactive examples.
+*   **Documentation**: Expand the demo docs site with more interactive examples.

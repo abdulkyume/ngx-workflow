@@ -1,11 +1,11 @@
 import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { DiagramStateService } from '../../services/diagram-state.service';
 
 @Component({
     selector: 'ngx-workflow-undo-redo-controls',
     standalone: true,
-    imports: [CommonModule],
+    imports: [],
     templateUrl: './undo-redo-controls.component.html',
     styleUrls: ['./undo-redo-controls.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush

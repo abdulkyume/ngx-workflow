@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Node, Edge } from '../../models';
@@ -8,6 +8,7 @@ import { Node, Edge } from '../../models';
     standalone: true,
     imports: [CommonModule, FormsModule],
     templateUrl: './properties-sidebar.component.html',
+    changeDetection: ChangeDetectionStrategy.OnPush,
     styleUrls: ['./properties-sidebar.component.scss']
 })
 export class PropertiesSidebarComponent {
@@ -77,6 +78,53 @@ export class PropertiesSidebarComponent {
     updatePorts(ports: number) {
         if (!this.node) return;
         this.change.emit({ ports: +ports });
+    }
+
+    /** Active port ids for the current node.ports setting */
+    getActivePorts(): Array<'top' | 'right' | 'bottom' | 'left'> {
+        const ports = this.node?.ports ?? 4;
+        if (ports === 0) return [];
+        if (ports === 1) return ['top'];
+        if (ports === 2) return ['top', 'bottom'];
+        if (ports === 3) return ['left', 'right'];
+        return ['top', 'right', 'bottom', 'left'];
+    }
+
+    getPortMaxConnections(handleId: string): number | null {
+        const value = this.node?.handleConfig?.[handleId]?.maxConnections;
+        return value === undefined ? null : value;
+    }
+
+    updateMaxConnectionsPerPort(value: number | string | null): void {
+        if (!this.node) return;
+        if (value === '' || value === null || value === undefined) {
+            this.change.emit({ maxConnectionsPerPort: undefined });
+            return;
+        }
+        const n = Number(value);
+        if (!Number.isFinite(n) || n < 1) return;
+        this.change.emit({ maxConnectionsPerPort: Math.floor(n) });
+    }
+
+    updatePortMaxConnections(handleId: string, value: number | string | null): void {
+        if (!this.node) return;
+        const current = { ...(this.node.handleConfig || {}) };
+        const existing = { ...(current[handleId] || {}) };
+
+        if (value === '' || value === null || value === undefined) {
+            delete existing.maxConnections;
+            if (Object.keys(existing).length === 0) {
+                delete current[handleId];
+            } else {
+                current[handleId] = existing;
+            }
+        } else {
+            const n = Number(value);
+            if (!Number.isFinite(n) || n < 1) return;
+            current[handleId] = { ...existing, maxConnections: Math.floor(n) };
+        }
+
+        this.change.emit({ handleConfig: current });
     }
 
     // Edge Updates

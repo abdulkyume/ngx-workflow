@@ -1,10 +1,10 @@
 import { Component, ChangeDetectionStrategy, Input, Output, EventEmitter } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 
 @Component({
   selector: 'ngx-workflow-zoom-controls',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './zoom-controls.component.html',
   styleUrls: ['./zoom-controls.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush

@@ -1,13 +1,13 @@
 # Contributing to ngx-workflow
 
-Thank you for your interest in contributing to `ngx-flow`! We welcome contributions from the community.
+Thank you for your interest in contributing to `ngx-workflow`! We welcome contributions from the community.
 
-## 🛠️ Development Setup
+## Development Setup
 
 1. **Clone the repository**
    ```bash
    git clone https://github.com/abdulkyume/ngx-workflow.git
-   cd ngx-flow
+   cd ngx-workflow
    ```
 
 2. **Install dependencies**
@@ -19,27 +19,36 @@ Thank you for your interest in contributing to `ngx-flow`! We welcome contributi
    ```bash
    npm start
    ```
-   This will run `ng serve` for the demo application. Open `http://localhost:4200` to see your changes.
+   Open `http://localhost:4200` for the docs site, examples, and Canvas Studio (`/sandbox`).
 
-## 🧪 Running Tests
+4. **Build the library**
+   ```bash
+   npm run build:lib
+   ```
 
-- Run unit tests: `npm test`
-- Run linting: `npm run lint`
+## Running Tests & Checks
 
-## 📝 Pull Request Guidelines
+- Library unit tests: `npm run test:lib`
+- Typecheck library: `npm run lint`
+- Optional Prettier write: `npm run format`
+- Demo app production build: `npm run build:web`
 
-1. **Fork the repo** and create your branch from `main`.
-2. **Descriptive Commits**: Use conventional commits (e.g., `feat: add new node type`, `fix: edge connection bug`).
-3. **Tests**: Ensure your changes are covered by tests if applicable.
-4. **Documentation**: Update README or docs if you change API behavior.
-5. **Format**: Ensure code is formatted (Prettier is configured).
+## Pull Request Guidelines
 
-## 🐛 Reporting Bugs
+1. Fork the repo and create your branch from `main`.
+2. Use conventional commits (e.g. `feat: add new node type`, `fix: edge connection bug`).
+3. Cover changes with tests when applicable.
+4. Update README / docs if you change API behavior.
+5. Ensure Prettier formatting is clean (`npm run format`).
 
-Please open an issue on GitHub with:
-- A clear description of the bug.
-- Steps to reproduce.
-- Expected vs actual behavior.
-- Screenshots if possible.
+## Reporting Bugs
 
-Happy Coding! 🚀
+Open an issue on GitHub with:
+
+- A clear description of the bug
+- Steps to reproduce
+- Expected vs actual behavior
+- Screenshots if possible
+- Environment details (Angular version, browser, OS, `ngx-workflow` version)
+
+Happy coding!

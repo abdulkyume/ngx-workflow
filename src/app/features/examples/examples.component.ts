@@ -1,4 +1,4 @@
-import { Component, signal, ViewChild, AfterViewInit } from '@angular/core';
+import { Component, signal, ViewChild, AfterViewInit, ChangeDetectionStrategy } from '@angular/core';
 import { NgxWorkflowModule, Node, Edge, DiagramComponent, LayoutService } from 'ngx-workflow';
 
 interface ExampleScenario {
@@ -109,6 +109,7 @@ interface ExampleScenario {
       </div>
     </div>
   `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [`
     .examples-page {
       padding-top: 40px;

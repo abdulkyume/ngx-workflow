@@ -1,11 +1,11 @@
 import { Component, ChangeDetectionStrategy, ElementRef, HostListener, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ContextMenuService } from '../../services/context-menu.service';
 
 @Component({
     selector: 'ngx-workflow-context-menu',
     standalone: true,
-    imports: [CommonModule],
+    imports: [],
     templateUrl: './context-menu.component.html',
     styleUrls: ['./context-menu.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush

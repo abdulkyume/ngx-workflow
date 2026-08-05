@@ -33,11 +33,34 @@ The main container for your flow chart. All nodes, edges, and interactions happe
 
 **Selector:** `ngx-workflow-diagram`
 
-**Inputs:**
-None (currently, all data and state are managed via `DiagramStateService`).
+**Key Inputs:**
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `nodes` | `Node[]` | `[]` | Controlled nodes |
+| `edges` | `Edge[] \| undefined` | `undefined` | Controlled edges (`[]` allowed) |
+| `maxConnectionsPerHandle` | `number` | `undefined` | Global max edges per port |
+| `proximityThreshold` | `number` | `200` | Auto-connect distance |
+| `connectionValidator` | `(s, t) => boolean` | `undefined` | Global connection validator |
+| `validateConnection` | `(c) => boolean` | `undefined` | Validator with handle ids |
+| `nodeTypes` | `Record<string, Type>` | `{}` | Custom node components |
+| `showMinimap` / `showZoomControls` / `showUndoRedoControls` | `boolean` | `true` | Chrome toggles |
+| `edgeReconnectable` | `boolean` | `false` | Reconnect by dragging endpoints |
 
-**Outputs:**
-None (all events are emitted via `DiagramStateService`).
+**Key Outputs:**
+| Name | Payload | Description |
+|------|---------|-------------|
+| `nodesChange` / `edgesChange` | `Node[]` / `Edge[]` | Graph mutations |
+| `connect` | `{ source, target, sourceHandle?, targetHandle? }` | New link |
+| `connectStart` / `connectEnd` | `{ nodeId, handleId? }` | Connect drag lifecycle |
+| `edgeDrop` | `{ sourceNodeId, sourceHandleId, position }` | Drop on empty canvas |
+| `beforeDelete` | `{ nodes, edges, cancel }` | Cancellable delete |
+| `importError` | `{ message, error? }` | JSON import failure |
+| `paneClick` | `{ event, position }` | Empty canvas click |
+| `contextMenu` | `{ type, item?, event }` | Right-click |
+
+**Node connection fields:** `ports` (`0`–`4`), `maxConnectionsPerPort`, `handleConfig[port].maxConnections`.
+
+See the demo site `/docs/inputs` and `/docs/outputs` for the full catalogs with examples.
 
 ---
 
@@ -146,8 +169,12 @@ A singleton service managing the entire state of the diagram (nodes, edges, view
 Provides methods for applying automatic graph layout algorithms to your nodes and edges.
 
 **Methods:**
--   `applyDagreLayout(nodes: Node[], edges: Edge[], options?: { rankdir?: 'TB' | 'LR'; align?: 'UL' | 'UR' | 'DL' | 'DR'; nodesep?: number; ranksep?: number }): Promise<Node[]>`: Applies the Dagre layout algorithm. Returns a Promise resolving to an array of nodes with updated positions.
--   `applyElkLayout(nodes: Node[], edges: Edge[], options?: any): Promise<Node[]>`: Applies the ELK layout algorithm. Returns a Promise resolving to an array of nodes with updated positions.
+-   `applyElkLayout(nodes: Node[], edges: Edge[], options?: { direction?: 'DOWN' | 'RIGHT' | 'UP' | 'LEFT'; spacing?: number }): Promise<Node[]>`: Applies the ELK layered layout algorithm. Returns a Promise resolving to an array of nodes with updated positions.
+-   `calculateForceDirected(nodes: Node[], edges: Edge[], options?: ForceDirectedOptions): Node[]`: Force-directed layout helper.
+-   `calculateHierarchical(nodes: Node[], edges: Edge[], options?: HierarchicalOptions): Node[]`: Simple hierarchical layout helper.
+-   `calculateCircular(nodes: Node[], edges: Edge[], options?: CircularOptions): Node[]`: Circular layout helper.
+
+> Note: Dagre is **not** included. Use ELK or the built-in helpers above.
 
 ---
 

@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, computed, Output, EventEmitter, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { DiagramStateService } from '../../services/diagram-state.service';
 
 export type LayoutAlgorithm = 'auto' | 'force' | 'hierarchical' | 'circular';
@@ -7,7 +7,7 @@ export type LayoutAlgorithm = 'auto' | 'force' | 'hierarchical' | 'circular';
 @Component({
     selector: 'ngx-workflow-layout-alignment-controls',
     standalone: true,
-    imports: [CommonModule],
+    imports: [],
     templateUrl: './layout-alignment-controls.component.html',
     styleUrls: ['./layout-alignment-controls.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,

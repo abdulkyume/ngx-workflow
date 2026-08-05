@@ -1,5 +1,5 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
+
 import { FormsModule } from '@angular/forms';
 import { SearchService, SearchState } from '../../services/search.service';
 import { Node } from '../../models';
@@ -8,8 +8,9 @@ import { Subscription } from 'rxjs';
 @Component({
     selector: 'ngx-workflow-search-controls',
     standalone: true,
-    imports: [CommonModule, FormsModule],
+    imports: [FormsModule],
     templateUrl: './search-controls.component.html',
+    changeDetection: ChangeDetectionStrategy.OnPush,
     styleUrls: ['./search-controls.component.scss']
 })
 export class SearchControlsComponent implements OnInit, OnDestroy {
