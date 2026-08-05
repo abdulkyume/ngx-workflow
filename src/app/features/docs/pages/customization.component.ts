@@ -1,71 +1,98 @@
 import { Component } from '@angular/core';
+import { RouterLink } from '@angular/router';
 
 @Component({
-    selector: 'app-doc-customization',
-    standalone: true,
-    template: `
-    <div class="doc-content animate-fade-in">
-      <h1>Customization</h1>
-      <p>
-        ngx-workflow is built to be unopinionated. You should be able to make it look like 
-        <strong>your</strong> app, not a generic tool.
+  selector: 'app-doc-customization',
+  standalone: true,
+  imports: [RouterLink],
+  template: `
+    <article class="prose">
+      <span class="badge badge-accent">Customization</span>
+      <h1>Custom Nodes, Edges & Theme Customization</h1>
+
+      <p class="lead text-muted">
+        Learn how to project custom Angular components into nodes, style connection handles, customize SVG edge paths, and override theme tokens.
       </p>
 
-      <h2>CSS Variables</h2>
+      <h2 id="custom-node-components">1. Custom Node Angular Templates</h2>
       <p>
-        We expose a comprehensive set of CSS variables for theming. You can override these 
-        globally or within a specific container.
+        You can create custom Angular components to render inside nodes. Use <code>&lt;ngx-workflow-handle&gt;</code> to declare input/output connection ports:
       </p>
-      
-      <pre><code>:root {{ '{' }}
-  /* Canvas Background */
-  --ngx-workflow-bg: #ffffff;
+
+      <pre><code>import &#123; Component, input &#125; from '&#64;angular/core';
+import &#123; HandleComponent &#125; from 'ngx-workflow';
+
+&#64;Component(&#123;
+  selector: 'app-custom-card-node',
+  standalone: true,
+  imports: [HandleComponent],
+  template: \`
+    &lt;div class="custom-card"&gt;
+      &lt;!-- Input Connection Port --&gt;
+      &lt;ngx-workflow-handle type="target" position="left" id="input-port" /&gt;
+
+      &lt;div class="card-header"&gt;
+        &lt;span class="status-dot"&gt;&lt;/span&gt;
+        &lt;h4&gt;Custom Card Node Title&lt;/h4&gt;
+      &lt;/div&gt;
+
+      &lt;div class="card-body"&gt;
+        &lt;p&gt;Custom node content and metrics...&lt;/p&gt;
+        &lt;span class="badge"&gt;CPU Metrics&lt;/span&gt;
+      &lt;/div&gt;
+
+      &lt;!-- Output Connection Port --&gt;
+      &lt;ngx-workflow-handle type="source" position="right" id="output-port" /&gt;
+    &lt;/div&gt;
+  \`
+&#125;)
+export class CustomCardNodeComponent &#123;
+  data = input.required&lt;any&gt;();
+&#125;</code></pre>
+
+      <h2 id="custom-edge-styles">2. Custom Edge Styling & Animations</h2>
+      <p>
+        Customize stroke colors, dash arrays, glow effects, or edge markers directly via edge properties:
+      </p>
+
+      <pre><code>edges = signal&lt;Edge[]&gt;([
+  &#123;
+    id: 'e-animated',
+    source: 'n1',
+    target: 'n2',
+    animated: true,
+    style: &#123;
+      stroke: '#3b82f6',
+      strokeWidth: '3px',
+      strokeDasharray: '5,5'
+    &#125;
+  &#125;
+]);</code></pre>
+
+      <h2 id="css-variables">3. CSS Theme Customization Tokens</h2>
+      <p>
+        Override default CSS variables in your application stylesheet to match your corporate design system:
+      </p>
+
+      <pre><code>:root &#123;
+  /* Brand Accent Colors */
+  --ngx-workflow-accent: #3b82f6;
+  --ngx-workflow-node-bg: #1e293b;
+  --ngx-workflow-node-border: #334155;
+  --ngx-workflow-node-text: #f8fafc;
+
+  /* Handle Ports */
+  --ngx-workflow-handle-color: #60a5fa;
+  --ngx-workflow-handle-hover: #2563eb;
   
-  /* Node Styling */
-  --ngx-workflow-node-bg: #ffffff;
-  --ngx-workflow-node-border: #e2e8f0;
-  --ngx-workflow-node-color: #1a202c;
-  --ngx-workflow-node-radius: 4px;
-  --ngx-workflow-node-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  /* Selected Node Border Glow */
+  --ngx-workflow-selected-glow: 0 0 0 2px #3b82f6;
+&#125;</code></pre>
 
-  /* Selection State */
-  --ngx-workflow-selection: #3b82f6;
-
-  /* Handle (Port) Styling */
-  --ngx-workflow-handle-bg: #ffffff;
-  --ngx-workflow-handle-border: #718096;
-  --ngx-workflow-handle-size: 10px;
-
-  /* Edge (Line) Styling */
-  --ngx-workflow-edge-stroke: #b0b8c4;
-  --ngx-workflow-edge-width: 2px;
-{{ '}' }}</code></pre>
-
-      <h3>Dark Mode Example</h3>
-      <pre><code>.dark-theme {{ '{' }}
-  --ngx-workflow-bg: #1a202c;
-  --ngx-workflow-node-bg: #2d3748;
-  --ngx-workflow-node-border: #4a5568;
-  --ngx-workflow-node-color: #f7fafc;
-  --ngx-workflow-edge-stroke: #4a5568;
-{{ '}' }}</code></pre>
-
-      <h2>Custom Node Templates</h2>
-      <p>
-        For strict control over your nodes, you can provide a custom template path or 
-        component content (Feature in Preview).
-      </p>
-    </div>
-  `,
-    styles: [`
-    .doc-content { max-width: 800px; line-height: 1.6; }
-    h1 { font-size: 2.5rem; font-weight: 800; margin-bottom: 24px; letter-spacing: -0.02em; }
-    h2 { font-size: 1.75rem; font-weight: 700; margin-top: 48px; margin-bottom: 24px; }
-    h3 { font-size: 1.25rem; font-weight: 600; margin-top: 32px; margin-bottom: 16px; }
-    p { margin-bottom: 16px; color: var(--color-text-secondary); font-size: 1.1rem; }
-    strong { color: var(--color-text-primary); }
-    pre { background: var(--color-bg-surface); padding: 24px; border-radius: 12px; overflow-x: auto; margin-bottom: 24px; border: 1px solid var(--color-border); }
-    code { font-family: var(--font-mono); font-size: 0.9rem; color: var(--color-text-primary); }
-  `]
+      <div class="next-steps flex gap-4 margin-top-8">
+        <a routerLink="/sandbox" class="btn btn-primary">Try Customization in Sandbox →</a>
+      </div>
+    </article>
+  `
 })
-export class DocCustomizationComponent { }
+export class DocCustomizationComponent {}

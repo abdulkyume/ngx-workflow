@@ -17,11 +17,14 @@ import { UndoRedoControlsComponent } from './components/undo-redo-controls/undo-
 import { VersionHistoryComponent } from './components/version-history/version-history.component';
 import { GridOverlayComponent } from './components/grid-overlay/grid-overlay.component';
 import { ContextMenuComponent } from './components/context-menu/context-menu.component';
+import { PaletteComponent } from './components/palette/palette.component';
+import { ExecutionControlsComponent } from './components/execution-controls/execution-controls.component';
 
 // Services
 import { DiagramStateService } from './services/diagram-state.service';
 import { LayoutService } from './services/layout.service';
 import { UndoRedoService } from './services/undo-redo.service';
+import { ExecutionSimulatorService } from './services/execution-simulator.service';
 
 // Injection Tokens
 import { NGX_WORKFLOW_NODE_TYPES } from './injection-tokens/node-types.token';
@@ -45,7 +48,9 @@ import { Node } from './models';
     PanelComponent,
     VersionHistoryComponent,
     GridOverlayComponent,
-    ContextMenuComponent
+    ContextMenuComponent,
+    PaletteComponent,
+    ExecutionControlsComponent
   ],
   declarations: [
     // Standalone components are imported, not declared.
@@ -54,6 +59,7 @@ import { Node } from './models';
     DiagramStateService,
     LayoutService,
     UndoRedoService,
+    ExecutionSimulatorService,
     {
       provide: NGX_WORKFLOW_NODE_TYPES,
       useValue: {
@@ -72,7 +78,9 @@ import { Node } from './models';
     PropertiesSidebarComponent,
     UndoRedoControlsComponent,
     NodeToolbarComponent,
-    PanelComponent
+    PanelComponent,
+    PaletteComponent,
+    ExecutionControlsComponent
   ],
 })
 export class NgxWorkflowModule { }

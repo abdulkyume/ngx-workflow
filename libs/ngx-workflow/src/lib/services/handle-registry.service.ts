@@ -7,6 +7,7 @@ export interface HandleConfig {
     nodeId: string;
     handleId: string;
     type: 'source' | 'target';
+    dataType?: string;
     isConnectable?: ConnectableLimit;
     isValidConnection?: (connection: {
         source: string;
@@ -64,6 +65,19 @@ export class HandleRegistryService {
         }
 
         return true;
+    }
+
+    canConnectTypes(sourceNodeId: string, sourceHandleId?: string, targetNodeId?: string, targetHandleId?: string): boolean {
+        if (!sourceHandleId || !targetNodeId || !targetHandleId) return true;
+
+        const sourceConfig = this.getHandle(sourceNodeId, sourceHandleId, 'source');
+        const targetConfig = this.getHandle(targetNodeId, targetHandleId, 'target');
+
+        if (!sourceConfig || !targetConfig) return true;
+        if (!sourceConfig.dataType || !targetConfig.dataType) return true;
+        if (sourceConfig.dataType === 'any' || targetConfig.dataType === 'any') return true;
+
+        return sourceConfig.dataType === targetConfig.dataType;
     }
 
     getHandle(nodeId: string, handleId: string, type: 'source' | 'target'): HandleConfig | undefined {

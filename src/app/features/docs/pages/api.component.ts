@@ -1,61 +1,161 @@
 import { Component } from '@angular/core';
+import { RouterLink } from '@angular/router';
 
 @Component({
-    selector: 'app-doc-api',
-    standalone: true,
-    template: `
-    <div class="doc-content animate-fade-in">
+  selector: 'app-doc-api',
+  standalone: true,
+  imports: [RouterLink],
+  template: `
+    <article class="prose">
+      <span class="badge badge-accent">Reference</span>
       <h1>API Reference</h1>
 
-      <h2>&lt;ngx-workflow-diagram&gt;</h2>
-      <p>The main component of the library.</p>
+      <p class="lead text-muted">
+        Complete specification of component inputs, outputs, models, and exported services in <code>ngx-workflow</code>.
+      </p>
 
-      <h3>Inputs</h3>
-      <div class="table-container">
-        <table>
-          <thead><tr><th>Input</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
-          <tbody>
-            <tr><td><code>[nodes]</code></td><td><code>Node[]</code></td><td><code>[]</code></td><td><strong>Required</strong>. Array of node objects to render.</td></tr>
-            <tr><td><code>[edges]</code></td><td><code>Edge[]</code></td><td><code>[]</code></td><td><strong>Required</strong>. Array of edge objects to render.</td></tr>
-            <tr><td><code>[viewOnly]</code></td><td><code>boolean</code></td><td><code>false</code></td><td>If true, disables node dragging and interactions.</td></tr>
-            <tr><td><code>[showMinimap]</code></td><td><code>boolean</code></td><td><code>false</code></td><td>Shows a navigation map.</td></tr>
-            <tr><td><code>[showZoomControls]</code></td><td><code>boolean</code></td><td><code>false</code></td><td>Shows +/- zoom buttons.</td></tr>
-            <tr><td><code>[showBackground]</code></td><td><code>boolean</code></td><td><code>false</code></td><td>Renders a background pattern.</td></tr>
-            <tr><td><code>[backgroundVariant]</code></td><td><code>'dots' | 'lines'</code></td><td><code>'dots'</code></td><td>Style of the background pattern.</td></tr>
-          </tbody>
-        </table>
-      </div>
+      <h2 id="diagram-component-inputs">DiagramComponent Inputs</h2>
+      
+      <table class="matrix-table">
+        <thead>
+          <tr>
+            <th>Property</th>
+            <th>Type</th>
+            <th>Default</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>[nodes]</code></td>
+            <td><code>Node[]</code></td>
+            <td><code>[]</code></td>
+            <td>Array of workflow nodes to render on the canvas.</td>
+          </tr>
+          <tr>
+            <td><code>[edges]</code></td>
+            <td><code>Edge[]</code></td>
+            <td><code>[]</code></td>
+            <td>Array of connection edges between nodes.</td>
+          </tr>
+          <tr>
+            <td><code>[showBackground]</code></td>
+            <td><code>boolean</code></td>
+            <td><code>true</code></td>
+            <td>Whether to render the canvas background pattern.</td>
+          </tr>
+          <tr>
+            <td><code>[backgroundVariant]</code></td>
+            <td><code>'dots' | 'grid' | 'cross'</code></td>
+            <td><code>'dots'</code></td>
+            <td>Visual background pattern style.</td>
+          </tr>
+          <tr>
+            <td><code>[showZoomControls]</code></td>
+            <td><code>boolean</code></td>
+            <td><code>true</code></td>
+            <td>Renders floating Zoom In, Zoom Out, and Fit View controls.</td>
+          </tr>
+          <tr>
+            <td><code>[showMinimap]</code></td>
+            <td><code>boolean</code></td>
+            <td><code>false</code></td>
+            <td>Renders floating interactive minimap navigation overlay.</td>
+          </tr>
+          <tr>
+            <td><code>[showLayoutControls]</code></td>
+            <td><code>boolean</code></td>
+            <td><code>false</code></td>
+            <td>Renders floating auto-layout direction trigger toolbar.</td>
+          </tr>
+          <tr>
+            <td><code>[snapToGrid]</code></td>
+            <td><code>boolean</code></td>
+            <td><code>false</code></td>
+            <td>Enables snapping node dragging to grid steps.</td>
+          </tr>
+          <tr>
+            <td><code>[gridSize]</code></td>
+            <td><code>number</code></td>
+            <td><code>20</code></td>
+            <td>Grid step size in pixels when snap-to-grid is enabled.</td>
+          </tr>
+        </tbody>
+      </table>
 
-      <h3>Outputs</h3>
-      <div class="table-container">
-        <table>
-          <thead><tr><th>Output</th><th>Event</th><th>Description</th></tr></thead>
-          <tbody>
-            <tr><td><code>(nodeClick)</code></td><td><code>Node</code></td><td>Emitted when a node is clicked.</td></tr>
-            <tr><td><code>(edgeClick)</code></td><td><code>Edge</code></td><td>Emitted when an edge is clicked.</td></tr>
-            <tr><td><code>(connect)</code></td><td><code>Connection</code></td><td>Emitted when two ports are connected.</td></tr>
-            <tr><td><code>(backgroundClick)</code></td><td><code>MouseEvent</code></td><td>Emitted when background is clicked.</td></tr>
-          </tbody>
-        </table>
+      <h2 id="diagram-component-outputs">DiagramComponent Outputs & Events</h2>
+
+      <table class="matrix-table">
+        <thead>
+          <tr>
+            <th>Event Output</th>
+            <th>Payload Type</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>(nodeClick)</code></td>
+            <td><code>Node</code></td>
+            <td>Fired when a node is clicked.</td>
+          </tr>
+          <tr>
+            <td><code>(nodesChange)</code></td>
+            <td><code>Node[]</code></td>
+            <td>Fired when nodes are dragged, moved, or deleted.</td>
+          </tr>
+          <tr>
+            <td><code>(edgesChange)</code></td>
+            <td><code>Edge[]</code></td>
+            <td>Fired when edges are added, reconnected, or deleted.</td>
+          </tr>
+          <tr>
+            <td><code>(connect)</code></td>
+            <td><code>Connection</code></td>
+            <td>Fired when a new connection handle drag is completed.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2 id="exported-models">Core TypeScript Models</h2>
+
+      <h3>WorkflowNode Interface</h3>
+      <pre><code>export interface Node &#123;
+  id: string;
+  label?: string;
+  type?: string;
+  position: &#123; x: number; y: number &#125;;
+  data?: Record&lt;string, any&gt;;
+  ports?: number;
+  selected?: boolean;
+&#125;</code></pre>
+
+      <h3>WorkflowEdge Interface</h3>
+      <pre><code>export interface Edge &#123;
+  id: string;
+  source: string;
+  target: string;
+  sourceHandle?: string;
+  targetHandle?: string;
+  type?: 'bezier' | 'step' | 'straight';
+  animated?: boolean;
+  label?: string;
+  style?: Record&lt;string, string&gt;;
+&#125;</code></pre>
+
+      <h2 id="injectable-services">Injectable Services</h2>
+
+      <ul>
+        <li><code>DiagramStateService</code>: Central RxJS & Signals state provider for nodes, edges, selection, and viewport transform.</li>
+        <li><code>AutoLayoutService</code>: Triggers ELK.js layout calculation (<code>applyLayout('TB' | 'LR')</code>).</li>
+        <li><code>ExportService</code>: Exports canvas diagram as PNG, SVG, or JSON payload (<code>exportAsPng()</code>, <code>exportAsSvg()</code>).</li>
+        <li><code>UndoRedoService</code>: Manages undo/redo state history stack (<code>undo()</code>, <code>redo()</code>).</li>
+      </ul>
+
+      <div class="next-steps flex gap-4 margin-top-8">
+        <a routerLink="/docs/customization" class="btn btn-primary">Next: Customization Guide →</a>
       </div>
-    </div>
-  `,
-    styles: [`
-    .doc-content { max-width: 800px; line-height: 1.6; }
-    h1 { font-size: 2.5rem; font-weight: 800; margin-bottom: 24px; letter-spacing: -0.02em; }
-    h2 { font-size: 1.75rem; font-weight: 700; margin-top: 48px; margin-bottom: 24px; }
-    h3 { font-size: 1.25rem; font-weight: 600; margin-top: 32px; margin-bottom: 16px; }
-    p { margin-bottom: 16px; color: var(--color-text-secondary); font-size: 1.1rem; }
-    
-    .table-container { 
-      border: 1px solid var(--color-border); border-radius: 8px; overflow: hidden; margin-bottom: 24px; overflow-x: auto;
-    }
-    table { width: 100%; border-collapse: collapse; text-align: left; min-width: 600px; }
-    th { background: var(--color-bg-surface); font-weight: 600; padding: 12px 16px; border-bottom: 1px solid var(--color-border); }
-    td { padding: 12px 16px; border-bottom: 1px solid var(--color-border); color: var(--color-text-secondary); vertical-align: top; }
-    tr:last-child td { border-bottom: none; }
-    code { font-family: var(--font-mono); font-size: 0.85rem; background: var(--color-bg-surface-hover); padding: 2px 6px; border-radius: 4px; color: var(--color-text-primary); }
-    strong { color: var(--color-text-primary); }
-  `]
+    </article>
+  `
 })
-export class DocApiComponent { }
+export class DocApiComponent {}

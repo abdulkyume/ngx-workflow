@@ -31,6 +31,9 @@ export interface Edge<T = any> {
   // Hidden state (for edge reconnection)
   hidden?: boolean;
 
+  // Custom Waypoints / Control Points
+  waypoints?: Array<{ x: number; y: number }>;
+
   // Custom data
   data?: T;
 }

@@ -12,8 +12,13 @@ A powerful, highly customizable Angular library for building interactive node-ba
 ### Core Features
 - **Native Angular**: Built from the ground up for Angular, using Signals and OnPush change detection
 - **Interactive**: Drag & drop nodes, zoom & pan canvas, connect edges
+- **Node Palette**: Drag-and-drop stencil panel (`<ngx-workflow-palette>`) to drop new nodes directly onto canvas
+- **Typed Ports**: Port data type validation (`dataType`) to prevent connecting incompatible handle types
+- **Manual Edge Waypoints**: Custom bendpoint support (`waypoints?: Array<{ x: number, y: number }>`) for manual routing
+- **Reactive Forms Integration**: Full `ControlValueAccessor` (`formControlName` / `[(ngModel)]`) support with built-in graph validators (`noCycles`, `noOrphanNodes`, `minNodes`)
 - **Customizable**: Fully custom node and edge templates
-- **Rich UI**: Built-in minimap, background patterns, controls, and alignment tools
+- **Rich UI**: Built-in minimap, background patterns, controls, alignment, and equal distribution tools
+- **Parallel Edge Offsetting**: Automatic curvature spacing for multi-edges between identical node pairs
 - **Layouts**: Automatic layout support via Dagre and ELK
 - **History**: Robust Undo/Redo history stack with Ctrl+Z/Ctrl+Shift+Z
 - **Theming**: Explicit `colorMode` and CSS variables for easy styling with dark mode support
@@ -314,15 +319,29 @@ Then use it in your edge: `{ id: 'e1', ..., markerEnd: 'my-marker' }`.
 }
 ```
 
+### Mobile & Touch Support
+- **Pinch-to-Zoom**: Two-finger pinch gesture scales the diagram centered at the focal midpoint.
+- **Two-Finger Pan**: Dragging with two fingers smoothly pans the canvas.
+- **Touch Action Guard**: Blocks default browser scrolling and gestures automatically.
+
+### Accessibility (a11y)
+- Full ARIA markup (`role="application"`, `role="graphics-document"`, `role="button"`, `role="img"`, `tabindex="0"`, and `aria-label`).
+- Full screen reader navigation for nodes, edges, minimap, and zoom controls.
+
 ## ⌨️ Keyboard Shortcuts
 
-### Navigation & Selection
+### Navigation & Focus Traversal
 | Shortcut | Action |
 |----------|--------|
+| `Tab` / `Shift` + `Tab` | Cycle keyboard focus through nodes |
+| `Arrow Keys` | Follow connected edges to focus upstream/downstream nodes |
+| `Shift` + `Arrow Keys` | Nudge selected node(s) by grid steps (10px / `gridSize`) |
 | `Space` + `Drag` | Pan canvas |
 | `Shift` + `Drag` | Lasso selection |
 | `Ctrl` + `Click` | Multi-select |
 | `Mouse Wheel` | Zoom in/out |
+| `Enter` / `Space` | Select/toggle focused node |
+| `Escape` | Clear selection and node focus |
 
 ### Editing
 | Shortcut | Action |

@@ -46,7 +46,6 @@ export class ThemeService {
      * @param mode - 'light', 'dark', or 'system'
      */
     setColorMode(mode: ColorMode): void {
-        console.log('[ThemeService] Setting color mode to:', mode);
         this.colorModeSignal.set(mode);
     }
 
@@ -72,17 +71,11 @@ export class ThemeService {
 
         const root = document.documentElement;
 
-        console.log('[ThemeService] Applying theme:', theme);
-        console.log('[ThemeService] Setting data-theme attribute to:', theme);
-
         // Set data attribute for CSS targeting
         root.setAttribute('data-theme', theme);
 
         // Also set class for easier CSS targeting
         root.classList.remove('light-theme', 'dark-theme');
         root.classList.add(`${theme}-theme`);
-
-        console.log('[ThemeService] Current classes:', root.className);
-        console.log('[ThemeService] Current data-theme:', root.getAttribute('data-theme'));
     }
 }

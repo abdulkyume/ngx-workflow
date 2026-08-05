@@ -30,6 +30,7 @@ export interface Node<T = any> {
   style?: Record<string, string>;
   parentId?: string;
   expanded?: boolean;
+  collapsed?: boolean;
   extent?: 'parent';
   label?: string;
   highlighted?: boolean;

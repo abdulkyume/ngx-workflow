@@ -1,4 +1,5 @@
-import { Component, ChangeDetectionStrategy, ElementRef, OnInit, Renderer2, NgZone, OnDestroy, HostListener, WritableSignal, Inject, Optional, computed, ViewChild, ContentChild, Input, Output, EventEmitter, OnChanges, SimpleChanges, Signal, ChangeDetectorRef, TemplateRef, Type, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, ElementRef, OnInit, Renderer2, NgZone, OnDestroy, HostListener, WritableSignal, Inject, Optional, computed, ViewChild, ContentChild, Signal, ChangeDetectorRef, TemplateRef, Type, signal, forwardRef, inject, input, output, effect } from '@angular/core';
+import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { CommonModule, NgComponentOutlet } from '@angular/common';
 import { DiagramStateService } from '../../services/diagram-state.service';
@@ -7,7 +8,7 @@ import { Subscription, Observable, combineLatest } from 'rxjs';
 import { debounceTime, skip } from 'rxjs/operators';
 import { NGX_WORKFLOW_NODE_TYPES } from '../../injection-tokens';
 import { NodeComponentType as WorkflowNodeComponentType } from '../../types';
-import { getBezierPath, getStraightPath, getStepPath, getSmoothStepPath, getSelfLoopPath, getSmartEdgePath, PathFinder, getPolylineMidpoint } from '../../utils';
+import { getBezierPath, getStraightPath, getStepPath, getSmoothStepPath, getSelfLoopPath, getSmartEdgePath, getWaypointPath, PathFinder, getPolylineMidpoint } from '../../utils';
 import { v4 as uuidv4 } from 'uuid';
 import { ZoomControlsComponent } from '../zoom-controls/zoom-controls.component';
 import { MinimapComponent } from '../minimap/minimap.component';
@@ -22,6 +23,10 @@ import { ThemeService, ColorMode } from '../../services/theme.service';
 import { ExportService } from '../../services/export.service';
 import { ExportControlsComponent } from '../export-controls/export-controls.component';
 import { AutoSaveService } from '../../services/auto-save.service';
+import { TouchGestureService } from '../../services/touch-gesture.service';
+import { CanvasPanZoomService } from '../../services/canvas-pan-zoom.service';
+import { NodeDragService } from '../../services/node-drag.service';
+import { SelectionBoxService } from '../../services/selection-box.service';
 
 export interface EdgeDropEvent {
   sourceNodeId: string;
@@ -82,126 +87,158 @@ import { LayoutService } from '../../services/layout.service';
     ExportControlsComponent,
     LayoutAlignmentControlsComponent,
     HandleComponent
+  ],
+  providers: [
+    {
+      provide: NG_VALUE_ACCESSOR,
+      useExisting: forwardRef(() => DiagramComponent),
+      multi: true,
+    },
   ]
 })
-export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
+export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor {
+  private handleRegistryService = inject(HandleRegistryService);
+
+  onChange: (val: any) => void = () => {};
+  onTouched: () => void = () => {};
+  isDisabled: boolean = false;
+
+  writeValue(val: any): void {
+    if (val && typeof val === 'object') {
+      if (Array.isArray(val.nodes)) {
+        this.diagramStateService.nodes.set(val.nodes);
+      }
+      if (Array.isArray(val.edges)) {
+        this.diagramStateService.edges.set(val.edges);
+      }
+      if (val.viewport) {
+        this.diagramStateService.viewport.set(val.viewport);
+      }
+    }
+  }
+
+  registerOnChange(fn: any): void {
+    this.onChange = fn;
+  }
+
+  registerOnTouched(fn: any): void {
+    this.onTouched = fn;
+  }
+
+  setDisabledState(isDisabled: boolean): void {
+    this.isDisabled = isDisabled;
+  }
+
   // Trigger rebuild
   @ViewChild('svg', { static: true }) svgRef!: ElementRef<SVGSVGElement>;
 
   // Input properties for declarative usage
-  @Input() initialNodes: WorkflowNode[] = [];
-  @Input() initialEdges: Edge[] = [];
-  @Input() initialViewport?: Viewport;
+  readonly initialNodes = input<WorkflowNode[]>([]);
+  readonly initialEdges = input<Edge[]>([]);
+  readonly initialViewport = input<Viewport | undefined>(undefined);
 
-  // Inputs for binding (sync with service)
-  @Input('nodes') set nodesInput(val: WorkflowNode[]) {
-    this.diagramStateService.nodes.set(val);
-    if (!this.isDraggingNode) {
-      this.updatePathFinder(val);
-    }
-  }
-  @Input('edges') set edgesInput(val: Edge[]) {
-    this.diagramStateService.edges.set(val);
-  }
+  // Inputs for binding (sync with service via effect)
+  readonly nodes = input<WorkflowNode[]>([]);
+  readonly edges = input<Edge[]>([]);
 
-  @Input() showZoomControls: boolean = true;
-  @Input() minZoom: number = 0.1;
-  @Input() maxZoom: number = 4;
-  @Input() backgroundImage: string | null = null; // New input
+  readonly showZoomControls = input<boolean>(true);
+  readonly minZoom = input<number>(0.1);
+  readonly maxZoom = input<number>(4);
+  readonly backgroundImage = input<string | null>(null);
 
   // Input for showing/hiding undo/redo controls
-  @Input() showUndoRedoControls: boolean = true;
+  readonly showUndoRedoControls = input<boolean>(true);
 
   // Input for showing/hiding minimap
-  @Input() showMinimap: boolean = true;
+  readonly showMinimap = input<boolean>(true);
 
   // Input for background configuration
-  @Input() showBackground: boolean = true;
-  @Input() backgroundVariant: 'dots' | 'lines' | 'cross' = 'dots';
-  @Input() backgroundGap: number = 20;
-  @Input() backgroundSize: number = 1;
-  @Input() backgroundColor: string = '#81818a';
-  @Input() backgroundBgColor: string = '#f0f0f0';
+  readonly showBackground = input<boolean>(true);
+  readonly backgroundVariant = input<'dots' | 'lines' | 'cross'>('dots');
+  readonly backgroundGap = input<number>(20);
+  readonly backgroundSize = input<number>(1);
+  readonly backgroundColor = input<string>('var(--ngx-workflow-bg-pattern, #81818a)');
+  readonly backgroundBgColor = input<string>('var(--ngx-workflow-bg, transparent)');
 
   // Color mode (theme) configuration
-  @Input() colorMode: ColorMode = 'light';
+  readonly colorMode = input<ColorMode>('light');
 
   // Grid configuration
-  @Input() gridSize: number = 20;
-  @Input() snapToGrid: boolean = false;
-  @Input() showGrid: boolean = false;
+  readonly gridSize = input<number>(20);
+  readonly snapToGrid = input<boolean>(false);
+  readonly showGrid = input<boolean>(false);
 
   // Z-index configuration
-  @Input() zIndexMode: 'default' | 'layered' = 'default';
+  readonly zIndexMode = input<'default' | 'layered'>('default');
 
   // Export controls configuration
-  @Input() showExportControls: boolean = false;
+  readonly showExportControls = input<boolean>(false);
 
   // Layout controls configuration
-  @Input() showLayoutControls: boolean = false;
+  readonly showLayoutControls = input<boolean>(false);
 
   // Auto-save configuration
-  @Input() autoSave: boolean = false;
-  @Input() autoSaveInterval: number = 1000; // milliseconds
-  @Input() maxVersions: number = 10;
+  readonly autoSave = input<boolean>(false);
+  readonly autoSaveInterval = input<number>(1000); // milliseconds
+  readonly maxVersions = input<number>(10);
 
   // Auto-panning configuration
-  @Input() autoPanOnNodeDrag: boolean = true;
-  @Input() autoPanOnConnect: boolean = true;
-  @Input() autoPanSpeed: number = 15; // pixels per frame
-  @Input() autoPanEdgeThreshold: number = 50; // pixels from edge
+  readonly autoPanOnNodeDrag = input<boolean>(true);
+  readonly autoPanOnConnect = input<boolean>(true);
+  readonly autoPanSpeed = input<number>(15); // pixels per frame
+  readonly autoPanEdgeThreshold = input<number>(50); // pixels from edge
 
   // Connection validation configuration
-  @Input() maxConnectionsPerHandle?: number; // Global limit for connections per handle
+  readonly maxConnectionsPerHandle = input<number | undefined>(undefined);
 
   // Collision detection
-  @Input() preventNodeOverlap: boolean = false;
-  @Input() nodeSpacing: number = 10;
+  readonly preventNodeOverlap = input<boolean>(false);
+  readonly nodeSpacing = input<number>(10);
 
-  // Output events
-  @Output() nodeClick = new EventEmitter<WorkflowNode>();
-  @Output() edgeClick = new EventEmitter<Edge>();
-  @Output() connect = new EventEmitter<{ source: string; sourceHandle?: string; target: string; targetHandle?: string }>();
-  @Output() nodesChange = new EventEmitter<WorkflowNode[]>();
-  @Output() edgesChange = new EventEmitter<Edge[]>();
-  @Output() nodeDoubleClick = new EventEmitter<WorkflowNode>();
-  @Output() contextMenu = new EventEmitter<{ type: 'node' | 'edge' | 'canvas'; item?: WorkflowNode | Edge; event: MouseEvent }>();
+  // Output events (Signal outputs)
+  readonly nodeClick = output<WorkflowNode>();
+  readonly edgeClick = output<Edge>();
+  readonly connect = output<{ source: string; sourceHandle?: string; target: string; targetHandle?: string }>();
+  readonly nodesChange = output<WorkflowNode[]>();
+  readonly edgesChange = output<Edge[]>();
+  readonly nodeDoubleClick = output<WorkflowNode>();
+  readonly contextMenu = output<{ type: 'node' | 'edge' | 'canvas'; item?: WorkflowNode | Edge; event: MouseEvent }>();
 
   // Granular interaction events
-  @Output() nodeMouseEnter = new EventEmitter<WorkflowNode>();
-  @Output() nodeMouseLeave = new EventEmitter<WorkflowNode>();
-  @Output() nodeMouseMove = new EventEmitter<{ node: WorkflowNode; event: MouseEvent }>();
-  @Output() edgeMouseEnter = new EventEmitter<Edge>();
-  @Output() edgeMouseLeave = new EventEmitter<Edge>();
-  @Output() paneClick = new EventEmitter<{ event: MouseEvent; position: XYPosition }>();
-  @Output() paneScroll = new EventEmitter<WheelEvent>();
-  @Output() connectStart = new EventEmitter<{ nodeId: string; handleId?: string }>();
-  @Output() connectEnd = new EventEmitter<{ nodeId: string; handleId?: string }>();
-  @Output() edgeDrop = new EventEmitter<EdgeDropEvent>();
-  @Output() connectionDrop = new EventEmitter<{ position: XYPosition; event: PointerEvent; sourceNodeId: string; sourceHandleId?: string }>();
+  readonly nodeMouseEnter = output<WorkflowNode>();
+  readonly nodeMouseLeave = output<WorkflowNode>();
+  readonly nodeMouseMove = output<{ node: WorkflowNode; event: MouseEvent }>();
+  readonly edgeMouseEnter = output<Edge>();
+  readonly edgeMouseLeave = output<Edge>();
+  readonly paneClick = output<{ event: MouseEvent; position: XYPosition }>();
+  readonly paneScroll = output<WheelEvent>();
+  readonly connectStart = output<{ nodeId: string; handleId?: string }>();
+  readonly connectEnd = output<{ nodeId: string; handleId?: string }>();
+  readonly edgeDrop = output<EdgeDropEvent>();
+  readonly connectionDrop = output<{ position: XYPosition; event: PointerEvent; sourceNodeId: string; sourceHandleId?: string }>();
 
   // Deletion control event
-  @Output() beforeDelete = new EventEmitter<{ nodes: WorkflowNode[]; edges: Edge[]; cancel: () => void }>();
+  readonly beforeDelete = output<{ nodes: WorkflowNode[]; edges: Edge[]; cancel: () => void }>();
 
   // Connection validation callback
-  @Input() validateConnection?: (connection: {
+  readonly validateConnection = input<((connection: {
     source: string;
     sourceHandle?: string;
     target?: string;
     targetHandle?: string;
-  }) => boolean;
+  }) => boolean) | undefined>(undefined);
 
   // Custom edge template
-  @Input() edgeTemplate?: TemplateRef<any>;
+  readonly edgeTemplate = input<TemplateRef<any> | undefined>(undefined);
 
   // Custom definitions template (for markers, patterns, etc.)
-  @Input() defsTemplate?: TemplateRef<any>;
+  readonly defsTemplate = input<TemplateRef<any> | undefined>(undefined);
 
   // Custom edge label template
   @ContentChild('edgeLabelTemplate', { read: TemplateRef }) edgeLabelTemplate?: TemplateRef<any>;
 
   // Edge reconnection feature
-  @Input() edgeReconnectable: boolean = false;
+  readonly edgeReconnectable = input<boolean>(false);
 
   // Sidebar State
   selectedNodeForEditing: WorkflowNode | null = null;
@@ -212,10 +249,8 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   editingEdgeLabel: string = '';
 
   viewport!: WritableSignal<Viewport>;
-  nodes!: WritableSignal<WorkflowNode[]>;
   viewNodes!: Signal<WorkflowNode[]>;
   filteredNodes!: Signal<WorkflowNode[]>;
-  edges!: WritableSignal<Edge[]>;
   filteredEdges!: Signal<Edge[]>;
   tempEdges!: WritableSignal<TempEdge[]>;
   alignmentGuides!: Signal<AlignmentGuide[]>;
@@ -233,6 +268,8 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   private unlistenPointerMove: (() => void) | null = null;
   private unlistenPointerUp: (() => void) | null = null;
   private unlistenPointerLeave: (() => void) | null = null;
+  private unlistenWindowPointerMove: (() => void) | null = null;
+  private unlistenWindowPointerUp: (() => void) | null = null;
   private pathPointsCache = new Map<string, XYPosition[]>();
 
   private isPanning = false;
@@ -249,13 +286,16 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   selectionStart: XYPosition = { x: 0, y: 0 };
   selectionEnd: XYPosition = { x: 0, y: 0 };
 
-  // Node Dragging
-  private isDraggingNode = false;
-  private draggingNode: WorkflowNode | null = null;
-  private draggingNodes: WorkflowNode[] = []; // All nodes being dragged (for multi-select)
-  private startNodePosition: XYPosition = { x: 0, y: 0 };
-  private startNodePositions: Map<string, XYPosition> = new Map(); // Initial positions for multi-drag
-  private startPointerPosition: XYPosition = { x: 0, y: 0 };
+  // Node Dragging delegated to NodeDragService
+  get isDraggingNode(): boolean {
+    return this.nodeDragService.isDraggingNode;
+  }
+  get draggingNode(): WorkflowNode | null {
+    return this.nodeDragService.draggingNode;
+  }
+  get draggingNodes(): WorkflowNode[] {
+    return this.nodeDragService.draggingNodes;
+  }
 
   // Collision detection
   collidingNodeIds: string[] = [];
@@ -269,7 +309,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   private connectingStartPointerPosition: { x: number, y: number } | null = null;
 
   // Proximity Connect
-  @Input() proximityThreshold = 200; // Increased to 200px for easier testing
+  readonly proximityThreshold = input<number>(200);
   // Proximity Connect State
   proximityTargetNodeId: string | null = null;
   proximityCandidate: any = null;
@@ -278,14 +318,19 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   // Grouping State
   hoveredGroupId: WritableSignal<string | null> = signal(null);
 
+  // Accessibility: keyboard focus tracking
+  focusedNodeId: WritableSignal<string | null> = signal(null);
+
   private isResizing = false;
   private resizingNode: WorkflowNode | null = null;
   private resizeHandle: 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | null = null;
   private startResizePosition: XYPosition = { x: 0, y: 0 };
   private startNodeDimensions: { width: number; height: number; x: number; y: number } = { width: 0, height: 0, x: 0, y: 0 };
 
-  // Selection box (rubber band)
-  isBoxSelecting = false;
+  // Selection box (rubber band) delegated to SelectionBoxService
+  get isBoxSelecting(): boolean {
+    return this.selectionBoxService.isBoxSelecting;
+  }
   selectionBoxStart: XYPosition = { x: 0, y: 0 };
   selectionBoxEnd: XYPosition = { x: 0, y: 0 };
 
@@ -326,6 +371,17 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   // --- Node Interaction Handlers ---
 
   onNodePointerDown(event: PointerEvent, node: WorkflowNode): void {
+    // Spacebar panning override
+    if (this.isSpacePressed) {
+      this.isSpacePanning = true;
+      this.panStartPosition = { x: event.clientX, y: event.clientY };
+      this.viewportStartPosition = { ...this.viewport() };
+      this.svgRef.nativeElement.style.cursor = 'grabbing';
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+
     // Ignore if clicking on a handle or resize handle
     const target = event.target as HTMLElement;
     if (target.classList.contains('ngx-workflow__handle') ||
@@ -358,28 +414,26 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     const isMultiSelect = event.ctrlKey || event.metaKey;
     if (!isMultiSelect) {
       if (!node.selected) {
-        // Clear other selections only if we are selecting a new unselected node
+        // Clear other selections and select this node
         this.diagramStateService.nodes.update(nodes =>
           nodes.map(n => ({ ...n, selected: n.id === node.id }))
         );
       }
+      // Always start dragging on normal node click
+      this.startDraggingNode(event, { ...node, selected: true });
     } else {
       // Toggle this node's selection
+      const isSelectedNow = !node.selected;
       this.diagramStateService.nodes.update(nodes =>
-        nodes.map(n => n.id === node.id ? { ...n, selected: !n.selected } : n)
+        nodes.map(n => n.id === node.id ? { ...n, selected: isSelectedNow } : n)
       );
-    }
-
-    // Only start dragging if the node is selected (which it should be now)
-    // and if we didn't just deselect it via multiselect
-    const currentNode = this.nodes().find(n => n.id === node.id);
-    if (currentNode?.selected) {
-      this.startDraggingNode(event, node);
+      if (isSelectedNow) {
+        this.startDraggingNode(event, { ...node, selected: true });
+      }
     }
   }
 
   onNodeDoubleClick(event: MouseEvent, node: WorkflowNode): void {
-    console.log('Node double clicked:', node);
     event.stopPropagation();
     this.selectedNodeForEditing = node;
     this.nodeDoubleClick.emit(node);
@@ -506,7 +560,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
       }
 
       // Z-index operations (only in layered mode)
-      if (this.zIndexMode === 'layered') {
+      if (this.zIndexMode() === 'layered') {
         actions.push({
           label: 'Bring to Front',
           action: () => this.diagramStateService.bringToFront(node.id),
@@ -666,9 +720,9 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   defaultNodeHeight = 60;
 
   // Input for custom connection validation (optional)
-  @Input() connectionValidator?: (sourceNodeId: string, targetNodeId: string) => boolean;
+  readonly connectionValidator = input<((sourceNodeId: string, targetNodeId: string) => boolean) | undefined>(undefined);
   // Input for node resizing (global toggle)
-  @Input() nodesResizable: boolean = true;
+  readonly nodesResizable = input<boolean>(true);
 
   private resizeObserver!: ResizeObserver;
 
@@ -693,13 +747,6 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
         existingEdge: existing
       });
       return false;
-    } else {
-      // Debug log for *allowed* connections to see what passed
-      /*
-      console.log('isValidConnection: Connection ALLOWED', {
-          sourceId, targetId, sourceHandleId, targetHandleId
-      });
-      */
     }
 
 
@@ -747,9 +794,15 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
       }
     }
 
+    // Check handle data type compatibility
+    if (!this.handleRegistryService.canConnectTypes(sourceId, sourceHandleId, targetId, targetHandleId)) {
+      return false;
+    }
+
     // Use custom validator if provided
-    if (this.connectionValidator) {
-      return this.connectionValidator(sourceId, targetId);
+    const validator = this.connectionValidator();
+    if (validator) {
+      return validator(sourceId, targetId);
     }
     return true;
   }
@@ -847,7 +900,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
 
     return this.nodes().filter(n =>
       n.id !== nodeId &&
-      this.checkNodeCollision(testNode, n, this.nodeSpacing)
+      this.checkNodeCollision(testNode, n, this.nodeSpacing())
     );
   }
 
@@ -872,40 +925,63 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     private autoSaveService: AutoSaveService,
     private handleRegistry: HandleRegistryService,
     private layoutService: LayoutService,
+    private touchGestureService: TouchGestureService,
+    public canvasPanZoomService: CanvasPanZoomService,
+    public nodeDragService: NodeDragService,
+    public selectionBoxService: SelectionBoxService,
     @Optional() @Inject(NGX_WORKFLOW_NODE_TYPES) private injectedNodeTypes: Record<string, WorkflowNodeComponentType> | null
   ) {
     this.nodes$ = toObservable(this.diagramStateService.nodes);
     this.edges$ = toObservable(this.diagramStateService.edges);
     this.viewport$ = toObservable(this.diagramStateService.viewport);
 
-    if (this.injectedNodeTypes) {
-      this.nodeTypes = { ...this.injectedNodeTypes };
-    }
+    // Sync input signals to the diagram state service
+    // This ensures that when a parent component updates [nodes] or [edges],
+    // the diagram renders the new state.
+    effect(() => {
+      const inputNodes = this.nodes();
+      if (inputNodes && inputNodes.length > 0 && !this.isDraggingNode) {
+        this.diagramStateService.nodes.set(inputNodes);
+      }
+    });
+
+    effect(() => {
+      const inputEdges = this.edges();
+      if (inputEdges && inputEdges.length > 0) {
+        this.diagramStateService.edges.set(inputEdges);
+      }
+    });
   }
 
-  @Input() nodeTypes: Record<string, Type<any>> = {};
+  readonly nodeTypes = input<Record<string, Type<any>>>({});
+
+  get allNodeTypes(): Record<string, Type<any>> {
+    return {
+      ...(this.injectedNodeTypes || {}),
+      ...(this.nodeTypes() || {})
+    };
+  }
 
   get nodeTypeKeys(): string[] {
-    return this.nodeTypes ? Object.keys(this.nodeTypes) : [];
+    return Object.keys(this.allNodeTypes);
   }
 
-
   isCustomNode(node: WorkflowNode): boolean {
-    return !!(node.type && this.nodeTypes && this.nodeTypes[node.type]);
+    const types = this.allNodeTypes;
+    return !!(node.type && types && types[node.type]);
   }
 
   getCustomNodeComponent(type: string | undefined): any {
-    if (!type || !this.nodeTypes) return undefined;
-    return this.nodeTypes[type];
+    const types = this.allNodeTypes;
+    if (!type || !types) return undefined;
+    return types[type];
   }
 
   ngOnInit(): void {
     this.diagramStateService.el = this.svgRef;
     this.viewport = this.diagramStateService.viewport;
-    this.nodes = this.diagramStateService.nodes;
     this.viewNodes = this.diagramStateService.viewNodes;
     this.filteredNodes = this.diagramStateService.visibleNodes; // Use visibleNodes for rendering
-    this.edges = this.diagramStateService.edges;
     this.filteredEdges = this.diagramStateService.visibleEdges; // Use visibleEdges for rendering
     this.tempEdges = this.diagramStateService.tempEdges;
     this.alignmentGuides = this.diagramStateService.alignmentGuides;
@@ -913,28 +989,28 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     // Initialize sortedNodes computed signal for z-index handling
     this.sortedNodes = computed(() => {
       const nodes = this.filteredNodes();
-      if (this.zIndexMode === 'layered') {
+      if (this.zIndexMode() === 'layered') {
         return [...nodes].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
       }
       return nodes;
     });
 
     // Set grid configuration
-    this.diagramStateService.setGridConfig(this.gridSize, this.snapToGrid);
+    this.diagramStateService.setGridConfig(this.gridSize(), this.snapToGrid());
 
-    if (this.initialNodes.length > 0) {
-      this.initialNodes.forEach(node => this.diagramStateService.addNode(node));
+    if (this.initialNodes().length > 0) {
+      this.initialNodes().forEach(node => this.diagramStateService.addNode(node));
     }
-    if (this.initialEdges.length > 0) {
+    if (this.initialEdges().length > 0) {
       // Add initial edges directly to the signal without triggering connect events
-      this.diagramStateService.edges.set([...this.initialEdges]);
+      this.diagramStateService.edges.set([...this.initialEdges()]);
     }
-    if (this.initialViewport) {
-      this.diagramStateService.setViewport(this.initialViewport);
+    if (this.initialViewport()) {
+      this.diagramStateService.setViewport(this.initialViewport()!);
     }
 
     // Set initial color mode
-    this.themeService.setColorMode(this.colorMode);
+    this.themeService.setColorMode(this.colorMode());
 
     // Subscribe to state changes and emit events
     this.subscriptions.add(
@@ -948,7 +1024,6 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     );
     this.subscriptions.add(
       this.nodes$.subscribe(nodes => {
-        this.nodes.set(nodes);
         if (!this.isDraggingNode) {
           this.updatePathFinder(nodes);
           this.nodesChange.emit(nodes);
@@ -981,10 +1056,19 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
       this.unlistenPointerLeave = this.renderer.listen(this.svgRef.nativeElement, 'pointerleave', (event: PointerEvent) => {
         this.onPointerLeave(event);
       });
+
+      // Window-level space-panning listeners outside Angular Zone to avoid
+      // triggering change detection on every mouse pixel movement globally.
+      this.unlistenWindowPointerMove = this.renderer.listen('window', 'pointermove', (event: PointerEvent) => {
+        this.onWindowPointerMove(event);
+      });
+      this.unlistenWindowPointerUp = this.renderer.listen('window', 'pointerup', (event: PointerEvent) => {
+        this.onWindowPointerUp(event);
+      });
     });
 
     // Auto-save: Load saved state if enabled
-    if (this.autoSave) {
+    if (this.autoSave()) {
       const savedState = this.autoSaveService.loadCurrentState();
       if (savedState) {
         this.setDiagramState(savedState);
@@ -992,14 +1076,14 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     }
 
     // Auto-save: Watch for changes and save
-    if (this.autoSave) {
+    if (this.autoSave()) {
       this.subscriptions.add(
         combineLatest([
           this.nodes$,
           this.edges$,
           this.viewport$
         ]).pipe(
-          debounceTime(this.autoSaveInterval),
+          debounceTime(this.autoSaveInterval()),
           skip(1) // Skip initial emission
         ).subscribe(() => {
           const state = this.getDiagramState();
@@ -1007,6 +1091,12 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
         })
       );
     }
+
+    // Attach services
+    this.touchGestureService.attach(this.svgRef.nativeElement, this.diagramStateService);
+    this.canvasPanZoomService.attach(this.svgRef, this.diagramStateService);
+    this.nodeDragService.attach(this.svgRef, this.diagramStateService);
+    this.selectionBoxService.attach(this.svgRef, this.diagramStateService);
   }
 
   ngOnDestroy(): void {
@@ -1017,61 +1107,17 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     if (this.unlistenPointerMove) this.unlistenPointerMove();
     if (this.unlistenPointerUp) this.unlistenPointerUp();
     if (this.unlistenPointerLeave) this.unlistenPointerLeave();
+    if (this.unlistenWindowPointerMove) this.unlistenWindowPointerMove();
+    if (this.unlistenWindowPointerUp) this.unlistenWindowPointerUp();
+    this.touchGestureService.detach();
+    this.canvasPanZoomService.detach();
+    this.nodeDragService.detach();
+    this.selectionBoxService.detach();
   }
 
   get lodLevel(): string {
     return this.diagramStateService.lodLevel();
   }
-
-  ngOnChanges(changes: SimpleChanges): void {
-    // Handle changes to input properties after initialization
-    if (changes['initialNodes'] && !changes['initialNodes'].firstChange) {
-      if (this.isDraggingNode || this.draggingNode) {
-        return;
-      }
-      const currentNodes = this.nodes();
-      if (this.initialNodes === currentNodes) {
-        return;
-      }
-      const currentNodeIds = new Set(currentNodes.map(n => n.id));
-      const newNodeIds = new Set(this.initialNodes.map(n => n.id));
-      currentNodes.forEach(node => {
-        if (!newNodeIds.has(node.id)) {
-          this.diagramStateService.removeNode(node.id);
-        }
-      });
-      this.initialNodes.forEach(node => {
-        if (!currentNodeIds.has(node.id)) {
-          this.diagramStateService.addNode(node);
-        } else {
-          const currentNode = currentNodes.find(n => n.id === node.id);
-          if (currentNode && JSON.stringify(currentNode) !== JSON.stringify(node)) {
-            this.diagramStateService.updateNode(node.id, node);
-          }
-        }
-      });
-    }
-    if (changes['initialEdges'] && !changes['initialEdges'].firstChange) {
-      const currentEdges = this.edges();
-      if (this.initialEdges === currentEdges) return;
-      if (JSON.stringify(this.initialEdges) !== JSON.stringify(currentEdges)) {
-        this.diagramStateService.edges.set([...this.initialEdges]);
-      }
-    }
-    if (changes['initialViewport'] && !changes['initialViewport'].firstChange && this.initialViewport) {
-      const currentViewport = this.viewport();
-      if (JSON.stringify(this.initialViewport) !== JSON.stringify(currentViewport)) {
-        this.diagramStateService.setViewport(this.initialViewport);
-      }
-    }
-
-    // Handle color mode changes
-    if (changes['colorMode'] && !changes['colorMode'].firstChange) {
-      this.themeService.setColorMode(this.colorMode);
-    }
-  }
-
-
 
   get transform(): string {
     const v = this.viewport();
@@ -1099,25 +1145,16 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
       return;
     }
 
-    // If beforeDelete event has listeners, emit it and allow cancellation
-    if (this.beforeDelete.observed) {
-      let cancelled = false;
-      const cancel = () => { cancelled = true; };
+    let cancelled = false;
+    const cancel = () => { cancelled = true; };
 
-      this.beforeDelete.emit({
-        nodes: nodesToDelete,
-        edges: edgesToDelete,
-        cancel
-      });
+    this.beforeDelete.emit({
+      nodes: nodesToDelete,
+      edges: edgesToDelete,
+      cancel
+    });
 
-      // Use setTimeout to allow synchronous cancellation
-      setTimeout(() => {
-        if (!cancelled) {
-          this.diagramStateService.deleteSelectedElements();
-        }
-      }, 0);
-    } else {
-      // No listeners, proceed with deletion immediately
+    if (!cancelled) {
       this.diagramStateService.deleteSelectedElements();
     }
   }
@@ -1241,8 +1278,9 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     }
   }
 
-  @HostListener('window:pointermove', ['$event'])
-  onWindowPointerMove(event: PointerEvent): void {
+  // Space-panning handlers — bound outside Angular Zone in ngOnInit
+  // to avoid triggering change detection on every mouse pixel movement.
+  private onWindowPointerMove(event: PointerEvent): void {
     if (this.isSpacePanning) {
       const dx = event.clientX - this.panStartPosition.x;
       const dy = event.clientY - this.panStartPosition.y;
@@ -1253,13 +1291,14 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
         y: this.viewportStartPosition.y + dy
       };
 
-      this.diagramStateService.setViewport(newViewport);
+      this.ngZone.run(() => {
+        this.diagramStateService.setViewport(newViewport);
+      });
       event.preventDefault();
     }
   }
 
-  @HostListener('window:pointerup', ['$event'])
-  onWindowPointerUp(event: PointerEvent): void {
+  private onWindowPointerUp(event: PointerEvent): void {
     if (this.isSpacePanning) {
       this.isSpacePanning = false;
       if (this.isSpacePressed) {
@@ -1358,10 +1397,8 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
         }
 
         // Easy Connect Logic
-        console.log('onNodePointerDown', { id: node.id, easyConnect: node.easyConnect, target: target });
         if (node.easyConnect) {
           const isDragHandle = target.closest('.drag-handle');
-          console.log('Easy Connect Check:', { isDragHandle: !!isDragHandle });
           if (isDragHandle) {
             this.startDraggingNode(event, node);
             return;
@@ -1402,9 +1439,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     // Emit paneClick event
     this.paneClick.emit({ event, position: { x: canvasX, y: canvasY } });
 
-    this.isBoxSelecting = true;
-    this.selectionBoxStart = { x: canvasX, y: canvasY };
-    this.selectionBoxEnd = { x: canvasX, y: canvasY };
+    this.selectionBoxService.startBoxSelection(canvasX, canvasY);
   }
 
 
@@ -1470,7 +1505,13 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     // Track start position to prevent accidental clicks triggering drops
     this.connectingStartPointerPosition = { x: event.clientX, y: event.clientY };
 
-    this.svgRef.nativeElement.setPointerCapture(event.pointerId);
+    if (event.pointerId !== undefined) {
+      try {
+        this.svgRef.nativeElement.setPointerCapture(event.pointerId);
+      } catch (e) {
+        // Safe fallback
+      }
+    }
 
     const nodeId = handleElement.dataset['nodeid'];
     const handleId = handleElement.dataset['handleid'];
@@ -1526,9 +1567,12 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
 
       // Use geometric distance check instead of elementFromPoint to avoid pointer capture issues
       let closestHandle: { nodeId: string, handleId: string } | null = null;
-      let minDistance = 20; // Detection radius
+      // Scale detection radius with zoom so it works reliably at any zoom level
+      let minDistance = Math.max(35, 35 / viewport.zoom);
 
       const nodes = this.nodes();
+
+      // First pass: check handle proximity (precise snapping)
       for (const node of nodes) {
         const handles = ['top', 'right', 'bottom', 'left'];
         for (const handleId of handles) {
@@ -1541,6 +1585,41 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
         }
       }
 
+      // Second pass: if no handle found, check if cursor is over a node body and pick closest handle
+      if (!closestHandle) {
+        for (const node of nodes) {
+          // Skip source node to avoid self-loop unless explicitly desired
+          if (node.id === this.connectingSourceNodeId) continue;
+
+          const absPos = this.diagramStateService.getAbsolutePosition(node, nodes);
+          const nodeW = node.width || this.defaultNodeWidth;
+          const nodeH = node.height || this.defaultNodeHeight;
+          const padding = 10; // Small padding around node body
+
+          if (
+            currentPointerX >= absPos.x - padding &&
+            currentPointerX <= absPos.x + nodeW + padding &&
+            currentPointerY >= absPos.y - padding &&
+            currentPointerY <= absPos.y + nodeH + padding
+          ) {
+            // Cursor is over this node — pick the nearest handle
+            let bestHandleId = 'top';
+            let bestDist = Infinity;
+            const handles = ['top', 'right', 'bottom', 'left'];
+            for (const hId of handles) {
+              const hPos = this.getHandleAbsolutePosition(node, hId);
+              const d = Math.hypot(hPos.x - currentPointerX, hPos.y - currentPointerY);
+              if (d < bestDist) {
+                bestDist = d;
+                bestHandleId = hId;
+              }
+            }
+            closestHandle = { nodeId: node.id, handleId: bestHandleId };
+            break;
+          }
+        }
+      }
+
       this.clearTargetHandleHighlight();
 
       if (closestHandle) {
@@ -1548,13 +1627,12 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
         const targetHandleId = closestHandle.handleId;
 
         // Allow connecting to any handle on a different node OR same node (self-loop)
-        // console.log('updateConnection: handle found', targetNodeId, this.connectingSourceNodeId);
         if (targetNodeId) {
           this.currentTargetHandle = { nodeId: targetNodeId, handleId: targetHandleId, type: 'target' };
 
           if (this.isValidConnection(this.connectingSourceNodeId!, targetNodeId, this.connectingSourceHandleId, targetHandleId)) {
             // We need to find the handle element to highlight it
-            const handleEl = this.el.nativeElement.querySelector(`.ngx - workflow__handle[data - nodeid="${targetNodeId}"][data - handleid="${targetHandleId}"]`);
+            const handleEl = this.el.nativeElement.querySelector(`.ngx-workflow__handle[data-nodeid="${targetNodeId}"][data-handleid="${targetHandleId}"]`);
             if (handleEl) {
               this.renderer.addClass(handleEl, 'ngx-workflow__handle--valid-target');
             }
@@ -1567,23 +1645,28 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   private finishConnecting(event: PointerEvent): void {
-    console.log('finishConnecting: start');
     event.stopPropagation();
     event.preventDefault();
 
     this.isConnecting = false;
-    this.svgRef.nativeElement.releasePointerCapture(event.pointerId);
+    if (event && event.pointerId !== undefined) {
+      try {
+        if (this.svgRef.nativeElement.hasPointerCapture(event.pointerId)) {
+          this.svgRef.nativeElement.releasePointerCapture(event.pointerId);
+        }
+      } catch (e) {
+        // Safe fallback
+      }
+    }
     this.clearTargetHandleHighlight();
 
     if (this.currentPreviewEdgeId) {
-      console.log('finishConnecting: removing preview edge');
       this.diagramStateService.removeEdge(this.currentPreviewEdgeId);
     }
 
     if (this.currentTargetHandle && this.connectingSourceNodeId) {
       const sourceId = this.connectingSourceNodeId;
       const targetId = this.currentTargetHandle.nodeId;
-      console.log('finishConnecting: attempting connection', { sourceId, targetId });
 
       if (this.isValidConnection(sourceId, targetId, this.connectingSourceHandleId, this.currentTargetHandle.handleId)) {
         const newEdge: Edge = {
@@ -1594,7 +1677,6 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
           targetHandle: this.currentTargetHandle.handleId,
           // type: 'bezier', // Removed to use default smart routing
         };
-        console.log('finishConnecting: adding edge', newEdge);
         this.diagramStateService.addEdge(newEdge);
 
         // Emit connectEnd event for successful connection
@@ -1603,18 +1685,19 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
           handleId: this.currentTargetHandle.handleId
         });
       } else {
-        console.log('finishConnecting: invalid connection');
-        // Visual feedback for invalid connection: flash source node
-        const sourceNodeEl = this.el.nativeElement.querySelector(`[data - nodeid=\"${sourceId}\"]`);
-        if (sourceNodeEl) {
-          this.renderer.addClass(sourceNodeEl, 'invalid-connection');
-          setTimeout(() => this.renderer.removeClass(sourceNodeEl, 'invalid-connection'), 1000);
+        // Visual feedback for invalid connection: shake the specific target handle port
+        const targetHandleEl = this.el.nativeElement.querySelector(
+          `.ngx-workflow__handle[data-nodeid="${targetId}"][data-handleid="${this.currentTargetHandle.handleId}"]`
+        );
+        if (targetHandleEl) {
+          this.renderer.addClass(targetHandleEl, 'ngx-workflow__handle--invalid-shake');
+          setTimeout(() => this.renderer.removeClass(targetHandleEl, 'ngx-workflow__handle--invalid-shake'), 1000);
         }
 
-        // Emit connectEnd with source node (connection cancelled)
+        // Emit connectEnd with target node (connection rejected)
         this.connectEnd.emit({
-          nodeId: sourceId,
-          handleId: this.connectingSourceHandleId
+          nodeId: targetId,
+          handleId: this.currentTargetHandle.handleId
         });
       }
     } else if (this.connectingSourceNodeId && !this.currentTargetHandle) {
@@ -1635,7 +1718,6 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     this.currentTargetHandle = null;
     this.connectingSourceNodeId = null;
     this.connectingSourceHandleId = undefined;
-    console.log('finishConnecting: end');
   }
 
   private clearTargetHandleHighlight(): void {
@@ -1646,103 +1728,19 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   // --- Dragging Logic ---
 
   private startDraggingNode(event: PointerEvent, node: WorkflowNode): void {
-    event.stopPropagation();
-    this.isDraggingNode = true;
-    this.draggingNode = node;
-    this.startNodePosition = { x: node.position.x, y: node.position.y };
-    this.startPointerPosition = { x: event.clientX, y: event.clientY };
-    this.svgRef.nativeElement.setPointerCapture(event.pointerId);
-
-    // Check if this node is part of a multi-selection
-    const selectedNodes = this.nodes().filter(n => n.selected);
-    if (selectedNodes.length > 1 && node.selected) {
-      // Multi-node drag: store all selected nodes and their positions
-      this.draggingNodes = selectedNodes;
-      this.startNodePositions.clear();
-      selectedNodes.forEach(n => {
-        this.startNodePositions.set(n.id, { x: n.position.x, y: n.position.y });
-      });
-    } else {
-      // Single node drag
-      this.draggingNodes = [node];
-      this.startNodePositions.clear();
-      this.startNodePositions.set(node.id, { x: node.position.x, y: node.position.y });
-    }
-
-    this.diagramStateService.onDragStart(node);
-    console.log('startDraggingNode: started for', node.id);
+    this.nodeDragService.startDraggingNode(event, node, this.nodes());
   }
 
   private dragNode(event: PointerEvent): void {
-    if (!this.draggingNode) return;
-    event.stopPropagation();
-
-    if (this.dragAnimationFrameId) {
-      cancelAnimationFrame(this.dragAnimationFrameId);
-    }
-
-    this.dragAnimationFrameId = requestAnimationFrame(() => {
-      if (!this.draggingNode) return;
-      const zoom = this.viewport().zoom;
-      const deltaX = (event.clientX - this.startPointerPosition.x) / zoom;
-      const deltaY = (event.clientY - this.startPointerPosition.y) / zoom;
-
-      if (this.draggingNodes.length > 1) {
-        // Multi-node drag: move all selected nodes by the same delta
-        const moves = this.draggingNodes.map(node => {
-          const startPos = this.startNodePositions.get(node.id)!;
-          return {
-            id: node.id,
-            position: {
-              x: startPos.x + deltaX,
-              y: startPos.y + deltaY
-            }
-          };
-        });
-        this.diagramStateService.moveNodes(moves);
-      } else {
-        // Single node drag
-        const newPosition = {
-          x: this.startNodePosition.x + deltaX,
-          y: this.startNodePosition.y + deltaY,
-        };
-        this.diagramStateService.moveNode(this.draggingNode!.id, newPosition);
-      }
+    this.nodeDragService.dragNode(event, this.viewport(), (currentX, currentY) => {
       this.cdRef.detectChanges();
-
-      // Check for collisions if enabled
-      if (this.preventNodeOverlap) {
-        const allCollidingIds: string[] = [];
-        this.draggingNodes.forEach(node => {
-          const collidingNodes = this.getCollidingNodes(node.id, node.position);
-          if (collidingNodes.length > 0) {
-            allCollidingIds.push(node.id);
-            collidingNodes.forEach(n => allCollidingIds.push(n.id));
-          }
-        });
-        this.collidingNodeIds = [...new Set(allCollidingIds)];
-      }
-
-      this.dragAnimationFrameId = null;
-
-      const currentX = this.startNodePosition.x + deltaX;
-      const currentY = this.startNodePosition.y + deltaY;
-
-      // Group Proximity (Visual Feedback)
-      if (this.draggingNodes.length === 1) {
-        this.checkGroupProximity(this.draggingNode!, { x: currentX, y: currentY });
-      }
-
-      // Check for Proximity Connect (Pass current position!)
-      // Ensure we DO NOT auto-connect if we are dragging a GROUP
-      if (this.draggingNodes.length === 1 && this.draggingNode!.type !== 'group') {
-        const currentX = this.startNodePosition.x + deltaX;
-        const currentY = this.startNodePosition.y + deltaY;
-        this.checkProximityConnect(this.draggingNode!, { x: currentX, y: currentY });
+      if (this.nodeDragService.draggingNode && this.nodeDragService.draggingNodes.length === 1) {
+        this.checkGroupProximity(this.nodeDragService.draggingNode, { x: currentX, y: currentY });
+        if (this.nodeDragService.draggingNode.type !== 'group') {
+          this.checkProximityConnect(this.nodeDragService.draggingNode, { x: currentX, y: currentY });
+        }
       }
     });
-
-    // Check for auto-pan
     this.checkAutoPan(event.clientX, event.clientY);
   }
 
@@ -1783,9 +1781,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
 
       const dist = Math.sqrt(Math.pow(nCenter.x - nodeCenter.x, 2) + Math.pow(nCenter.y - nodeCenter.y, 2));
 
-      // console.log(`Distance to ${n.id}: ${dist}`); // Debug log
-
-      if (dist < this.proximityThreshold && dist < minDist) {
+      if (dist < this.proximityThreshold() && dist < minDist) {
         minDist = dist;
         closestNodeId = n.id;
       }
@@ -1964,23 +1960,11 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   private stopDraggingNode(event: PointerEvent): void {
-    if (!this.draggingNode) return;
-    event.stopPropagation();
-
-    // Stop auto-pan
+    const draggedNodes = [...this.nodeDragService.draggingNodes];
     this.stopAutoPan();
-
-    this.isDraggingNode = false;
+    this.nodeDragService.stopDraggingNode(event);
     this.updatePathFinder(this.nodes());
-    if (this.dragAnimationFrameId) {
-      cancelAnimationFrame(this.dragAnimationFrameId);
-      this.dragAnimationFrameId = null;
-    }
-    this.svgRef.nativeElement.releasePointerCapture(event.pointerId);
-
-    // Trigger onDragEnd for all dragged nodes
-    this.draggingNodes.forEach(node => {
-      this.diagramStateService.onDragEnd(node);
+    draggedNodes.forEach(node => {
       this.checkReparenting(node);
     });
 
@@ -2009,12 +1993,6 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
       this.proximityTargetNodeId = null;
       this.proximityCandidate = null;
     }
-
-    console.log('stopDraggingNode: stopped');
-
-    this.draggingNode = null;
-    this.draggingNodes = [];
-    this.startNodePositions.clear();
 
     // Emit the final state after drag is complete
     this.nodesChange.emit(this.nodes());
@@ -2064,8 +2042,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     }
 
     // Only update if parent changed
-    if (node.parentId !== newParentId) {
-      console.log(`Reparenting node ${node.id} to ${newParentId || 'root'}`);
+    if (newParentId !== node.parentId) {
       this.diagramStateService.reparentNode(node.id, newParentId);
     }
   }
@@ -2328,7 +2305,7 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
       }
 
       // Validate the new connection
-      if (this.isValidConnection(newEdge.source, newEdge.target)) {
+      if (this.isValidConnection(newEdge.source, newEdge.target, newEdge.sourceHandle, newEdge.targetHandle)) {
         // Save state before updating for undo/redo
         this.diagramStateService.saveStateForUndo();
 
@@ -2415,6 +2392,10 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
       }
     }
 
+    if ('waypoints' in edge && edge.waypoints && edge.waypoints.length > 0 && !isTemporary) {
+      return getWaypointPath(sourcePos, targetPos, edge.waypoints);
+    }
+
     // Use smart routing if type is 'smart' or not specified (default)
     // But respect explicit 'straight' type if user wants simple straight line
     if ((edge.type === 'smart' || !edge.type) && !isTemporary) {
@@ -2438,8 +2419,24 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
       }
     }
 
+    // Calculate curvature offset for parallel edges between same source & target nodes
+    let curvatureOffset = 0;
+    if (!isTemporary && 'source' in edge && 'target' in edge) {
+      const allEdges = this.edges();
+      const nodePairKey = [edge.source, edge.target].sort().join('::');
+      const parallelEdges = allEdges.filter(
+        (e) => [e.source, e.target].sort().join('::') === nodePairKey
+      );
+      if (parallelEdges.length > 1) {
+        const edgeIndex = parallelEdges.findIndex((e) => e.id === edge.id);
+        if (edgeIndex !== -1) {
+          curvatureOffset = (edgeIndex - (parallelEdges.length - 1) / 2) * 35;
+        }
+      }
+    }
+
     switch (edge.type) {
-      case 'bezier': return getBezierPath(sourcePos, targetPos);
+      case 'bezier': return getBezierPath(sourcePos, targetPos, curvatureOffset);
       case 'step': return getStepPath(sourcePos, targetPos);
       case 'smoothstep': return getSmoothStepPath(sourcePos, targetPos);
       case 'straight': return getStraightPath(sourcePos, targetPos);
@@ -2506,7 +2503,6 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   onEdgeClick(event: MouseEvent, edge: Edge): void {
-    console.log('onEdgeClick', edge.id);
     event.stopPropagation();
     event.preventDefault();
 
@@ -2531,7 +2527,6 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   onEdgeDoubleClick(event: MouseEvent, edge: Edge): void {
-    console.log('onEdgeDoubleClick', edge.id);
     event.stopPropagation();
     event.preventDefault();
 
@@ -2884,6 +2879,158 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     }
   }
 
+  // --- Accessibility: ARIA Label Generators ---
+
+  /**
+   * Generate descriptive ARIA label for a node.
+   */
+  getNodeAriaLabel(node: WorkflowNode): string {
+    const label = node.label || node.data?.label || node.type || 'Unnamed';
+    const type = node.type ? ` (${node.type})` : '';
+    const selected = node.selected ? ', selected' : '';
+    return `Node: ${label}${type}${selected}`;
+  }
+
+  /**
+   * Generate descriptive ARIA label for an edge.
+   */
+  getEdgeAriaLabel(edge: Edge): string {
+    const nodes = this.nodes();
+    const sourceNode = nodes.find(n => n.id === edge.source);
+    const targetNode = nodes.find(n => n.id === edge.target);
+    const sourceLabel = sourceNode?.label || sourceNode?.id || edge.source;
+    const targetLabel = targetNode?.label || targetNode?.id || edge.target;
+    const edgeLabel = edge.label ? ` labeled ${edge.label}` : '';
+    return `Edge from ${sourceLabel} to ${targetLabel}${edgeLabel}`;
+  }
+
+  /**
+   * Handle node receiving keyboard focus.
+   */
+  onNodeFocus(node: WorkflowNode): void {
+    this.focusedNodeId.set(node.id);
+  }
+
+  /**
+   * Handle node losing keyboard focus.
+   */
+  onNodeBlur(node: WorkflowNode): void {
+    if (this.focusedNodeId() === node.id) {
+      this.focusedNodeId.set(null);
+    }
+  }
+
+  /**
+   * Handle keyboard events on a focused node.
+   * Enter/Space → toggle selection. Shift+Arrows → nudge. Escape → deselect.
+   */
+  onNodeKeyDown(event: KeyboardEvent, node: WorkflowNode): void {
+    const gridStep = this.snapToGrid() ? this.gridSize() : 10;
+
+    switch (event.key) {
+      case 'Enter':
+      case ' ':
+        event.preventDefault();
+        event.stopPropagation();
+        this.diagramStateService.nodes.update(nodes =>
+          nodes.map(n => n.id === node.id ? { ...n, selected: !n.selected } : n)
+        );
+        break;
+
+      case 'Escape':
+        event.preventDefault();
+        this.diagramStateService.clearSelection();
+        (event.target as HTMLElement).blur();
+        break;
+
+      case 'ArrowUp':
+        if (event.shiftKey) {
+          event.preventDefault();
+          event.stopPropagation();
+          this.nudgeSelectedNodes(0, -gridStep);
+        } else if (!event.ctrlKey && !event.metaKey) {
+          event.preventDefault();
+          this.focusConnectedNode(node, 'incoming');
+        }
+        break;
+
+      case 'ArrowDown':
+        if (event.shiftKey) {
+          event.preventDefault();
+          event.stopPropagation();
+          this.nudgeSelectedNodes(0, gridStep);
+        } else if (!event.ctrlKey && !event.metaKey) {
+          event.preventDefault();
+          this.focusConnectedNode(node, 'outgoing');
+        }
+        break;
+
+      case 'ArrowLeft':
+        if (event.shiftKey) {
+          event.preventDefault();
+          event.stopPropagation();
+          this.nudgeSelectedNodes(-gridStep, 0);
+        } else if (!event.ctrlKey && !event.metaKey) {
+          event.preventDefault();
+          this.focusConnectedNode(node, 'incoming');
+        }
+        break;
+
+      case 'ArrowRight':
+        if (event.shiftKey) {
+          event.preventDefault();
+          event.stopPropagation();
+          this.nudgeSelectedNodes(gridStep, 0);
+        } else if (!event.ctrlKey && !event.metaKey) {
+          event.preventDefault();
+          this.focusConnectedNode(node, 'outgoing');
+        }
+        break;
+    }
+  }
+
+  /**
+   * Nudge all selected nodes by (dx, dy) pixels.
+   */
+  private nudgeSelectedNodes(dx: number, dy: number): void {
+    this.diagramStateService.nodes.update(nodes =>
+      nodes.map(n => {
+        if (!n.selected) return n;
+        return {
+          ...n,
+          position: {
+            x: n.position.x + dx,
+            y: n.position.y + dy
+          }
+        };
+      })
+    );
+  }
+
+  /**
+   * Move keyboard focus to a connected node via edges.
+   */
+  private focusConnectedNode(node: WorkflowNode, direction: 'outgoing' | 'incoming'): void {
+    const edges = this.edges();
+    let targetId: string | undefined;
+
+    if (direction === 'outgoing') {
+      const outEdge = edges.find(e => e.source === node.id);
+      targetId = outEdge?.target;
+    } else {
+      const inEdge = edges.find(e => e.target === node.id);
+      targetId = inEdge?.source;
+    }
+
+    if (targetId) {
+      const svgEl = this.svgRef.nativeElement;
+      const targetEl = svgEl.querySelector(`[data-id="${targetId}"]`) as HTMLElement;
+      if (targetEl) {
+        targetEl.focus();
+      }
+    }
+  }
+
   onMinimapViewportChange(viewport: Viewport): void {
     this.diagramStateService.setViewport(viewport);
   }
@@ -3007,14 +3154,14 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
    * Check if mouse is near viewport edge and calculate pan direction
    */
   private checkAutoPan(clientX: number, clientY: number): void {
-    if (!this.autoPanOnNodeDrag && !this.isDraggingNode) return;
-    if (!this.autoPanOnConnect && !this.isConnecting) return;
+    if (!this.autoPanOnNodeDrag() && !this.isDraggingNode) return;
+    if (!this.autoPanOnConnect() && !this.isConnecting) return;
 
     const container = this.svgRef.nativeElement.parentElement;
     if (!container) return;
 
     const rect = container.getBoundingClientRect();
-    const threshold = this.autoPanEdgeThreshold;
+    const threshold = this.autoPanEdgeThreshold();
 
     // Calculate distance from edges
     const distanceFromLeft = clientX - rect.left;
@@ -3080,8 +3227,8 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     const currentViewport = this.diagramStateService.viewport();
     const newViewport = {
       ...currentViewport,
-      x: currentViewport.x + (this.autoPanDirection.x * this.autoPanSpeed),
-      y: currentViewport.y + (this.autoPanDirection.y * this.autoPanSpeed)
+      x: currentViewport.x + (this.autoPanDirection.x * this.autoPanSpeed()),
+      y: currentViewport.y + (this.autoPanDirection.y * this.autoPanSpeed())
     };
 
     this.diagramStateService.setViewport(newViewport);
@@ -3126,9 +3273,8 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
     return { x, y, width, height };
   }
 
-  private stopBoxSelection(event: PointerEvent): void {
-    this.isBoxSelecting = false;
-    // Final selection is already applied by selectNodesInBox
+  private stopBoxSelection(event?: PointerEvent): void {
+    this.selectionBoxService.stopBoxSelection();
   }
 
   private isNodeInSelectionBox(node: WorkflowNode, box: { x: number; y: number; width: number; height: number }): boolean {
@@ -3316,6 +3462,47 @@ export class DiagramComponent implements OnInit, OnDestroy, OnChanges {
       }
     } catch (e) {
       console.error('Layout failed', e);
+    }
+  }
+
+  onDragOver(event: DragEvent): void {
+    if (event.dataTransfer?.types.includes('application/ngx-workflow-node')) {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'copy';
+    }
+  }
+
+  onDrop(event: DragEvent): void {
+    const rawData = event.dataTransfer?.getData('application/ngx-workflow-node');
+    if (!rawData) return;
+    event.preventDefault();
+
+    try {
+      const nodeData = JSON.parse(rawData);
+      const containerRect = this.el?.nativeElement?.getBoundingClientRect() || { left: 0, top: 0 };
+      const viewport = this.diagramStateService.viewport();
+
+      const clientX = event.clientX;
+      const clientY = event.clientY;
+
+      const canvasX = (clientX - containerRect.left - viewport.x) / viewport.zoom;
+      const canvasY = (clientY - containerRect.top - viewport.y) / viewport.zoom;
+
+      const newNode: WorkflowNode = {
+        id: uuidv4(),
+        position: { x: Math.round(canvasX), y: Math.round(canvasY) },
+        label: nodeData.label || 'New Node',
+        type: nodeData.type || 'default',
+        width: nodeData.width || 170,
+        height: nodeData.height || 60,
+        data: nodeData.data || {},
+        ...(nodeData.nodeOverrides || {}),
+      };
+
+      this.diagramStateService.nodes.update((nodes) => [...nodes, newNode]);
+      this.diagramStateService.undoRedoService.saveState(this.diagramStateService.getDiagramState());
+    } catch (e) {
+      console.error('Failed to parse dropped node data:', e);
     }
   }
 }

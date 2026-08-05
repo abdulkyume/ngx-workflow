@@ -1,4 +1,4 @@
-import { Component, Input, OnDestroy, OnInit, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, input, inject, effect, OnDestroy } from '@angular/core';
 import { HandleRegistryService, ConnectableLimit } from '../../services/handle-registry.service';
 
 @Component({
@@ -6,43 +6,42 @@ import { HandleRegistryService, ConnectableLimit } from '../../services/handle-r
     template: '<ng-content></ng-content>',
     standalone: true
 })
-export class HandleComponent implements OnInit, OnDestroy, OnChanges {
-    @Input() nodeId!: string;
-    @Input() handleId!: string;
-    @Input() type!: 'source' | 'target';
-    @Input() isConnectable: ConnectableLimit | undefined;
-    @Input() isValidConnection?: (connection: {
+export class HandleComponent implements OnDestroy {
+    private handleRegistry = inject(HandleRegistryService);
+
+    readonly nodeId = input.required<string>();
+    readonly handleId = input.required<string>();
+    readonly type = input.required<'source' | 'target'>();
+    readonly dataType = input<string | undefined>();
+    readonly isConnectable = input<ConnectableLimit | undefined>();
+    readonly isValidConnection = input<((connection: {
         source: string;
         sourceHandle: string;
         target: string;
         targetHandle: string;
-    }) => boolean;
+    }) => boolean) | undefined>();
 
-    constructor(private handleRegistry: HandleRegistryService) { }
-
-    ngOnInit(): void {
-        this.register();
-    }
-
-    ngOnChanges(changes: SimpleChanges): void {
-        if ((changes['isConnectable'] && !changes['isConnectable'].firstChange) ||
-            (changes['isValidConnection'] && !changes['isValidConnection'].firstChange)) {
-            this.register(); // Re-register on change
-        }
+    constructor() {
+        effect(() => {
+            const nodeId = this.nodeId();
+            const handleId = this.handleId();
+            const type = this.type();
+            if (nodeId && handleId && type) {
+                this.handleRegistry.registerHandle(nodeId, handleId, type, {
+                    dataType: this.dataType(),
+                    isConnectable: this.isConnectable(),
+                    isValidConnection: this.isValidConnection()
+                });
+            }
+        });
     }
 
     ngOnDestroy(): void {
-        if (this.nodeId && this.handleId && this.type) {
-            this.handleRegistry.unregisterHandle(this.nodeId, this.handleId, this.type);
-        }
-    }
-
-    private register(): void {
-        if (this.nodeId && this.handleId && this.type) {
-            this.handleRegistry.registerHandle(this.nodeId, this.handleId, this.type, {
-                isConnectable: this.isConnectable,
-                isValidConnection: this.isValidConnection
-            });
+        const nodeId = this.nodeId();
+        const handleId = this.handleId();
+        const type = this.type();
+        if (nodeId && handleId && type) {
+            this.handleRegistry.unregisterHandle(nodeId, handleId, type);
         }
     }
 }

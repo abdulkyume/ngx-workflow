@@ -67,6 +67,7 @@
   cursor: grab;
   position: relative;
   z-index: 1;
+  touch-action: none; // Prevent default browser touch gestures (pinch-zoom, scroll)
   
   &:active {
     cursor: grabbing;
@@ -86,6 +87,12 @@
 .ngx-workflow__node {
   cursor: grab;
   transition: transform 0.1s ease, opacity 0.2s ease;
+  outline: none;
+
+  &:focus,
+  &:focus-visible {
+    outline: none;
+  }
 
   /* Node Body */
   .ngx-workflow__node-rect {
@@ -181,7 +188,7 @@ foreignObject {
 
   &-path {
     fill: none;
-    stroke: #94a3b8; /* Slate 400 */
+    stroke: var(--ngx-workflow-edge-stroke, #94a3b8);
     stroke-width: 2;
     transition: stroke 0.2s ease, stroke-width 0.2s ease;
     pointer-events: stroke;
@@ -330,19 +337,23 @@ foreignObject {
   50% { opacity: 1; }
 }
 
-/* --- Invalid Connection Feedback --- */
-@keyframes invalidConnectionShake {
+/* --- Invalid Connection Feedback (Handle-level) --- */
+@keyframes invalidHandleShake {
   0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-4px); }
-  75% { transform: translateX(4px); }
+  20% { transform: translateX(-3px); }
+  40% { transform: translateX(3px); }
+  60% { transform: translateX(-2px); }
+  80% { transform: translateX(2px); }
 }
 
-.invalid-connection {
-  animation: invalidConnectionShake 0.3s ease-in-out 2;
-  
-  .ngx-workflow__node-rect {
-    stroke: #ef4444 !important; /* Red 500 */
-    stroke-width: 3px;
+.ngx-workflow__handle--invalid-shake {
+  animation: invalidHandleShake 0.4s ease-in-out 2;
+
+  .ngx-workflow__handle-circle {
+    fill: #ef4444 !important; /* Red 500 */
+    stroke: #dc2626 !important; /* Red 600 */
+    stroke-width: 2.5;
+    r: 8;
   }
 }
 

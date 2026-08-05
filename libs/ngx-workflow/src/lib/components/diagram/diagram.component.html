@@ -1,9 +1,10 @@
-<div class="ngx-workflow__container" [attr.data-lod]="lodLevel">
-  <ngx-workflow-background *ngIf="showBackground" [variant]="backgroundVariant" [gap]="backgroundGap"
-    [size]="backgroundSize" [color]="backgroundColor" [backgroundColor]="backgroundBgColor"
-    [backgroundImage]="backgroundImage"></ngx-workflow-background>
-  <ngx-workflow-grid-overlay *ngIf="showGrid" [gridSize]="gridSize"></ngx-workflow-grid-overlay>
-  <svg #svg class="ngx-workflow__diagram" (wheel)="onWheel($event)" (pointerdown)="onPointerDown($event)"
+<div class="ngx-workflow__container" [attr.data-lod]="lodLevel" role="application" aria-label="Workflow diagram canvas" (dragover)="onDragOver($event)" (drop)="onDrop($event)">
+  <ngx-workflow-background *ngIf="showBackground()" [variant]="backgroundVariant()" [gap]="backgroundGap()"
+    [size]="backgroundSize()" [color]="backgroundColor()" [backgroundColor]="backgroundBgColor()"
+    [backgroundImage]="backgroundImage()"></ngx-workflow-background>
+  <ngx-workflow-grid-overlay *ngIf="showGrid()" [gridSize]="gridSize()"></ngx-workflow-grid-overlay>
+  <svg #svg class="ngx-workflow__diagram" role="graphics-document" aria-roledescription="workflow diagram"
+    (wheel)="onWheel($event)" (pointerdown)="onPointerDown($event)"
     (pointermove)="onPointerMove($event)" (pointerup)="onPointerUp($event)" (pointerleave)="onPointerUp($event)"
     (dblclick)="onDiagramDoubleClick($event)">
     <defs>
@@ -29,7 +30,7 @@
       </marker>
 
       <!-- Custom Definitions -->
-      <ng-container *ngTemplateOutlet="defsTemplate"></ng-container>
+      <ng-container *ngTemplateOutlet="defsTemplate()"></ng-container>
     </defs>
 
     <rect width="100%" height="100%" fill="url(#ngx-workflow__grid-pattern)" class="ngx-workflow__background" />
@@ -56,6 +57,7 @@
         [class.animated]="edge.animated && edge.animationType !== 'dot'" [class.hidden]="edge.hidden"
         [class.animated]="edge.animated && (edge.animationType === 'flow' || edge.animationType === 'both')"
         [class.hidden]="edge.hidden" [class.shadow]="edge.shadow" class="ngx-workflow__edge"
+        role="img" [attr.aria-label]="getEdgeAriaLabel(edge)"
         (click)="onEdgeClick($event, edge)" (dblclick)="onEdgeDoubleClick($event, edge)"
         (mouseenter)="onEdgeMouseEnter($event, edge)" (mouseleave)="onEdgeMouseLeave($event, edge)">
         <!-- Edge path with markers -->
@@ -107,7 +109,7 @@
         </g>
 
         <!-- Edge Update Handles -->
-        <g *ngIf="edge.selected && edgeReconnectable">
+        <g *ngIf="edge.selected && edgeReconnectable()">
           <!-- Source Handle -->
           <circle class="ngx-workflow__edge-reconnect-handle" [attr.cx]="getEdgeHandlePosition(edge, 'source').x"
             [attr.cy]="getEdgeHandlePosition(edge, 'source').y" r="8" fill="#3b82f6" stroke="white" stroke-width="2"
@@ -130,14 +132,20 @@
       <!-- Selection Box (Rubber Band) -->
       <rect *ngIf="isBoxSelecting" class="ngx-workflow__selection-box" [attr.x]="getSelectionBox().x"
         [attr.y]="getSelectionBox().y" [attr.width]="getSelectionBox().width"
-        [attr.height]="getSelectionBox().height" />
+        [attr.height]="getSelectionBox().height" aria-hidden="true" />
 
       <!-- Nodes -->
       <g *ngFor="let node of sortedNodes(); trackBy: trackByNodeId" class="ngx-workflow__node" [attr.data-id]="node.id"
         [attr.transform]="'translate(' + (node._renderPosition?.x ?? node.position.x) + ',' + (node._renderPosition?.y ?? node.position.y) + ')'"
+        role="button" tabindex="0"
+        [attr.aria-label]="getNodeAriaLabel(node)"
+        [attr.aria-selected]="node.selected || false"
+        [class.ngx-workflow__node--focused]="focusedNodeId() === node.id"
         (pointerdown)="onNodePointerDown($event, node)" (dblclick)="onNodeDoubleClick($event, node)"
         (mouseenter)="onNodeMouseEnter($event, node)" (mouseleave)="onNodeMouseLeave($event, node)"
-        (mousemove)="onNodeMouseMove($event, node)">
+        (mousemove)="onNodeMouseMove($event, node)"
+        (focus)="onNodeFocus(node)" (blur)="onNodeBlur(node)"
+        (keydown)="onNodeKeyDown($event, node)">
 
         <!-- Custom Node Template -->
         <foreignObject *ngIf="isCustomNode(node)" [attr.width]="node.width || defaultNodeWidth"
@@ -182,7 +190,7 @@
           <!-- Node Label -->
           <text [attr.x]="(node.width || defaultNodeWidth) / 2" [attr.y]="(node.height || defaultNodeHeight) / 2"
             text-anchor="middle" dominant-baseline="middle" class="ngx-workflow__node-label"
-            [style.fill]="node.style?.['color'] || 'black'">
+            [style.fill]="node.style?.['color'] || 'var(--ngx-workflow-text-primary)'">
             {{ node.label }}
           </text>
         </g>
@@ -251,7 +259,7 @@
         </ng-container>
 
         <!-- Resize Handles (HTML implementation to ensure they are on top of custom nodes) -->
-        <foreignObject *ngIf="node.selected && (node.resizable !== false) && nodesResizable"
+        <foreignObject *ngIf="node.selected && (node.resizable !== false) && nodesResizable()"
           [attr.width]="node.width || defaultNodeWidth" [attr.height]="node.height || defaultNodeHeight"
           style="overflow: visible; pointer-events: none;">
           <div style="position: relative; width: 100%; height: 100%; pointer-events: none;">
@@ -315,19 +323,19 @@
 
     <div class="divider"></div>
 
-    <ngx-workflow-layout-alignment-controls *ngIf="showLayoutControls"
+    <ngx-workflow-layout-alignment-controls *ngIf="showLayoutControls()"
       (applyLayout)="onApplyLayout($any($event))"></ngx-workflow-layout-alignment-controls>
 
     <div class="divider"></div>
 
-    <ngx-workflow-export-controls *ngIf="showExportControls" (exportJSON)="exportToJSON()"
+    <ngx-workflow-export-controls *ngIf="showExportControls()" (exportJSON)="exportToJSON()"
       (importJSON)="triggerImport()">
     </ngx-workflow-export-controls>
   </div>
 
-  <ngx-workflow-minimap *ngIf="showMinimap"></ngx-workflow-minimap>
+  <ngx-workflow-minimap *ngIf="showMinimap()"></ngx-workflow-minimap>
 
-  <ngx-workflow-zoom-controls *ngIf="showZoomControls" [zoom]="viewport().zoom" [minZoom]="minZoom" [maxZoom]="maxZoom"
+  <ngx-workflow-zoom-controls *ngIf="showZoomControls()" [zoom]="viewport().zoom" [minZoom]="minZoom()" [maxZoom]="maxZoom()"
     (zoomIn)="onZoomChange(viewport().zoom + 0.1)" (zoomOut)="onZoomChange(viewport().zoom - 0.1)"
     (fitView)="onZoomChange(1)" (resetZoom)="onZoomChange(1)"></ngx-workflow-zoom-controls>
 

@@ -1,0 +1,10 @@
+# Ignore build output and log files for code search tools
+node_modules/
+dist/
+.angular/
+coverage/
+build.log
+*.log
+.agents/scratch/
+tmp/
+out-tsc/

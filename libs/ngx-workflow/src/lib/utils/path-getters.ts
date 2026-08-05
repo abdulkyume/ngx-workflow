@@ -4,9 +4,22 @@ export function getStraightPath(source: XYPosition, target: XYPosition): string 
   return `M ${source.x},${source.y} L ${target.x},${target.y}`;
 }
 
-export function getBezierPath(source: XYPosition, target: XYPosition): string {
-  const midX = (source.x + target.x) / 2;
-  return `M ${source.x},${source.y} C ${midX},${source.y} ${midX},${target.y} ${target.x},${target.y}`;
+export function getBezierPath(source: XYPosition, target: XYPosition, curvatureOffset: number = 0): string {
+  if (!curvatureOffset) {
+    const midX = (source.x + target.x) / 2;
+    return `M ${source.x},${source.y} C ${midX},${source.y} ${midX},${target.y} ${target.x},${target.y}`;
+  }
+
+  const dx = target.x - source.x;
+  const dy = target.y - source.y;
+  const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+  const nx = -dy / dist;
+  const ny = dx / dist;
+
+  const midX = (source.x + target.x) / 2 + nx * curvatureOffset;
+  const midY = (source.y + target.y) / 2 + ny * curvatureOffset;
+
+  return `M ${source.x},${source.y} Q ${midX},${midY} ${target.x},${target.y}`;
 }
 
 export function getStepPath(source: XYPosition, target: XYPosition): string {
@@ -73,6 +86,19 @@ export function getSmartEdgePath(path: XYPosition[]): string {
     d += ` L ${path[i].x},${path[i].y}`;
   }
 
+  return d;
+}
+
+export function getWaypointPath(source: XYPosition, target: XYPosition, waypoints: XYPosition[]): string {
+  if (!waypoints || waypoints.length === 0) {
+    return getStraightPath(source, target);
+  }
+
+  let d = `M ${source.x},${source.y}`;
+  for (const wp of waypoints) {
+    d += ` L ${wp.x},${wp.y}`;
+  }
+  d += ` L ${target.x},${target.y}`;
   return d;
 }
 

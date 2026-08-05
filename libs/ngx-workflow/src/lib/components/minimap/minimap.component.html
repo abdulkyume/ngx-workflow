@@ -1,5 +1,5 @@
 <div class="ngx-workflow__minimap">
-  <svg [attr.viewBox]="viewBox()" class="ngx-workflow__minimap-svg" (click)="onMinimapClick($event)">
+  <svg [attr.viewBox]="viewBox()" class="ngx-workflow__minimap-svg" role="img" aria-label="Diagram minimap navigation" (click)="onMinimapClick($event)">
     <rect *ngFor="let node of nodes()" [attr.x]="node.position.x" [attr.y]="node.position.y"
       [attr.width]="node.width || 170" [attr.height]="node.height || 60" [attr.fill]="getNodeFill(node)"
       [class]="nodeClass" [class.selected]="isNodeSelected(node)" class="ngx-workflow__minimap-node" />

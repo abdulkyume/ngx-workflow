@@ -1,0 +1,55 @@
+<div class="ngx-workflow-execution-controls" [class]="position">
+  <div class="ngx-workflow-execution-controls__toolbar">
+    <button
+      class="ngx-workflow-execution-controls__btn"
+      (click)="simulator.start()"
+      title="Start Execution"
+    >
+      ⏮️
+    </button>
+
+    <button
+      class="ngx-workflow-execution-controls__btn"
+      (click)="simulator.stepBack()"
+      title="Step Back"
+    >
+      ◀️
+    </button>
+
+    <button
+      class="ngx-workflow-execution-controls__btn primary"
+      (click)="togglePlay()"
+      [title]="simulator.isPlaying() ? 'Pause' : 'Play'"
+    >
+      {{ simulator.isPlaying() ? '⏸️' : '▶️' }}
+    </button>
+
+    <button
+      class="ngx-workflow-execution-controls__btn"
+      (click)="simulator.stepNext()"
+      title="Step Next"
+    >
+      ▶️
+    </button>
+
+    <button
+      class="ngx-workflow-execution-controls__btn"
+      (click)="simulator.reset()"
+      title="Reset"
+    >
+      🔄
+    </button>
+
+    <div class="ngx-workflow-execution-controls__speed">
+      <span class="ngx-workflow-execution-controls__label">{{ simulator.speedMs() }}ms</span>
+      <input
+        type="range"
+        min="200"
+        max="3000"
+        step="200"
+        [value]="simulator.speedMs()"
+        (input)="onSpeedChange($event)"
+      />
+    </div>
+  </div>
+</div>

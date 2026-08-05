@@ -1,131 +1,80 @@
 import { Component } from '@angular/core';
-import { DocDemoComponent } from '../components/doc-demo.component';
+import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-doc-concepts',
   standalone: true,
-  imports: [DocDemoComponent],
+  imports: [RouterLink],
   template: `
-    <div class="doc-content prose animate-fade-in">
-      <div class="page-header">
-        <h1>Core Concepts</h1>
-        <p class="lead">
-           Understanding how ngx-workflow thinks about data is key to building complex editors.
-        </p>
-      </div>
+    <article class="prose">
+      <span class="badge badge-accent">Core Architecture</span>
+      <h1>Core Concepts & Reactive Architecture</h1>
 
-      <h2>The Data Model</h2>
-      <p>
-        The library is <strong>unidirectional</strong>. You provide the <code>nodes</code> and <code>edges</code> signals, 
-        and the library renders them. When a user drags a node, the library updates its internal state 
-        and emits events, but <strong>you</strong> own the source of truth.
+      <p class="lead text-muted">
+        Understanding the internal mechanics of <code>ngx-workflow</code> will help you build complex interactive diagram editors efficiently.
       </p>
 
-      <h3>Nodes</h3>
-      <p>A Node is the fundamental building block.</p>
-      
-      <app-doc-demo [code]="nodeCode">
-        <!-- Visual representation of a Node structure -->
-        <div class="concept-visual node-visual">
-           <div class="mock-node bg-white border shadow-sm p-4 rounded">
-             <div class="text-sm font-bold mb-2">My Node (id: '1')</div>
-             <div class="text-xs text-gray-500 font-mono">
-               x: 100, y: 50<br>
-               data: {{ '{' }} ... {{ '}' }}
-             </div>
-             <!-- Mock Handles -->
-             <div class="handle top"></div>
-             <div class="handle right"></div>
-             <div class="handle bottom"></div>
-             <div class="handle left"></div>
-           </div>
-        </div>
-      </app-doc-demo>
-
-      <h3>Ports & Bitmasks</h3>
+      <h2 id="signals-state-model">1. Signals State Management</h2>
       <p>
-        Instead of defining an array of handles, we use a <strong>Bitmask</strong> to define 
-        which sides of a node can have connections. This is extremely performant for large graphs.
+        At the core of <code>ngx-workflow</code> is <code>DiagramStateService</code>. Instead of relying on continuous change detection cycles or heavy RxJS subscription chains for mouse movements, diagram state is modeled using Angular <code>signal()</code> and <code>computed()</code> primitives:
       </p>
 
-      <div class="table-wrapper">
-        <table>
-          <thead><tr><th>Side</th><th>Value</th><th>Binary</th></tr></thead>
-          <tbody>
-            <tr><td>Right</td><td><code>1</code></td><td><code>0001</code></td></tr>
-            <tr><td>Left</td><td><code>2</code></td><td><code>0010</code></td></tr>
-            <tr><td>Top</td><td><code>4</code></td><td><code>0100</code></td></tr>
-            <tr><td>Bottom</td><td><code>8</code></td><td><code>1000</code></td></tr>
-          </tbody>
-        </table>
+      <pre><code>// State Architecture Overview
+diagramState = &#123;
+  nodes: signal&lt;WorkflowNode[]&gt;([]),
+  edges: signal&lt;WorkflowEdge[]&gt;([]),
+  viewport: signal&lt;ViewportState&gt;(&#123; x: 0, y: 0, zoom: 1 &#125;),
+  selectedNodeIds: signal&lt;Set&lt;string&gt;&gt;(new Set())
+&#125;;</code></pre>
+
+      <div class="callout callout-success">
+        <div class="callout-title">⚡ Performance Impact</div>
+        <div>Because nodes and handles consume Signal inputs directly, dragging a single node only updates that specific node component's transform without re-evaluating the rest of the diagram subtree!</div>
       </div>
 
-      <div class="info-box">
-        <strong>Tip:</strong> You can combine these! <code>3</code> (1+2) means Left & Right. 
-        <code>15</code> means All Sides.
+      <h2 id="viewport-matrix">2. Viewport Transform & Canvas Coordinates</h2>
+      <p>
+        The diagram viewport handles pan (translate) and zoom (scale). All node positions are maintained in absolute graph space <code>(x, y)</code>, while the viewport transform matrix converts them to DOM client coordinates:
+      </p>
+
+      <pre><code>DOM_X = (Graph_X * Zoom) + Pan_X
+DOM_Y = (Graph_Y * Zoom) + Pan_Y</code></pre>
+
+      <p>
+        When users drag nodes, <code>ngx-workflow</code> automatically converts mouse offset events back into graph space coordinates, taking the current zoom level and pan offset into account.
+      </p>
+
+      <h2 id="handles-registry">3. Handle Registry & Port Calculation</h2>
+      <p>
+        Connections originate and terminate at <strong>Handles</strong> (ports). Handles register their exact DOM bounds with <code>HandleRegistryService</code> whenever node positions change or canvas zoom updates:
+      </p>
+
+      <ul>
+        <li><code>left</code> / <code>right</code> / <code>top</code> / <code>bottom</code> position presets.</li>
+        <li>Automatic path tangent calculation for Bezier curve handles.</li>
+        <li>Support for multiple input/output ports per node side.</li>
+      </ul>
+
+      <h2 id="auto-layout">4. ELK.js Auto-Layout Engine</h2>
+      <p>
+        <code>ngx-workflow</code> includes <code>AutoLayoutService</code> which delegates layout computation to the Eclipse Layout Kernel (ELK). You can invoke auto-layout at any time:
+      </p>
+
+      <pre><code>import &#123; AutoLayoutService &#125; from 'ngx-workflow';
+
+// Inject service in your component
+private autoLayout = inject(AutoLayoutService);
+
+async arrangeDiagram() &#123;
+  // Directions: 'TB' (Top-to-Bottom), 'LR' (Left-to-Right), 'BT', 'RL'
+  await this.autoLayout.applyLayout('LR');
+&#125;</code></pre>
+
+      <div class="next-steps flex gap-4 margin-top-8">
+        <a routerLink="/docs/api" class="btn btn-primary">Next: API Reference →</a>
+        <a routerLink="/docs/customization" class="btn btn-secondary">Customization Guide</a>
       </div>
-      
-      <h2>Edges</h2>
-      <p>Edges connect two nodes via their IDs and (optional) handle IDs.</p>
-      <app-doc-demo [code]="edgeCode">
-         <div class="concept-visual edge-visual">
-            <svg width="200" height="100" style="overflow: visible">
-              <path d="M 20 50 C 100 50, 100 50, 180 50" fill="none" stroke="#2563eb" stroke-width="2" marker-end="url(#arrow)"/>
-              <circle cx="20" cy="50" r="4" fill="#2563eb"/>
-              <circle cx="180" cy="50" r="4" fill="#2563eb"/>
-              <text x="100" y="40" text-anchor="middle" font-size="10" fill="#64748b">Edge (id: 'e1-2')</text>
-            </svg>
-         </div>
-      </app-doc-demo>
-    </div>
-  `,
-  styles: [`
-    .concept-visual {
-      display: flex; align-items: center; justify-content: center;
-      width: 100%; height: 100%; min-height: 200px;
-      background-size: 20px 20px;
-      background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
-    }
-    
-    .mock-node {
-      width: 140px; background: white; border: 1px solid var(--color-border);
-      border-radius: 8px; padding: 12px; position: relative;
-      box-shadow: var(--shadow-sm);
-    }
-    .handle {
-      width: 8px; height: 8px; background: var(--color-text-primary); border-radius: 50%;
-      position: absolute;
-    }
-    .top { top: -4px; left: 50%; transform: translateX(-50%); }
-    .bottom { bottom: -4px; left: 50%; transform: translateX(-50%); }
-    .left { left: -4px; top: 50%; transform: translateY(-50%); }
-    .right { right: -4px; top: 50%; transform: translateY(-50%); }
-    
-    .info-box {
-      background: var(--color-bg-surface); border-left: 4px solid var(--color-accent);
-      padding: 1rem; margin: 1.5rem 0; border-radius: 0 8px 8px 0;
-      color: var(--color-text-secondary);
-    }
-    
-    /* Tables are handled by global .prose, but wrapper helps scrolling */
-    .table-wrapper { overflow-x: auto; margin: 1.5rem 0; border: 1px solid var(--color-border); border-radius: 8px; }
-    table { width: 100%; text-align: left; border-collapse: collapse; }
-    th, td { padding: 12px; border-bottom: 1px solid var(--color-border); }
-    th { background: var(--color-bg-surface); font-weight: 600; color: var(--color-text-primary); }
-  `]
+    </article>
+  `
 })
-export class DocConceptsComponent {
-  nodeCode = `interface Node {
-  id: string;
-  position: { x: number; y: number };
-  data: any;
-  ports: number; // 1 | 2 | 4 | 8
-}`;
-
-  edgeCode = `interface Edge {
-  id: string;
-  source: string;
-  target: string;
-  animated?: boolean;
-}`;
-}
+export class DocConceptsComponent {}

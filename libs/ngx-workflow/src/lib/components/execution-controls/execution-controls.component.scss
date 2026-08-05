@@ -1,0 +1,77 @@
+.ngx-workflow-execution-controls {
+  position: absolute;
+  z-index: 100;
+  pointer-events: auto;
+
+  &.top-right {
+    top: 16px;
+    right: 16px;
+  }
+
+  &.top-left {
+    top: 16px;
+    left: 16px;
+  }
+
+  &.bottom-left {
+    bottom: 16px;
+    left: 16px;
+  }
+
+  &.bottom-right {
+    bottom: 16px;
+    right: 16px;
+  }
+
+  &__toolbar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: var(--ngx-workflow-bg, #ffffff);
+    border: 1px solid var(--ngx-workflow-border, #cbd5e1);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  &__btn {
+    border: none;
+    background: var(--ngx-workflow-item-bg, #f1f5f9);
+    color: var(--ngx-workflow-text, #1e293b);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+
+    &:hover {
+      background: var(--ngx-workflow-item-hover-bg, #e2e8f0);
+    }
+
+    &.primary {
+      background: #3b82f6;
+      color: #ffffff;
+
+      &:hover {
+        background: #2563eb;
+      }
+    }
+  }
+
+  &__speed {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: 6px;
+
+    input[type='range'] {
+      width: 70px;
+    }
+  }
+
+  &__label {
+    font-size: 11px;
+    color: var(--ngx-workflow-text-secondary, #64748b);
+    font-family: monospace;
+  }
+}

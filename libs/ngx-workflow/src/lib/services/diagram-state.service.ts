@@ -65,19 +65,27 @@ export class DiagramStateService {
     const query = this.searchQuery().toLowerCase();
     const type = this.filterType();
 
+    // Build a Map<string, Node> once for O(1) lookups in hierarchy traversal
+    const nodeMap = new Map<string, Node>(nodes.map(n => [n.id, n]));
+
     return nodes.map(node => {
-      const matchesSearch = !query ||
-        (node.label && node.label.toLowerCase().includes(query)) ||
-        (node.data && JSON.stringify(node.data).toLowerCase().includes(query));
+      // Skip expensive JSON.stringify when no search query is active
+      let matchesSearch: boolean;
+      if (!query) {
+        matchesSearch = true;
+      } else {
+        matchesSearch =
+          (node.label != null && node.label.toLowerCase().includes(query)) ||
+          (node.data != null && JSON.stringify(node.data).toLowerCase().includes(query));
+      }
 
       const matchesType = !type || node.type === type;
 
       const isMatch = matchesSearch && matchesType;
       const isActive = !!query || !!type;
 
-      // Compute absolute position for rendering
-      // We pass the full nodes list for recursion
-      const renderPosition = this.getAbsolutePosition(node, nodes);
+      // Compute absolute position using O(1) map lookups
+      const renderPosition = this._getAbsolutePositionFromMap(node, nodeMap);
 
       return {
         ...node,
@@ -286,7 +294,6 @@ export class DiagramStateService {
   // --- Edge Management ---
 
   addEdge(edge: Edge): void {
-    console.log('DiagramStateService.addEdge: start', edge);
 
     // Check for duplicates before adding to state
     const existing = this.edges().find(e =>
@@ -311,7 +318,6 @@ export class DiagramStateService {
       target: edge.target,
       targetHandle: edge.targetHandle,
     });
-    console.log('DiagramStateService.addEdge: end');
   }
 
   updateEdge(id: string, changes: Partial<Edge>): void {
@@ -353,7 +359,6 @@ export class DiagramStateService {
   }
 
   setContainerDimensions(dimensions: { width: number; height: number }): void {
-    console.log('DiagramStateService.setContainerDimensions', dimensions);
     this.containerDimensions.set(dimensions);
   }
 
@@ -711,7 +716,6 @@ export class DiagramStateService {
         });
 
         if (newEdges.length > 0) {
-          console.log('Smart Deletion: Auto-reconnecting nodes', newEdges);
           this.edges.update(edges => [...edges, ...newEdges]);
         }
       }
@@ -732,7 +736,6 @@ export class DiagramStateService {
 
     // Clear selection after deletion
     this.clearSelection();
-    console.log('Selected elements deleted. Nodes:', nodesToDelete, 'Edges:', edgesToDelete);
   }
 
   // --- Internal batching methods for components to use ---
@@ -810,7 +813,7 @@ export class DiagramStateService {
       nodes: JSON.parse(JSON.stringify(selectedNodes)),
       edges: JSON.parse(JSON.stringify(internalEdges)),
     };
-    console.log('Copied to clipboard');
+    // Done
   }
 
   paste(): void {
@@ -1310,13 +1313,14 @@ export class DiagramStateService {
     this.undoRedoService.saveState(this.getCurrentState());
 
     const nodes = this.nodes();
+    const nodeMap = new Map<string, Node>(nodes.map(n => [n.id, n]));
     const selectedNodes = nodes.filter(n => nodeIds.includes(n.id));
 
     // Calculate bounding box of selected nodes to position the group
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     selectedNodes.forEach(node => {
       // Use absolute position for calculation
-      const absPos = this.getAbsolutePosition(node, nodes);
+      const absPos = this._getAbsolutePositionFromMap(node, nodeMap);
       minX = Math.min(minX, absPos.x);
       minY = Math.min(minY, absPos.y);
       maxX = Math.max(maxX, absPos.x + (node.width || 150));
@@ -1343,7 +1347,7 @@ export class DiagramStateService {
 
     const updatedNodes = nodes.map(node => {
       if (nodeIds.includes(node.id)) {
-        const absPos = this.getAbsolutePosition(node, nodes);
+        const absPos = this._getAbsolutePositionFromMap(node, nodeMap);
         return {
           ...node,
           parentId: groupNode.id,
@@ -1367,6 +1371,7 @@ export class DiagramStateService {
     this.undoRedoService.saveState(this.getCurrentState());
 
     const nodes = this.nodes();
+    const nodeMap = new Map<string, Node>(nodes.map(n => [n.id, n]));
     const updatedNodes = nodes.map(node => {
       // If node is a child of one of the ungrouped nodes (logic: user selects group to ungroup)
       // OR if the node itself is selected and has a parent?
@@ -1375,7 +1380,7 @@ export class DiagramStateService {
 
       // Scenario 1: User selects Group Node and ungroups -> Children become orphans
       if (node.parentId && nodeIds.includes(node.parentId)) {
-        const absPos = this.getAbsolutePosition(node, nodes);
+        const absPos = this._getAbsolutePositionFromMap(node, nodeMap);
         return {
           ...node,
           parentId: undefined,
@@ -1402,13 +1407,13 @@ export class DiagramStateService {
     const finalNodes = nodes.filter(n => !groupsToDestroy.has(n.id)).map(node => {
       // Case A: This node was a child of a destroyed group
       if (node.parentId && groupsToDestroy.has(node.parentId)) {
-        const absPos = this.getAbsolutePosition(node, nodes);
+        const absPos = this._getAbsolutePositionFromMap(node, nodeMap);
         return { ...node, parentId: undefined, position: absPos };
       }
 
       // Case B: This node implies itself to detach
       if (childrenToDetach.has(node.id)) {
-        const absPos = this.getAbsolutePosition(node, nodes);
+        const absPos = this._getAbsolutePositionFromMap(node, nodeMap);
         return { ...node, parentId: undefined, position: absPos };
       }
 
@@ -1418,14 +1423,25 @@ export class DiagramStateService {
     this.nodes.set(finalNodes);
   }
 
-  // Helper to compute absolute position of a node
+  /**
+   * Compute the absolute position of a node by traversing its parent hierarchy.
+   * Accepts either a Node[] (backward-compatible) or a pre-built Map<string, Node>
+   * for O(1) lookups during hot-path rendering.
+   */
   public getAbsolutePosition(node: Node, allNodes: Node[]): XYPosition {
+    // Build a map for the caller, delegating to the O(1) implementation
+    const nodeMap = new Map<string, Node>(allNodes.map(n => [n.id, n]));
+    return this._getAbsolutePositionFromMap(node, nodeMap);
+  }
+
+  /** @internal O(1)-lookup implementation used by computed signals and internal methods. */
+  public _getAbsolutePositionFromMap(node: Node, nodeMap: Map<string, Node>): XYPosition {
     let x = node.position.x;
     let y = node.position.y;
     let current = node;
 
     while (current.parentId) {
-      const parent = allNodes.find(n => n.id === current.parentId);
+      const parent = nodeMap.get(current.parentId);
       if (parent) {
         x += parent.position.x;
         y += parent.position.y;
@@ -1446,6 +1462,8 @@ export class DiagramStateService {
 
     this.undoRedoService.saveState(this.getCurrentState());
 
+    const nodeMap = new Map<string, Node>(nodes.map(n => [n.id, n]));
+
     const updatedNodes = nodes.map(n => {
       if (n.id === nodeId) {
         let newNode = { ...n, parentId: newParentId };
@@ -1460,10 +1478,10 @@ export class DiagramStateService {
 
         if (newParentId) {
           // Convert to relative position
-          const parent = nodes.find(p => p.id === newParentId);
+          const parent = nodeMap.get(newParentId);
           if (parent) {
-            const parentAbsPos = this.getAbsolutePosition(parent, nodes);
-            const nodeAbsPos = this.getAbsolutePosition(n, nodes);
+            const parentAbsPos = this._getAbsolutePositionFromMap(parent, nodeMap);
+            const nodeAbsPos = this._getAbsolutePositionFromMap(n, nodeMap);
 
             // New Relative Position
             newNode.position = {
@@ -1482,7 +1500,7 @@ export class DiagramStateService {
 
           if (n.parentId) {
             // Converting from Child -> Root
-            const absPos = this.getAbsolutePosition(n, nodes);
+            const absPos = this._getAbsolutePositionFromMap(n, nodeMap);
             newNode.position = absPos;
           }
         }
@@ -1511,7 +1529,6 @@ export class DiagramStateService {
 
   // Move multiple nodes (batch movement)
   moveNodes(moves: { id: string; position: XYPosition }[]): void {
-    console.log('moveNodes', moves.length);
     const GRID_SIZE = 20;
 
     let currentNodes = [...this.nodes()];
@@ -1668,6 +1685,108 @@ export class DiagramStateService {
 
   selectAllNodes(): void {
     this.nodes.update((nodes) => nodes.map((n) => ({ ...n, selected: true })));
+  }
+
+  /**
+   * Toggles the collapsed state of a group node and hides/shows its children.
+   */
+  toggleGroupCollapse(groupId: string): void {
+    const groupNode = this.nodes().find((n) => n.id === groupId);
+    if (!groupNode) return;
+
+    const isCollapsing = !groupNode.collapsed;
+
+    this.nodes.update((nodes) =>
+      nodes.map((node) => {
+        if (node.id === groupId) {
+          return { ...node, collapsed: isCollapsing };
+        }
+        if (node.parentId === groupId) {
+          return { ...node, hidden: isCollapsing };
+        }
+        return node;
+      })
+    );
+  }
+
+  /**
+   * Groups all currently selected nodes under a new container node.
+   */
+  groupSelectedNodes(groupLabel: string = 'Group'): string | null {
+    const selected = this.selectedNodes();
+    if (selected.length === 0) return null;
+
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minY = Infinity;
+    let maxY = -Infinity;
+
+    for (const node of selected) {
+      const w = node.width || 170;
+      const h = node.height || 60;
+      minX = Math.min(minX, node.position.x);
+      maxX = Math.max(maxX, node.position.x + w);
+      minY = Math.min(minY, node.position.y);
+      maxY = Math.max(maxY, node.position.y + h);
+    }
+
+    const padding = 40;
+    const groupId = uuidv4();
+    const groupNode: Node = {
+      id: groupId,
+      type: 'group',
+      label: groupLabel,
+      position: { x: minX - padding, y: minY - padding },
+      width: maxX - minX + padding * 2,
+      height: maxY - minY + padding * 2,
+    };
+
+    const selectedSet = new Set(selected.map((n) => n.id));
+
+    this.nodes.update((nodes) => [
+      groupNode,
+      ...nodes.map((node) => {
+        if (!selectedSet.has(node.id)) return node;
+        return {
+          ...node,
+          parentId: groupId,
+          position: {
+            x: node.position.x - (minX - padding),
+            y: node.position.y - (minY - padding),
+          },
+        };
+      }),
+    ]);
+
+    return groupId;
+  }
+
+  /**
+   * Ungroups children from a group node and removes the group container.
+   */
+  ungroup(groupId: string): void {
+    const groupNode = this.nodes().find((n) => n.id === groupId);
+    if (!groupNode) return;
+
+    const groupX = groupNode.position.x;
+    const groupY = groupNode.position.y;
+
+    this.nodes.update((nodes) =>
+      nodes
+        .filter((n) => n.id !== groupId)
+        .map((node) => {
+          if (node.parentId !== groupId) return node;
+          return {
+            ...node,
+            parentId: undefined,
+            hidden: false,
+            position: {
+              x: groupX + node.position.x,
+              y: groupY + node.position.y,
+            },
+          };
+        })
+    );
   }
   // --- Node Animation (Web Animations API) ---
 

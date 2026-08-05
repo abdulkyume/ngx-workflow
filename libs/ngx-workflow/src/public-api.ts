@@ -20,18 +20,31 @@ export * from './lib/components/export-controls/export-controls.component';
 export * from './lib/components/layout-alignment-controls/layout-alignment-controls.component';
 export * from './lib/components/search-controls/search-controls.component';
 export * from './lib/components/properties-sidebar/properties-sidebar.component';
+export * from './lib/components/palette/palette.component';
+export * from './lib/components/execution-controls/execution-controls.component';
 
 // Services
 export * from './lib/services/diagram-state.service';
 export * from './lib/services/layout.service';
+export * from './lib/services/auto-layout.service';
+export * from './lib/services/export.service';
 export * from './lib/services/undo-redo.service';
 export * from './lib/services/theme.service';
+export * from './lib/services/touch-gesture.service';
+export * from './lib/services/canvas-pan-zoom.service';
+export * from './lib/services/node-drag.service';
+export * from './lib/services/selection-box.service';
+export * from './lib/services/execution-simulator.service';
 
 // Models
 export * from './lib/models/node.model';
 export * from './lib/models/edge.model';
 export * from './lib/models/viewport.model';
 export * from './lib/models/diagram.model';
+
+// Adapters
+export * from './lib/adapters/mermaid-adapter';
+export * from './lib/adapters/reactflow-adapter';
 
 // Types
 export * from './lib/types/component-types';
@@ -42,3 +55,6 @@ export * from './lib/injection-tokens/edge-types.token';
 
 // Utils
 export * from './lib/utils/path-getters';
+
+// Validators
+export * from './lib/validators/workflow-validators';
