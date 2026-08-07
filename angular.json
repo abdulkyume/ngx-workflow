@@ -26,7 +26,8 @@
               "src/styles.css"
             ],
             "allowedCommonJsDependencies": [
-              "elkjs"
+              "elkjs",
+              "gsap"
             ]
           },
           "configurations": {
@@ -34,13 +35,13 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "5mb",
-                  "maximumError": "5mb"
+                  "maximumWarning": "900kb",
+                  "maximumError": "1.5mb"
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "5mb",
-                  "maximumError": "5mb"
+                  "maximumWarning": "48kb",
+                  "maximumError": "96kb"
                 }
               ],
               "outputHashing": "all"

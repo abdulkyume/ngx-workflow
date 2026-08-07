@@ -1,58 +1,50 @@
 import { Component, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
-
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { OUTPUT_DOCS, OutputDoc } from '../data/output-docs.data';
+import { OUTPUT_DOCS } from '../data/output-docs.data';
 import { NgxWorkflowModule } from 'ngx-workflow';
 
 @Component({
-    selector: 'app-doc-output-detail',
-    standalone: true,
-    imports: [RouterLink, NgxWorkflowModule],
-    template: `
+  selector: 'app-doc-output-detail',
+  standalone: true,
+  imports: [RouterLink, NgxWorkflowModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
     @if (output(); as item) {
-      <div class="max-w-5xl mx-auto py-8">
-    
-        <!-- Breadcrumb -->
-        <nav class="flex mb-8 text-sm text-gray-500">
-          <a routerLink="/docs/outputs" class="hover:text-green-600">Outputs</a>
-          <span class="mx-2">/</span>
-          <span class="text-gray-900 font-medium">{{ item.name }}</span>
+      <div class="doc-detail">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a routerLink="/docs/outputs">Outputs</a>
+          <span>/</span>
+          <span>{{ item.name }}</span>
         </nav>
-    
-        <!-- Header -->
-        <div class="mb-10">
-          <h1 class="text-3xl font-bold text-gray-900 mb-4 font-mono">{{ item.name }}</h1>
-          <p class="text-xl text-gray-600 mb-6">{{ item.description }}</p>
-    
-          <div class="flex flex-wrap gap-6 text-sm">
-            <div class="flex flex-col">
-              <span class="text-gray-500 uppercase tracking-wide text-xs font-semibold mb-1">Category</span>
-              <span class="font-medium text-gray-900">{{ item.category }}</span>
-            </div>
-    
-            <div class="flex flex-col">
-              <span class="text-gray-500 uppercase tracking-wide text-xs font-semibold mb-1">Type</span>
-              <code class="font-mono bg-gray-100 px-2 py-0.5 rounded text-green-700">{{ item.type }}</code>
-            </div>
+
+        <h1>{{ item.name }}</h1>
+        <p class="lead">{{ item.description }}</p>
+
+        <div class="meta-row">
+          <div class="meta-item">
+            <span class="meta-label">Category</span>
+            <span class="meta-value">{{ item.category }}</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Type</span>
+            <code class="meta-code">{{ item.type }}</code>
           </div>
         </div>
-    
-        <hr class="border-gray-200 mb-10">
+
+        <hr class="divider" />
 
         @if (item.example) {
-          <div class="mb-10">
-            <h2 class="text-2xl font-bold text-gray-900 mb-4">Usage</h2>
-            <pre class="bg-gray-900 text-gray-100 rounded-lg p-4 overflow-x-auto text-sm"><code>{{ item.example }}</code></pre>
-          </div>
+          <section>
+            <h2>Usage</h2>
+            <pre><code>{{ item.example }}</code></pre>
+          </section>
         }
-    
-        <div class="grid lg:grid-cols-3 gap-8">
-          <!-- Playground -->
-          <div class="lg:col-span-2">
-            <h2 class="text-2xl font-bold text-gray-900 mb-4">Interactive Example</h2>
-    
-            <div class="h-[400px] border border-gray-300 rounded-lg overflow-hidden relative shadow-sm bg-gray-50">
+
+        <div class="playground">
+          <section>
+            <h2>Interactive example</h2>
+            <div class="preview-frame">
               <ngx-workflow-diagram
                 [nodes]="nodes"
                 [edges]="edges"
@@ -75,83 +67,151 @@ import { NgxWorkflowModule } from 'ngx-workflow';
                 (edgeMouseEnter)="logEvent('edgeMouseEnter', $event)"
                 (edgeMouseLeave)="logEvent('edgeMouseLeave', $event)"
                 (beforeDelete)="logEvent('beforeDelete', $event)"
-                (importError)="logEvent('importError', $event)">
-              </ngx-workflow-diagram>
+                (importError)="logEvent('importError', $event)"
+              />
             </div>
-            <p class="mt-2 text-sm text-gray-500">Try interacting with the nodes and edges above. Drag port-to-port to fire connect events.</p>
-          </div>
-    
-          <!-- Console -->
-          <div class="lg:col-span-1">
-            <h3 class="text-lg font-bold text-gray-900 mb-4">Event Log</h3>
-            <div class="border border-gray-200 rounded-lg h-[400px] flex flex-col bg-white overflow-hidden shadow-sm">
-              <div class="bg-gray-50 border-b border-gray-200 px-4 py-2 flex justify-between items-center">
-                <span class="text-xs font-mono text-gray-500 uppercase">Output</span>
-                <button (click)="logs.set([])" class="text-xs text-red-600 hover:text-red-800">Clear</button>
-              </div>
-    
-              <div class="flex-1 overflow-y-auto p-4 space-y-2 font-mono text-xs">
-                @if (logs().length === 0) {
-                  <div class="text-gray-400 italic text-center py-4">
-                    No events logged yet.
-                  </div>
-                }
-                @for (log of logs(); track log) {
-                  <div class="animate-fade-in border-l-2 pl-2" [class.border-green-500]="log.event === item.name" [class.border-gray-300]="log.event !== item.name">
-                    <div class="flex items-center gap-2 text-gray-400 mb-1">
-                      <span>{{ log.time }}</span>
-                      <span class="font-bold text-gray-700">{{ log.event }}</span>
-                    </div>
-                    <div class="text-gray-600 break-words whitespace-pre-wrap">
-                      {{ log.data }}
-                    </div>
-                  </div>
-                }
-              </div>
+            <p class="hint">Interact with nodes and edges. Drag port-to-port to fire connect events.</p>
+          </section>
+
+          <section class="log-panel glass-panel">
+            <div class="log-header">
+              <h3>Event log</h3>
+              <button type="button" class="btn btn-sm btn-outline" (click)="logs.set([])">Clear</button>
             </div>
-          </div>
+            <div class="log-body">
+              @if (logs().length === 0) {
+                <p class="empty">No events logged yet.</p>
+              }
+              @for (log of logs(); track $index) {
+                <div class="log-row" [class.highlight]="log.event === item.name">
+                  <div class="log-meta">
+                    <span>{{ log.time }}</span>
+                    <strong>{{ log.event }}</strong>
+                  </div>
+                  <pre>{{ log.data }}</pre>
+                </div>
+              }
+            </div>
+          </section>
         </div>
       </div>
     } @else {
-      <div class="py-12 text-center">
-        <h2 class="text-2xl font-bold text-gray-900 mb-2">Output not found</h2>
-        <a routerLink="/docs/outputs" class="text-green-600 hover:underline">Back to Outputs</a>
+      <div class="doc-detail" style="text-align:center;padding:64px 0">
+        <h2>Output not found</h2>
+        <a routerLink="/docs/outputs" class="btn btn-secondary">Back to Outputs</a>
       </div>
     }
-    `,
-    changeDetection: ChangeDetectionStrategy.OnPush,
-    styles: [`
+  `,
+  styles: [`
     :host { display: block; }
-  `]
+    h2, h3 {
+      font-family: var(--font-display);
+      margin: 0 0 12px;
+    }
+    h2 { font-size: 1.4rem; }
+    h3 { font-size: 1.05rem; }
+    pre {
+      background: var(--color-bg-elevated);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      overflow: auto;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--color-text-primary);
+      margin: 0 0 20px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .playground {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+    .hint {
+      margin: 10px 0 0;
+      font-size: 0.85rem;
+      color: var(--color-text-muted);
+    }
+    .log-panel {
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-height: 400px;
+      max-height: 520px;
+    }
+    .log-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .log-body {
+      flex: 1;
+      overflow: auto;
+      padding: 12px;
+    }
+    .empty {
+      text-align: center;
+      color: var(--color-text-muted);
+      font-style: italic;
+    }
+    .log-row {
+      border-left: 2px solid var(--color-border);
+      padding: 0 0 12px 10px;
+      margin-bottom: 10px;
+    }
+    .log-row.highlight { border-left-color: var(--color-primary); }
+    .log-meta {
+      display: flex;
+      gap: 8px;
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
+      margin-bottom: 4px;
+    }
+    .log-meta strong { color: var(--color-text-primary); }
+    .log-row pre {
+      margin: 0;
+      padding: 8px;
+      font-size: 0.72rem;
+      background: var(--color-bg-base);
+    }
+    @media (max-width: 960px) {
+      .playground { grid-template-columns: 1fr; }
+    }
+  `],
 })
 export class DocOutputDetailComponent {
-    private route = inject(ActivatedRoute);
-    private params = toSignal(this.route.params);
+  private route = inject(ActivatedRoute);
+  private params = toSignal(this.route.params);
 
-    output = computed(() => {
-        const params = this.params();
-        const name = params?.['id'];
-        return OUTPUT_DOCS.find(i => i.name === name);
+  output = computed(() => {
+    const name = this.params()?.['id'];
+    return OUTPUT_DOCS.find((i) => i.name === name);
+  });
+
+  logs = signal<Array<{ time: string; event: string; data: string }>>([]);
+
+  nodes = [
+    { id: '1', position: { x: 50, y: 50 }, label: 'Click Me' },
+    { id: '2', position: { x: 250, y: 150 }, label: 'Drag Me' },
+  ];
+  edges = [{ id: 'e1-2', source: '1', target: '2', label: 'Connect' }];
+
+  logEvent(eventName: string, data: unknown): void {
+    const time = new Date().toLocaleTimeString([], {
+      hour12: false,
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
     });
-
-    logs = signal<Array<{ time: string, event: string, data: string }>>([]);
-
-    // Dummy data
-    nodes = [
-        { id: '1', position: { x: 50, y: 50 }, label: 'Click Me' },
-        { id: '2', position: { x: 250, y: 150 }, label: 'Drag Me' }
-    ];
-    edges = [
-        { id: 'e1-2', source: '1', target: '2', label: 'Connect' }
-    ];
-
-    logEvent(eventName: string, data: any) {
-        const time = new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        const dataStr = JSON.stringify(data, (key, value) => {
-            if (key === 'source' && value?.view) return '[Window]';
-            return value;
-        });
-
-        this.logs.update(prev => [{ time, event: eventName, data: dataStr }, ...prev].slice(0, 50));
-    }
+    const dataStr = JSON.stringify(data, (key, value) => {
+      if (key === 'source' && value?.view) return '[Window]';
+      return value;
+    });
+    this.logs.update((prev) => [{ time, event: eventName, data: dataStr }, ...prev].slice(0, 50));
+  }
 }

@@ -1,105 +1,106 @@
 import { Component, computed, inject, ChangeDetectionStrategy } from '@angular/core';
-
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { INPUT_DOCS, InputDoc } from '../data/input-docs.data';
+import { INPUT_DOCS } from '../data/input-docs.data';
 import { NgxWorkflowModule } from 'ngx-workflow';
 
 @Component({
   selector: 'app-doc-input-detail',
   standalone: true,
   imports: [RouterLink, NgxWorkflowModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (input(); as item) {
-      <div class="max-w-5xl mx-auto py-8">
-    
-        <!-- Breadcrumb -->
-        <nav class="flex mb-8 text-sm text-gray-500">
-          <a routerLink="/docs/inputs" class="hover:text-blue-600">Inputs</a>
-          <span class="mx-2">/</span>
-          <span class="text-gray-900 font-medium">{{ item.name }}</span>
+      <div class="doc-detail">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a routerLink="/docs/inputs">Inputs</a>
+          <span>/</span>
+          <span>{{ item.name }}</span>
         </nav>
-    
-        <!-- Header -->
-        <div class="mb-10">
-          <h1 class="text-3xl font-bold text-gray-900 mb-4 font-mono">{{ item.name }}</h1>
-          <p class="text-xl text-gray-600 mb-6">{{ item.description }}</p>
-    
-          <div class="flex flex-wrap gap-6 text-sm">
-            <div class="flex flex-col">
-              <span class="text-gray-500 uppercase tracking-wide text-xs font-semibold mb-1">Category</span>
-              <span class="font-medium text-gray-900">{{ item.category }}</span>
-            </div>
-    
-            <div class="flex flex-col">
-              <span class="text-gray-500 uppercase tracking-wide text-xs font-semibold mb-1">Type</span>
-              <code class="font-mono bg-gray-100 px-2 py-0.5 rounded text-blue-700">{{ item.type }}</code>
-            </div>
-    
-            @if (item.default !== 'undefined') {
-              <div class="flex flex-col">
-                <span class="text-gray-500 uppercase tracking-wide text-xs font-semibold mb-1">Default</span>
-                <code class="font-mono bg-gray-100 px-2 py-0.5 rounded text-gray-800">{{ item.default }}</code>
-              </div>
-            }
+
+        <h1>{{ item.name }}</h1>
+        <p class="lead">{{ item.description }}</p>
+
+        <div class="meta-row">
+          <div class="meta-item">
+            <span class="meta-label">Category</span>
+            <span class="meta-value">{{ item.category }}</span>
           </div>
+          <div class="meta-item">
+            <span class="meta-label">Type</span>
+            <code class="meta-code">{{ item.type }}</code>
+          </div>
+          @if (item.default !== 'undefined') {
+            <div class="meta-item">
+              <span class="meta-label">Default</span>
+              <code class="meta-code">{{ item.default }}</code>
+            </div>
+          }
         </div>
-    
-        <hr class="border-gray-200 mb-10">
+
+        <hr class="divider" />
 
         @if (item.example) {
-          <div class="mb-10">
-            <h2 class="text-2xl font-bold text-gray-900 mb-4">Example</h2>
-            <pre class="bg-gray-900 text-gray-100 rounded-lg p-4 overflow-x-auto text-sm"><code>{{ item.example }}</code></pre>
-          </div>
+          <section>
+            <h2>Example</h2>
+            <pre class="prose"><code>{{ item.example }}</code></pre>
+          </section>
         }
-    
-        <!-- Preview -->
-        <div class="mb-12">
-          <h2 class="text-2xl font-bold text-gray-900 mb-4">Interactive preview</h2>
-          <p class="text-gray-600 mb-4">Try the diagram (drag ports to connect):</p>
-    
-          <div class="h-[400px] border border-gray-300 rounded-lg overflow-hidden relative shadow-sm bg-gray-50">
+
+        <section>
+          <h2>Interactive preview</h2>
+          <p class="lead">Try the diagram (drag ports to connect):</p>
+          <div class="preview-frame">
             <ngx-workflow-diagram
               [nodes]="nodes"
               [edges]="edges"
               [showBackground]="true"
-              [maxConnectionsPerHandle]="2">
-            </ngx-workflow-diagram>
-    
-            <div class="absolute bottom-2 right-2 bg-white/80 backdrop-blur px-2 py-1 text-xs text-gray-500 rounded border border-gray-200">
-              ngx-workflow-diagram
-            </div>
+              [maxConnectionsPerHandle]="2"
+            />
+            <div class="preview-badge">ngx-workflow-diagram</div>
           </div>
-        </div>
+        </section>
       </div>
     } @else {
-      <div class="py-12 text-center">
-        <h2 class="text-2xl font-bold text-gray-900 mb-2">Input not found</h2>
-        <a routerLink="/docs/inputs" class="text-blue-600 hover:underline">Back to Inputs</a>
+      <div class="doc-detail" style="text-align:center;padding:64px 0">
+        <h2>Input not found</h2>
+        <a routerLink="/docs/inputs" class="btn btn-secondary">Back to Inputs</a>
       </div>
     }
-    `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
+  `,
   styles: [`
     :host { display: block; }
-  `]
+    h2 {
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      margin: 0 0 12px;
+    }
+    pre {
+      background: var(--color-bg-elevated);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      overflow: auto;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      color: var(--color-text-primary);
+    }
+  `],
 })
 export class DocInputDetailComponent {
   private route = inject(ActivatedRoute);
   private params = toSignal(this.route.params);
 
   input = computed(() => {
-    const params = this.params();
-    const name = params?.['id'];
-    return INPUT_DOCS.find(i => i.name === name);
+    const name = this.params()?.['id'];
+    return INPUT_DOCS.find((i) => i.name === name);
   });
 
   nodes = [
     { id: '1', position: { x: 80, y: 100 }, label: 'Node A', ports: 4, maxConnectionsPerPort: 2 },
-    { id: '2', position: { x: 320, y: 100 }, label: 'Node B', ports: 4 }
+    { id: '2', position: { x: 320, y: 100 }, label: 'Node B', ports: 4 },
   ];
   edges = [
-    { id: 'e1-2', source: '1', target: '2', sourceHandle: 'right', targetHandle: 'left', label: 'Edge' }
+    { id: 'e1-2', source: '1', target: '2', sourceHandle: 'right', targetHandle: 'left', label: 'Edge' },
   ];
 }

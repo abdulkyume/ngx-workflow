@@ -51,31 +51,20 @@ interface ExampleScenario {
             </div>
 
             <div class="toolbar-controls">
-              <!-- Animated Edges Toggle -->
-              <button class="tool-btn" [class.active]="animated()" (click)="toggleAnimated()" title="Toggle Edge Animation">
-                ⚡ Anim
+              <button type="button" class="tool-btn" [class.active]="animated()" (click)="toggleAnimated()" [attr.aria-pressed]="animated()">
+                Animate
               </button>
-              
-              <!-- Background Variant Selector -->
-              <button class="tool-btn" (click)="cycleBg()" title="Change Background">
-                🎨 {{ bgVariant() }}
+              <button type="button" class="tool-btn" (click)="cycleBg()" [attr.aria-label]="'Background ' + bgVariant()">
+                {{ bgVariant() }}
               </button>
-
-              <!-- Fit View Button -->
-              <button class="tool-btn" (click)="fitView()" title="Center Diagram">
-                🔍 Fit View
-              </button>
-
-              <!-- Auto Layout Button (if scenario 2) -->
+              <button type="button" class="tool-btn" (click)="fitView()">Fit view</button>
               @if (activeScenario().id === 'autolayout') {
-                <button class="tool-btn btn-primary-sm" (click)="triggerAutoLayout()">
-                  📐 Auto Layout
+                <button type="button" class="tool-btn btn-primary-sm" (click)="triggerAutoLayout()">
+                  Auto layout
                 </button>
               }
-
-              <!-- Code View Toggle -->
-              <button class="tool-btn" [class.active]="showCode()" (click)="toggleCode()">
-                &lt;/&gt; {{ showCode() ? 'Hide Code' : 'View Code' }}
+              <button type="button" class="tool-btn" [class.active]="showCode()" (click)="toggleCode()" [attr.aria-pressed]="showCode()">
+                {{ showCode() ? 'Hide code' : 'View code' }}
               </button>
             </div>
           </div>
@@ -121,6 +110,7 @@ interface ExampleScenario {
     }
 
     .examples-header h1 {
+      font-family: var(--font-display);
       font-size: 2.2rem;
       font-weight: 800;
       margin: 8px 0;

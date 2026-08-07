@@ -121,9 +121,9 @@
 
   /* Selected State */
   &.selected .ngx-workflow__node-rect {
-    stroke: var(--ngx-workflow-primary);
+    stroke: var(--ngx-workflow-primary, #2dd4bf);
     stroke-width: 2px;
-    filter: drop-shadow(0 0 0 2px rgba(59, 130, 246, 0.2));
+    filter: drop-shadow(0 0 10px color-mix(in srgb, var(--ngx-workflow-primary, #2dd4bf) 40%, transparent));
   }
 
   /* Dragging State */
@@ -210,14 +210,20 @@ foreignObject {
 
   /* Selected State */
   &.selected .ngx-workflow__edge-path {
-    stroke: var(--ngx-workflow-primary);
+    stroke: var(--ngx-workflow-primary, #2dd4bf);
     stroke-width: 3;
-    filter: drop-shadow(0 1px 2px rgba(59, 130, 246, 0.3));
+    filter: drop-shadow(0 0 6px color-mix(in srgb, var(--ngx-workflow-primary, #2dd4bf) 45%, transparent));
   }
 
   &.animated .ngx-workflow__edge-path {
     stroke-dasharray: 10;
     animation: flowAnimation 1s linear infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &.animated .ngx-workflow__edge-path {
+      animation: none;
+    }
   }
 
   &.hidden {
@@ -628,8 +634,12 @@ foreignObject {
 }
 
 // Search highlighting styles
-.node-search-match .ngx-workflow__node-rect { stroke: var(--ngx-workflow-primary-color, #3b82f6); stroke-width: 2px; filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.6)); }
-.node-search-current .ngx-workflow__node-rect { stroke: var(--ngx-workflow-primary-color, #3b82f6); stroke-width: 3px; filter: drop-shadow(0 0 12px rgba(59, 130, 246, 0.8)); animation: pulse-glow 1.5s ease-in-out infinite; }
+.node-search-match .ngx-workflow__node-rect { stroke: var(--ngx-workflow-primary, #2dd4bf); stroke-width: 2px; filter: drop-shadow(0 0 8px color-mix(in srgb, var(--ngx-workflow-primary, #2dd4bf) 55%, transparent)); }
+.node-search-current .ngx-workflow__node-rect { stroke: var(--ngx-workflow-primary, #2dd4bf); stroke-width: 3px; filter: drop-shadow(0 0 12px color-mix(in srgb, var(--ngx-workflow-primary, #2dd4bf) 70%, transparent)); animation: pulse-glow 1.5s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .node-search-current .ngx-workflow__node-rect { animation: none; }
+}
 .node-search-dimmed { opacity: 0.3; transition: opacity 0.3s ease; }
 @keyframes pulse-glow { 0%, 100% { filter: drop-shadow(0 0 12px rgba(59, 130, 246, 0.8)); } 50% { filter: drop-shadow(0 0 16px rgba(59, 130, 246, 1)); } }
 

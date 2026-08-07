@@ -1,4 +1,4 @@
-import { Injectable, signal, computed, effect } from '@angular/core';
+import { Injectable, signal, computed, effect, DestroyRef, inject } from '@angular/core';
 
 export type ColorMode = 'light' | 'dark' | 'system';
 
@@ -6,6 +6,7 @@ export type ColorMode = 'light' | 'dark' | 'system';
     providedIn: 'root'
 })
 export class ThemeService {
+    private readonly destroyRef = inject(DestroyRef);
     private colorModeSignal = signal<ColorMode>('light');
     readonly colorMode = this.colorModeSignal.asReadonly();
 
@@ -19,18 +20,18 @@ export class ThemeService {
     });
 
     constructor() {
-        // Listen for system theme changes
+        // Listen for system theme changes and remove the listener on destroy
         if (typeof window !== 'undefined' && window.matchMedia) {
             const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+            const onChange = (e: MediaQueryListEvent) => {
+                if (this.colorMode() === 'system') {
+                    this.applyTheme(e.matches ? 'dark' : 'light');
+                }
+            };
 
-            // Modern browsers
             if (mediaQuery.addEventListener) {
-                mediaQuery.addEventListener('change', (e) => {
-                    // Trigger recomputation if in system mode
-                    if (this.colorMode() === 'system') {
-                        this.applyTheme(e.matches ? 'dark' : 'light');
-                    }
-                });
+                mediaQuery.addEventListener('change', onChange);
+                this.destroyRef.onDestroy(() => mediaQuery.removeEventListener('change', onChange));
             }
         }
 

@@ -16,83 +16,97 @@ interface TocItem {
   imports: [RouterOutlet, RouterLink, RouterLinkActive, FormsModule],
   template: `
     <div class="docs-layout container">
-      <!-- Left Sidebar Navigation -->
-      <aside class="docs-sidebar">
+      <div class="mobile-docs-nav">
+        <label class="mobile-label" for="docs-nav-select">Documentation</label>
+        <select
+          id="docs-nav-select"
+          class="mobile-select"
+          [value]="currentPath()"
+          (change)="onMobileNav($event)">
+          <option value="/docs/intro">Introduction & Setup</option>
+          <option value="/docs/concepts">Signals & State Model</option>
+          <option value="/docs/api">API Reference</option>
+          <option value="/docs/customization">Custom Nodes & Edges</option>
+          <option value="/docs/inputs">Input Properties</option>
+          <option value="/docs/outputs">Outputs & Events</option>
+        </select>
+      </div>
+
+      <aside class="docs-sidebar" aria-label="Documentation">
         <div class="sidebar-search">
           <input
-            type="text"
+            type="search"
             placeholder="Filter documentation..."
             [ngModel]="searchQuery()"
             (ngModelChange)="searchQuery.set($event)"
-            class="search-input"/>
-          </div>
-    
-          <div class="sidebar-content">
-            @if (shouldShow('getting started') || shouldShow('intro')) {
-              <div class="nav-group">
-                <h4 class="group-title">Getting Started</h4>
-                <a routerLink="/docs/intro" routerLinkActive="active" class="nav-item">Introduction & Setup</a>
-              </div>
-            }
-    
-            @if (shouldShow('concepts') || shouldShow('api') || shouldShow('customization')) {
-              <div class="nav-group">
-                <h4 class="group-title">Core Architecture</h4>
-                @if (shouldShow('concepts')) {
-                  <a routerLink="/docs/concepts" routerLinkActive="active" class="nav-item">Signals & State Model</a>
-                }
-                @if (shouldShow('api')) {
-                  <a routerLink="/docs/api" routerLinkActive="active" class="nav-item">API Reference</a>
-                }
-                @if (shouldShow('customization')) {
-                  <a routerLink="/docs/customization" routerLinkActive="active" class="nav-item">Custom Nodes & Edges</a>
-                }
-              </div>
-            }
-    
-            @if (shouldShow('inputs') || shouldShow('outputs')) {
-              <div class="nav-group">
-                <h4 class="group-title">Component Reference</h4>
-                @if (shouldShow('inputs')) {
-                  <a routerLink="/docs/inputs" routerLinkActive="active" class="nav-item">Input Properties</a>
-                }
-                @if (shouldShow('outputs')) {
-                  <a routerLink="/docs/outputs" routerLinkActive="active" class="nav-item">Outputs & Events</a>
-                }
-              </div>
-            }
+            class="search-input"
+            aria-label="Filter documentation" />
+        </div>
+
+        <div class="sidebar-content">
+          @if (shouldShow('getting started') || shouldShow('intro')) {
+            <div class="nav-group">
+              <h4 class="group-title">Getting Started</h4>
+              <a routerLink="/docs/intro" routerLinkActive="active" class="nav-item">Introduction & Setup</a>
+            </div>
+          }
+
+          @if (shouldShow('concepts') || shouldShow('api') || shouldShow('customization')) {
+            <div class="nav-group">
+              <h4 class="group-title">Core Architecture</h4>
+              @if (shouldShow('concepts')) {
+                <a routerLink="/docs/concepts" routerLinkActive="active" class="nav-item">Signals & State Model</a>
+              }
+              @if (shouldShow('api')) {
+                <a routerLink="/docs/api" routerLinkActive="active" class="nav-item">API Reference</a>
+              }
+              @if (shouldShow('customization')) {
+                <a routerLink="/docs/customization" routerLinkActive="active" class="nav-item">Custom Nodes & Edges</a>
+              }
+            </div>
+          }
+
+          @if (shouldShow('inputs') || shouldShow('outputs')) {
+            <div class="nav-group">
+              <h4 class="group-title">Component Reference</h4>
+              @if (shouldShow('inputs')) {
+                <a routerLink="/docs/inputs" routerLinkActive="active" class="nav-item">Input Properties</a>
+              }
+              @if (shouldShow('outputs')) {
+                <a routerLink="/docs/outputs" routerLinkActive="active" class="nav-item">Outputs & Events</a>
+              }
+            </div>
+          }
+        </div>
+      </aside>
+
+      <div class="docs-main" #mainContent>
+        <router-outlet (activate)="onActivate($event)"></router-outlet>
+      </div>
+
+      @if (tocItems.length > 0) {
+        <aside class="docs-toc" aria-label="On this page">
+          <div class="toc-content glass-panel">
+            <span class="toc-title">On this page</span>
+            <ul class="toc-list">
+              @for (item of tocItems; track item.id) {
+                <li>
+                  <a
+                    href="#{{ item.id }}"
+                    class="toc-link"
+                    [class.active]="activeFragment === item.id"
+                    [class.indent]="item.level === 3"
+                    (click)="scrollTo(item.id, $event)">
+                    {{ item.label }}
+                  </a>
+                </li>
+              }
+            </ul>
           </div>
         </aside>
-    
-        <!-- Main Docs Content Area -->
-        <main class="docs-main" #mainContent>
-          <router-outlet (activate)="onActivate($event)"></router-outlet>
-        </main>
-    
-        <!-- Right Sidebar (On This Page TOC) -->
-        @if (tocItems.length > 0) {
-          <aside class="docs-toc">
-            <div class="toc-content glass-panel">
-              <span class="toc-title">On this page</span>
-              <ul class="toc-list">
-                @for (item of tocItems; track item) {
-                  <li>
-                    <a
-                      href="javascript:void(0)"
-                      class="toc-link"
-                      [class.active]="activeFragment === item.id"
-                      [class.indent]="item.level === 3"
-                      (click)="scrollTo(item.id, $event)">
-                      {{ item.label }}
-                    </a>
-                  </li>
-                }
-              </ul>
-            </div>
-          </aside>
-        }
-      </div>
-    `,
+      }
+    </div>
+  `,
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [`
     .docs-layout {
@@ -234,9 +248,35 @@ interface TocItem {
       .docs-toc { display: none; }
     }
 
+    .mobile-docs-nav {
+      display: none;
+      margin-bottom: 24px;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .mobile-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--color-text-muted);
+    }
+
+    .mobile-select {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--color-border);
+      background: var(--color-bg-surface);
+      color: var(--color-text-primary);
+      font-size: 0.9rem;
+    }
+
     @media (max-width: 768px) {
       .docs-layout { display: block; }
       .docs-sidebar { display: none; }
+      .mobile-docs-nav { display: flex; }
     }
   `]
 })
@@ -246,6 +286,7 @@ export class DocsComponent implements OnInit, OnDestroy, AfterViewInit {
   tocItems: TocItem[] = [];
   activeFragment: string | null = null;
   searchQuery = signal('');
+  currentPath = signal('/docs/intro');
 
   private observer: IntersectionObserver | null = null;
   private routerSubscription!: Subscription;
@@ -259,9 +300,17 @@ export class DocsComponent implements OnInit, OnDestroy, AfterViewInit {
   ngOnInit() {
     this.routerSubscription = this.router.events.pipe(
       filter(event => event instanceof NavigationEnd)
-    ).subscribe(() => {
+    ).subscribe((event) => {
+      const nav = event as NavigationEnd;
+      this.currentPath.set(nav.urlAfterRedirects.split('?')[0]);
       setTimeout(() => this.generateToc(), 150);
     });
+    this.currentPath.set(this.router.url.split('?')[0]);
+  }
+
+  onMobileNav(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    void this.router.navigateByUrl(value);
   }
 
   ngAfterViewInit() {
