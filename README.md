@@ -5,7 +5,9 @@
 
 A powerful, highly customizable Angular library for building interactive node-based editors, flow charts, and diagrams. Built with Angular Signals for high performance and reactivity.
 
-> Live demo: clone the repo and run `npm start`, then open **Examples** or **Canvas Studio** (`/sandbox`).
+> Live demo & docs: [ngx-workflow.vercel.app](https://ngx-workflow.vercel.app) · local: `npm start` then **Examples** or **Canvas Studio** (`/sandbox`).
+>
+> AI / LLM index: [llms.txt](https://ngx-workflow.vercel.app/llms.txt) · [llms-full.txt](https://ngx-workflow.vercel.app/llms-full.txt)
 
 ## 🚀 Features
 
@@ -34,14 +36,15 @@ A powerful, highly customizable Angular library for building interactive node-ba
 - **Edge Reconnection**: Drag edge endpoints to reconnect them
 
 ### Visuals & Motion
-- **Edge Animation**: SVG motion particles on edges (`animated: true`)
+- **Edge Animation**: Flow dash and/or moving-dot particles (`animated`, `animationType`: `'flow' | 'dot' | 'both'`)
+- **RGBA Colors**: Node fill/text/border and edge stroke/label/animation colors support hex, `rgb()`, and `rgba()`
 - **Node Motion**: Programmatic API to animate nodes along edge paths
-- **Custom Markers**: Support for `arrow`, `arrowclosed`, `dot`, or fully custom SVG definitions via `[defsTemplate]`
+- **Markers**: Built-in `arrow`, `arrowclosed`, `dot` tinted to match the edge stroke; custom SVG via `[defsTemplate]`
 - **Background Images**: Support for custom background images via `[backgroundImage]`
 
 ### Built-in UI Components
 - **Search Bar**: Press `Ctrl+F` to search nodes by label/id.
-- **Properties Panel**: Sidebar for editing node properties (auto-shows on selection).
+- **Properties Panel**: Sidebar for node/edge editing (RGBA pickers, animation, markers); auto-shows on selection.
 - **Context Menu**: Right-click canvas/nodes/edges for actions.
 - **Layout Alignment**: Auto-align selected nodes (if `showLayoutControls` is true).
 - **Minimap**: Navigable overview of complex flows.
@@ -245,9 +248,13 @@ interface Node {
   resizable?: boolean;     // Is this specific node resizable? (default: true)
   zIndex?: number;         // Manual Z-Index
   class?: string;          // Custom CSS class
-  style?: object;          // Custom inline styles
-  
-  // Styling
+  // Styling — colors accept hex / rgb() / rgba()
+  style?: {
+    backgroundColor?: string;
+    color?: string;
+    borderColor?: string;
+    [key: string]: any;
+  };
   shadow?: boolean | string;   // Drop shadow
   borderStyle?: 'solid' | 'dashed' | 'dotted' | 'none';
   borderColor?: string;
@@ -284,13 +291,19 @@ interface Edge {
   sourceHandle?: string;   // ID of source handle (optional)
   targetHandle?: string;   // ID of target handle (optional)
   label?: string;          // Label text displayed on the edge
-  type?: 'bezier' | 'straight' | 'step'; // Path type (default: 'bezier')
-  animated?: boolean;      // Show animation (dashed moving line)?
-  markerStart?: string;    // Start marker ID (e.g., 'arrow', 'dot')
-  markerEnd?: string;      // End marker ID
-  style?: object;          // SVG styles (stroke, stroke-width, etc.)
+  type?: 'bezier' | 'straight' | 'step' | 'smoothstep' | 'smart' | 'dashed';
+  animated?: boolean;      // Defaults animationType to 'flow' when unset
+  animationType?: 'flow' | 'dot' | 'both';
+  animationDuration?: string; // e.g. '1s'
+  animationStyle?: { fill?: string };
+  markerStart?: 'arrow' | 'arrowclosed' | 'dot' | string;
+  markerEnd?: 'arrow' | 'arrowclosed' | 'dot' | string; // Built-ins match stroke
+  style?: { stroke?: string; strokeWidth?: string | number; strokeDasharray?: string; [key: string]: any };
+  labelStyle?: { fill?: string; [key: string]: any };
 }
 ```
+
+Standalone properties sidebar: bind `(nodeChange)` / `(edgeChange)` (not `(change)` for nodes).
 
 #### `Handle` (Component)
 
@@ -326,7 +339,7 @@ Similar to nodes, you can register custom edge components via the edge types tok
 ## 🎨 Custom Customization
 
 ### Edge Markers
-To use custom SVG markers, pass a template to `[defsTemplate]`:
+Built-in markers (`arrow`, `arrowclosed`, `dot`) match `edge.style.stroke` (including `rgba`). For custom SVG markers, pass a template to `[defsTemplate]`:
 
 ```html
 <ng-template #defs>

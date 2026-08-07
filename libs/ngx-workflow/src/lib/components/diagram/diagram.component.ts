@@ -168,6 +168,9 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
   // Input for showing/hiding minimap
   readonly showMinimap = input<boolean>(true);
 
+  /** When true, fit and center all nodes once the canvas has measurable size. */
+  readonly fitViewOnInit = input<boolean>(false);
+
   // Input for background configuration
   readonly showBackground = input<boolean>(true);
   readonly backgroundVariant = input<'dots' | 'lines' | 'cross'>('dots');
@@ -176,8 +179,9 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
   readonly backgroundColor = input<string>('var(--ngx-workflow-bg-pattern, #81818a)');
   readonly backgroundBgColor = input<string>('var(--ngx-workflow-bg, transparent)');
 
-  // Color mode (theme) configuration
-  readonly colorMode = input<ColorMode>('light');
+  // Color mode (theme) configuration.
+  // When unset, inherit the host app's theme tokens (do not mutate document).
+  readonly colorMode = input<ColorMode | undefined>(undefined);
 
   // Grid configuration
   readonly gridSize = input<number>(20);
@@ -186,6 +190,9 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
 
   // Z-index configuration
   readonly zIndexMode = input<'default' | 'layered'>('default');
+
+  // Search controls configuration
+  readonly showSearchControls = input<boolean>(true);
 
   // Export controls configuration
   readonly showExportControls = input<boolean>(false);
@@ -296,6 +303,10 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
   private isPanning = false;
   private lastPanPosition: XYPosition = { x: 0, y: 0 };
   private subscriptions = new Subscription();
+  /** Skip parent→service node sync while we push service→parent via nodesChange. */
+  private syncingNodesToParent = false;
+  /** Skip parent→service edge sync while we push service→parent via edgesChange. */
+  private syncingEdgesToParent = false;
 
   // Observable versions of signals for auto-save (initialized in constructor)
   private nodes$!: Observable<WorkflowNode[]>;
@@ -694,24 +705,152 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
   }
 
   onPropertiesChange(changes: Partial<WorkflowNode>): void {
-    if (this.selectedNodeForEditing) {
-      this.diagramStateService.updateNode(this.selectedNodeForEditing.id, changes);
-      // Update local reference to keep sidebar in sync
-      this.selectedNodeForEditing = { ...this.selectedNodeForEditing, ...changes };
+    // Guard: native DOM `change` used to hit `(change)` when Output was named `change`
+    if (!changes || typeof changes !== 'object' || changes instanceof Event) {
+      return;
+    }
+    if (!this.selectedNodeForEditing) {
+      return;
+    }
 
-      // If ports changed, validate edges
-      if (changes.ports !== undefined) {
-        this.validateEdgesForNode(this.selectedNodeForEditing);
-      }
+    const id = this.selectedNodeForEditing.id;
+    this.diagramStateService.updateNode(id, changes);
+
+    // Re-read from store so canvas + sidebar share the same style object
+    const updated = this.diagramStateService.nodes().find((n) => n.id === id);
+    if (updated) {
+      this.selectedNodeForEditing = { ...updated, style: { ...(updated.style || {}) } };
+    }
+
+    this.cdRef.detectChanges();
+
+    if (changes.ports !== undefined && this.selectedNodeForEditing) {
+      this.validateEdgesForNode(this.selectedNodeForEditing);
     }
   }
 
+  /** Include style in track key so color edits always rebind SVG fill/stroke. */
+  trackNodeStyle(node: WorkflowNode): string {
+    const s = node.style || {};
+    return [
+      node.id,
+      s['backgroundColor'] || '',
+      s['color'] || '',
+      s['borderColor'] || '',
+      node.borderColor || '',
+      node.borderWidth ?? '',
+      node.selected ? '1' : '0',
+    ].join('|');
+  }
+
+  getNodeFill(node: WorkflowNode): string {
+    return node.style?.['backgroundColor'] || 'var(--ngx-workflow-surface, #ffffff)';
+  }
+
+  getNodeStroke(node: WorkflowNode): string {
+    return (
+      node.borderColor ||
+      node.style?.['borderColor'] ||
+      (node.selected ? 'var(--ngx-workflow-primary, #2dd4bf)' : 'var(--ngx-workflow-border, #e5e7eb)')
+    );
+  }
+
+  getNodeStrokeWidth(node: WorkflowNode): number {
+    if (node.borderWidth != null) return node.borderWidth;
+    return node.selected ? 2 : 1.5;
+  }
+
+  getNodeLabelFill(node: WorkflowNode): string {
+    return node.style?.['color'] || 'var(--ngx-workflow-text-primary, #111827)';
+  }
+
   onEdgePropertiesChange(changes: Partial<Edge>): void {
-    if (this.selectedEdgeForEditing) {
-      this.diagramStateService.updateEdge(this.selectedEdgeForEditing.id, changes);
-      // Update local reference to keep sidebar in sync
-      this.selectedEdgeForEditing = { ...this.selectedEdgeForEditing, ...changes };
+    if (!changes || typeof changes !== 'object' || changes instanceof Event) {
+      return;
     }
+    if (!this.selectedEdgeForEditing) return;
+
+    const id = this.selectedEdgeForEditing.id;
+    this.diagramStateService.updateEdge(id, changes);
+
+    const updated = this.diagramStateService.edges().find((e) => e.id === id);
+    if (updated) {
+      this.selectedEdgeForEditing = {
+        ...updated,
+        style: { ...(updated.style || {}) },
+        labelStyle: { ...(updated.labelStyle || {}) },
+        animationStyle: { ...(updated.animationStyle || {}) },
+      };
+    }
+    this.cdRef.detectChanges();
+  }
+
+  trackEdgeStyle(edge: Edge): string {
+    const s = edge.style || {};
+    const a = edge.animationStyle || {};
+    const l = edge.labelStyle || {};
+    return [
+      edge.id,
+      s['stroke'] || '',
+      s['strokeWidth'] || '',
+      s['strokeDasharray'] || '',
+      a['fill'] || '',
+      l['fill'] || '',
+      edge.animated ? '1' : '0',
+      edge.animationType || 'flow',
+      edge.animationDuration || '',
+      edge.markerStart || '',
+      edge.markerEnd || '',
+      edge.selected ? '1' : '0',
+    ].join('|');
+  }
+
+  /** Treat missing animationType as 'flow' (matches sidebar default). */
+  getEdgeAnimationType(edge: Edge): 'flow' | 'dot' | 'both' {
+    return edge.animationType || 'flow';
+  }
+
+  isEdgeFlowAnimated(edge: Edge): boolean {
+    if (!edge.animated) return false;
+    const type = this.getEdgeAnimationType(edge);
+    return type === 'flow' || type === 'both';
+  }
+
+  isEdgeDotAnimated(edge: Edge): boolean {
+    if (!edge.animated) return false;
+    const type = this.getEdgeAnimationType(edge);
+    return type === 'dot' || type === 'both';
+  }
+
+  /** Effective stroke used by the path and matching marker fills. */
+  getEdgeStrokeColor(edge: Edge): string {
+    if (edge.style?.['stroke']) return String(edge.style['stroke']);
+    if (edge.selected) return 'var(--ngx-workflow-primary, #2dd4bf)';
+    return 'var(--ngx-workflow-edge-stroke, #94a3b8)';
+  }
+
+  /** Custom width only; omit when unset so CSS selected/default widths apply. */
+  getEdgeStrokeWidth(edge: Edge): number | null {
+    const raw = edge.style?.['strokeWidth'];
+    if (raw == null || raw === '') return null;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  /**
+   * Flow animation needs a dash pattern. Prefer an explicit line style;
+   * otherwise use the animated default.
+   */
+  getEdgeStrokeDasharray(edge: Edge): string | null {
+    const custom = edge.style?.['strokeDasharray'];
+    if (custom) return String(custom);
+    if (this.isEdgeFlowAnimated(edge)) return '10';
+    if (edge.type === 'dashed') return '5,5';
+    return null;
+  }
+
+  getEdgeAnimationFill(edge: Edge): string {
+    return edge.animationStyle?.['fill'] || '#3b82f6';
   }
 
   /**
@@ -778,7 +917,8 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
   // Input for node resizing (global toggle)
   readonly nodesResizable = input<boolean>(true);
 
-  private resizeObserver!: ResizeObserver;
+  private resizeObserver: ResizeObserver | null = null;
+  private hasInitialFitted = false;
 
   // Helper to check if a connection is allowed
   private isValidConnection(
@@ -1004,6 +1144,12 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
     effect(() => {
       const inputNodes = this.nodes();
       if (inputNodes && inputNodes.length > 0 && !this.isDraggingNode) {
+        // Skip no-op writes — avoids parent ↔ child feedback loops via nodesChange
+        if (inputNodes === this.diagramStateService.nodes()) return;
+        // Don't clobber local store updates with a stale parent snapshot mid-emit
+        if (this.syncingNodesToParent) {
+          return;
+        }
         this.diagramStateService.nodes.set(inputNodes);
       }
     });
@@ -1012,8 +1158,24 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
       // Controlled mode only: sync parent edges, including [] after the last edge is deleted
       const inputEdges = this.edges();
       if (inputEdges !== undefined) {
+        if (inputEdges === this.diagramStateService.edges()) return;
+        if (this.syncingEdgesToParent) {
+          return;
+        }
         this.diagramStateService.edges.set(inputEdges);
       }
+    });
+
+    // Scope diagram theme to this host only — never write document.documentElement
+    effect(() => {
+      const mode = this.colorMode();
+      const host = this.el.nativeElement;
+      if (!mode) {
+        this.themeService.unregisterHost(host);
+        return;
+      }
+      this.themeService.registerHost(host);
+      this.themeService.setColorMode(mode);
     });
   }
 
@@ -1073,9 +1235,6 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
       this.diagramStateService.setViewport(this.initialViewport()!);
     }
 
-    // Set initial color mode
-    this.themeService.setColorMode(this.colorMode());
-
     // Subscribe to state changes and emit events
     this.subscriptions.add(
       this.diagramStateService.nodeClick.subscribe((node: WorkflowNode) => this.nodeClick.emit(node))
@@ -1090,46 +1249,81 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
       this.nodes$.subscribe(nodes => {
         if (!this.isDraggingNode) {
           this.updatePathFinder(nodes);
+          // Prevent parent→service effect from applying a stale snapshot over this emit
+          this.syncingNodesToParent = true;
           this.nodesChange.emit(nodes);
+          queueMicrotask(() => {
+            this.syncingNodesToParent = false;
+          });
         }
       })
     );
     this.subscriptions.add(
-      this.diagramStateService.edgesChange.subscribe((edges: Edge[]) => this.edgesChange.emit(edges))
+      this.diagramStateService.edgesChange.subscribe((edges: Edge[]) => {
+        this.syncingEdgesToParent = true;
+        this.edgesChange.emit(edges);
+        queueMicrotask(() => {
+          this.syncingEdgesToParent = false;
+        });
+      })
     );
 
-    // Initialize ResizeObserver
-    this.resizeObserver = new ResizeObserver(entries => {
-      for (const entry of entries) {
-        const { width, height } = entry.contentRect;
-        this.diagramStateService.setContainerDimensions({ width, height });
-      }
-    });
+    // Browser-only observers / listeners (skipped during prerender / SSR)
+    if (typeof window !== 'undefined' && typeof ResizeObserver !== 'undefined') {
+      // Initialize ResizeObserver outside Angular to avoid CD storms on every frame
+      this.ngZone.runOutsideAngular(() => {
+        this.resizeObserver = new ResizeObserver((entries) => {
+          for (const entry of entries) {
+            const { width, height } = entry.contentRect;
+            const prev = this.diagramStateService.containerDimensions();
+            const changed =
+              Math.abs(prev.width - width) >= 0.5 || Math.abs(prev.height - height) >= 0.5;
+            if (!changed) continue;
 
-    // We need to observe the container, but we only have el (host) or svgRef.
-    // Let's observe the host element.
-    this.resizeObserver.observe(this.el.nativeElement);
+            this.ngZone.run(() => {
+              this.diagramStateService.setContainerDimensions({ width, height });
+              if (this.fitViewOnInit() && !this.hasInitialFitted && width > 40 && height > 40) {
+                this.hasInitialFitted = true;
+                requestAnimationFrame(() => {
+                  this.ngZone.run(() => {
+                    this.fitView();
+                    this.cdRef.markForCheck();
+                  });
+                });
+              } else {
+                this.cdRef.markForCheck();
+              }
+            });
+          }
+        });
+        this.resizeObserver.observe(this.el.nativeElement);
+      });
 
-    this.ngZone.runOutsideAngular(() => {
-      this.unlistenPointerMove = this.renderer.listen(this.svgRef.nativeElement, 'pointermove', (event: PointerEvent) => {
-        this.onPointerMove(event);
-      });
-      this.unlistenPointerUp = this.renderer.listen(this.svgRef.nativeElement, 'pointerup', (event: PointerEvent) => {
-        this.onPointerUp(event);
-      });
-      this.unlistenPointerLeave = this.renderer.listen(this.svgRef.nativeElement, 'pointerleave', (event: PointerEvent) => {
-        this.onPointerLeave(event);
-      });
+      this.ngZone.runOutsideAngular(() => {
+        this.unlistenPointerMove = this.renderer.listen(this.svgRef.nativeElement, 'pointermove', (event: PointerEvent) => {
+          this.onPointerMove(event);
+        });
+        this.unlistenPointerUp = this.renderer.listen(this.svgRef.nativeElement, 'pointerup', (event: PointerEvent) => {
+          this.onPointerUp(event);
+        });
+        this.unlistenPointerLeave = this.renderer.listen(this.svgRef.nativeElement, 'pointerleave', (event: PointerEvent) => {
+          this.onPointerLeave(event);
+        });
 
-      // Window-level space-panning listeners outside Angular Zone to avoid
-      // triggering change detection on every mouse pixel movement globally.
-      this.unlistenWindowPointerMove = this.renderer.listen('window', 'pointermove', (event: PointerEvent) => {
-        this.onWindowPointerMove(event);
+        // Window-level space-panning listeners outside Angular Zone to avoid
+        // triggering change detection on every mouse pixel movement globally.
+        this.unlistenWindowPointerMove = this.renderer.listen('window', 'pointermove', (event: PointerEvent) => {
+          this.onWindowPointerMove(event);
+        });
+        this.unlistenWindowPointerUp = this.renderer.listen('window', 'pointerup', (event: PointerEvent) => {
+          this.onWindowPointerUp(event);
+        });
       });
-      this.unlistenWindowPointerUp = this.renderer.listen('window', 'pointerup', (event: PointerEvent) => {
-        this.onWindowPointerUp(event);
-      });
-    });
+    }
+
+    if (this.fitViewOnInit()) {
+      this.scheduleInitialFitView();
+    }
 
     // Auto-save: Load saved state if enabled
     if (this.autoSave()) {
@@ -1164,27 +1358,40 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
   }
 
   ngOnDestroy(): void {
+    this.themeService.unregisterHost(this.el.nativeElement);
     this.subscriptions.unsubscribe();
     if (this.importNotificationTimer) {
       clearTimeout(this.importNotificationTimer);
       this.importNotificationTimer = null;
     }
     if (this.autoPanInterval !== null) {
-      window.cancelAnimationFrame(this.autoPanInterval);
+      if (typeof window !== 'undefined') {
+        window.cancelAnimationFrame(this.autoPanInterval);
+      }
       this.autoPanInterval = null;
     }
     if (this.dragAnimationFrameId !== null) {
-      window.cancelAnimationFrame(this.dragAnimationFrameId);
+      if (typeof window !== 'undefined') {
+        window.cancelAnimationFrame(this.dragAnimationFrameId);
+      }
       this.dragAnimationFrameId = null;
     }
-    if (this.resizeObserver) {
-      this.resizeObserver.disconnect();
+    this.resizeObserver?.disconnect();
+    this.resizeObserver = null;
+    try {
+      this.unlistenPointerMove?.();
+      this.unlistenPointerUp?.();
+      this.unlistenPointerLeave?.();
+      this.unlistenWindowPointerMove?.();
+      this.unlistenWindowPointerUp?.();
+    } catch {
+      // DOM / window may already be torn down during prerender cleanup
     }
-    if (this.unlistenPointerMove) this.unlistenPointerMove();
-    if (this.unlistenPointerUp) this.unlistenPointerUp();
-    if (this.unlistenPointerLeave) this.unlistenPointerLeave();
-    if (this.unlistenWindowPointerMove) this.unlistenWindowPointerMove();
-    if (this.unlistenWindowPointerUp) this.unlistenWindowPointerUp();
+    this.unlistenPointerMove = null;
+    this.unlistenPointerUp = null;
+    this.unlistenPointerLeave = null;
+    this.unlistenWindowPointerMove = null;
+    this.unlistenWindowPointerUp = null;
     this.touchGestureService.detach();
     this.canvasPanZoomService.detach();
     this.nodeDragService.detach();
@@ -1500,7 +1707,7 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
       return;
     }
 
-    // Clicking on empty canvas - start box selection
+    // Clicking on empty canvas - potential box selection (shown after drag threshold)
     // If Ctrl key is NOT pressed, clear selection
     if (!event.ctrlKey && !event.metaKey) {
       this.diagramStateService.clearSelection();
@@ -1515,7 +1722,7 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
     // Emit paneClick event
     this.paneClick.emit({ event, position: { x: canvasX, y: canvasY } });
 
-    this.selectionBoxService.startBoxSelection(canvasX, canvasY);
+    this.selectionBoxService.begin(canvasX, canvasY, event.pointerId);
   }
 
 
@@ -1529,7 +1736,7 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
       this.updateConnection(event);
     } else if (this.isDraggingNode) {
       this.dragNode(event);
-    } else if (this.isBoxSelecting) {
+    } else if (this.isBoxSelecting || this.selectionBoxService.isPendingSelection) {
       this.updateBoxSelection(event);
     } else if (this.isPanning) {
       this.pan(event);
@@ -1547,7 +1754,7 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
       this.finishConnecting(event);
     } else if (this.isDraggingNode) {
       this.stopDraggingNode(event);
-    } else if (this.isBoxSelecting) {
+    } else if (this.isBoxSelecting || this.selectionBoxService.isPendingSelection) {
       this.stopBoxSelection(event);
     } else if (this.isPanning) {
       this.stopPanning(event);
@@ -1557,7 +1764,16 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
   }
 
   onPointerLeave(event: PointerEvent): void {
-    if (this.isResizing || this.isUpdatingEdge || this.isPanning || this.isSelecting || this.isDraggingNode || this.isConnecting) {
+    if (
+      this.isResizing ||
+      this.isUpdatingEdge ||
+      this.isPanning ||
+      this.isSelecting ||
+      this.isBoxSelecting ||
+      this.selectionBoxService.isPendingSelection ||
+      this.isDraggingNode ||
+      this.isConnecting
+    ) {
       this.onPointerUp(event);
     }
   }
@@ -2551,13 +2767,33 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
     }
   }
 
-  getMarkerUrl(marker: string | undefined): string | null {
+  getMarkerUrl(marker: string | undefined | null): string | null {
     if (!marker) return null;
+    const id = String(marker).trim();
+    if (!id) return null;
     // Support built-in markers or custom marker IDs
-    if (marker === 'arrow' || marker === 'arrowclosed' || marker === 'dot') {
-      return `url(#ngx-workflow__${marker})`;
+    if (id === 'arrow' || id === 'arrowclosed' || id === 'dot') {
+      return `url(#ngx-workflow__${id})`;
     }
-    return `url(#${marker})`;
+    // Legacy alias from older sidebar/tests
+    if (id === 'arrowhead') {
+      return 'url(#ngx-workflow__arrow)';
+    }
+    return `url(#${id})`;
+  }
+
+  /** Prefer per-edge tinted markers so start/end match the edge stroke color. */
+  getMarkerUrlForEdge(edge: Edge, position: 'start' | 'end'): string | null {
+    const marker = position === 'start' ? edge.markerStart : edge.markerEnd;
+    if (!marker) return null;
+    const id = String(marker).trim();
+    if (!id) return null;
+    const type =
+      id === 'arrowhead' ? 'arrow' : id === 'arrow' || id === 'arrowclosed' || id === 'dot' ? id : null;
+    if (type) {
+      return `url(#ngx-workflow__${type}-${edge.id})`;
+    }
+    return `url(#${id})`;
   }
 
   getEdgeLabelPosition(edge: Edge): XYPosition {
@@ -2663,7 +2899,8 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
   }
 
   fitView(): void {
-    const nodes = this.nodes();
+    // Prefer live service state — input can lag one tick behind mount
+    const nodes = this.diagramStateService.nodes();
     if (nodes.length === 0) return;
 
     // Calculate bounds of all nodes
@@ -2682,23 +2919,48 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
       maxY = Math.max(maxY, node.position.y + height);
     });
 
-    const boundsWidth = maxX - minX;
-    const boundsHeight = maxY - minY;
+    const boundsWidth = Math.max(maxX - minX, 1);
+    const boundsHeight = Math.max(maxY - minY, 1);
 
     // Get SVG dimensions
     const svgRect = this.svgRef.nativeElement.getBoundingClientRect();
-    const padding = 50; // Padding around nodes
+    if (svgRect.width < 10 || svgRect.height < 10) return;
 
-    // Calculate zoom to fit
-    const zoomX = (svgRect.width - padding * 2) / boundsWidth;
-    const zoomY = (svgRect.height - padding * 2) / boundsHeight;
-    const zoom = Math.min(zoomX, zoomY, 2); // Max zoom of 2x for fit view
+    // Keep padding inside the viewport — short mobile canvases used to produce negative zoom
+    const padding = Math.min(56, Math.min(svgRect.width, svgRect.height) * 0.12);
+    const availW = Math.max(svgRect.width - padding * 2, 1);
+    const availH = Math.max(svgRect.height - padding * 2, 1);
+
+    const zoomX = availW / boundsWidth;
+    const zoomY = availH / boundsHeight;
+    const minZ = this.minZoom() || 0.1;
+    const maxZ = Math.min(this.maxZoom() || 4, 1.35);
+    const zoom = Math.min(Math.max(Math.min(zoomX, zoomY), minZ), maxZ);
 
     // Calculate center position
     const x = (svgRect.width - boundsWidth * zoom) / 2 - minX * zoom;
     const y = (svgRect.height - boundsHeight * zoom) / 2 - minY * zoom;
 
     this.diagramStateService.setViewport({ x, y, zoom });
+  }
+
+  private scheduleInitialFitView(): void {
+    let attempts = 0;
+    const tryFit = () => {
+      attempts += 1;
+      const rect = this.svgRef?.nativeElement?.getBoundingClientRect();
+      const hasNodes = this.diagramStateService.nodes().length > 0;
+      if (hasNodes && rect && rect.width > 40 && rect.height > 40) {
+        this.hasInitialFitted = true;
+        this.fitView();
+        this.cdRef.markForCheck();
+        return;
+      }
+      if (attempts < 90) {
+        requestAnimationFrame(tryFit);
+      }
+    };
+    requestAnimationFrame(() => requestAnimationFrame(tryFit));
   }
 
   /**
@@ -3370,38 +3632,33 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
     const svgRect = this.svgRef.nativeElement.getBoundingClientRect();
     const viewport = this.viewport();
 
-    // Convert screen coordinates to canvas coordinates
     const canvasX = (event.clientX - svgRect.left - viewport.x) / viewport.zoom;
     const canvasY = (event.clientY - svgRect.top - viewport.y) / viewport.zoom;
 
-    this.selectionBoxEnd = { x: canvasX, y: canvasY };
-
-    // Update selected nodes in real-time
-    this.selectNodesInBox();
-  }
-
-  private selectNodesInBox(): void {
-    const box = this.getSelectionBox();
-    const nodes = this.nodes();
-
-    const nodesInBox = nodes.filter(node => this.isNodeInSelectionBox(node, box));
-    const nodeIds = nodesInBox.map(n => n.id);
-
-    if (nodeIds.length > 0) {
-      this.diagramStateService.selectNodes(nodeIds, true); // Add to selection
+    const active = this.selectionBoxService.moveTo(canvasX, canvasY);
+    if (active) {
+      // Live-update selection (replace mode, not toggle)
+      this.selectNodesInBox();
+      this.cdRef.markForCheck();
     }
   }
 
+  private selectNodesInBox(): void {
+    const box = this.selectionBoxService.getSelectionBox();
+    if (box.width <= 0 && box.height <= 0) return;
+
+    const nodes = this.nodes();
+    const nodeIds = nodes.filter((node) => this.isNodeInSelectionBox(node, box)).map((n) => n.id);
+    this.diagramStateService.selectNodes(nodeIds, false);
+  }
+
   getSelectionBox(): { x: number; y: number; width: number; height: number } {
-    const x = Math.min(this.selectionBoxStart.x, this.selectionBoxEnd.x);
-    const y = Math.min(this.selectionBoxStart.y, this.selectionBoxEnd.y);
-    const width = Math.abs(this.selectionBoxEnd.x - this.selectionBoxStart.x);
-    const height = Math.abs(this.selectionBoxEnd.y - this.selectionBoxStart.y);
-    return { x, y, width, height };
+    return this.selectionBoxService.getSelectionBox();
   }
 
   private stopBoxSelection(event?: PointerEvent): void {
-    this.selectionBoxService.stopBoxSelection();
+    this.selectionBoxService.end(event?.pointerId);
+    this.cdRef.markForCheck();
   }
 
   private isNodeInSelectionBox(node: WorkflowNode, box: { x: number; y: number; width: number; height: number }): boolean {

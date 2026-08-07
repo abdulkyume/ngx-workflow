@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.2] - 2026-08-07
+
+### Fixed
+- Diagram theme is scoped to the diagram host only (`ThemeService` no longer mutates `document.documentElement`)
+- Rubber-band selection no longer flashes on plain canvas clicks (drag threshold before the box appears)
+- Safer browser API teardown for prerender/SSR hosts (`ResizeObserver` / `window` listeners skipped when unavailable)
+- Node/edge colors from the properties sidebar now apply on the canvas (inline SVG styles; CSS no longer overrides custom fills/strokes)
+- Edge flow animation applies when `animated: true` even if `animationType` is omitted (defaults to `'flow'`)
+- Built-in edge markers (`arrow`, `arrowclosed`, `dot`) match the edge stroke color, including `rgba(...)`
+- Controlled `[nodes]` / `[edges]` sync no longer clobbers in-flight sidebar style updates
+
+### Added
+- Properties sidebar RGBA color pickers (swatch + `rgba()` text + opacity) for node background / text / border and edge stroke / label / animation colors
+
+### Changed
+- Selection box API: `begin` / `moveTo` / `end` with pending-selection state (legacy `startSelecting` aliases retained where needed)
+- Package metadata: docs homepage (`https://ngx-workflow.vercel.app`), richer keywords, `rxjs` peer, `publishConfig.access: public`
+- Public API now exports `path-finder` utilities
+- `CHANGELOG.md` is included in the published npm package
+- Properties sidebar output renamed: `(change)` → `(nodeChange)` (avoids collision with native DOM `change` from color/range inputs). `(edgeChange)` is unchanged.
+- `updateNode` / `updateEdge` deep-merge `style`, `labelStyle`, `animationStyle`, and `handleConfig`
+
+### Breaking
+- If you use `<ngx-workflow-properties-sidebar>` directly, bind `(nodeChange)` instead of `(change)` for node edits
+
 ## [0.5.1] - 2026-08-05
 
 ### Fixed

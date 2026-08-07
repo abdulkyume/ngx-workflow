@@ -61,6 +61,7 @@ export * from './lib/injection-tokens/edge-types.token';
 
 // Utils
 export * from './lib/utils/path-getters';
+export * from './lib/utils/path-finder';
 
 // Validators
 export * from './lib/validators/workflow-validators';

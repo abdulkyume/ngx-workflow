@@ -12,32 +12,45 @@
     (pointermove)="onPointerMove($event)" (pointerup)="onPointerUp($event)" (pointerleave)="onPointerUp($event)"
     (dblclick)="onDiagramDoubleClick($event)">
     <defs>
-      <pattern id="ngx-workflow__grid-pattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
-        <circle cx="0.5" cy="0.5" r="0.5" fill="#ccc" />
-      </pattern>
-
-      <!-- Arrow marker -->
-      <marker id="ngx-workflow__arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6"
-        orient="auto-start-reverse">
-        <path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke" />
+      <!-- Shared defaults (edges without a resolved per-edge marker) -->
+      <marker id="ngx-workflow__arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="12.5" markerHeight="12.5"
+        markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke" stroke="none" />
       </marker>
-
-      <!-- Arrowclosed marker (filled) -->
-      <marker id="ngx-workflow__arrowclosed" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6"
-        orient="auto-start-reverse">
-        <path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke" stroke="context-stroke" />
+      <marker id="ngx-workflow__arrowclosed" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="12.5" markerHeight="12.5"
+        markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke" stroke="context-stroke" stroke-width="1" />
       </marker>
-
-      <!-- Dot marker -->
-      <marker id="ngx-workflow__dot" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6">
+      <marker id="ngx-workflow__dot" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="10" markerHeight="10"
+        markerUnits="userSpaceOnUse">
         <circle cx="5" cy="5" r="4" fill="context-stroke" />
       </marker>
+
+      <!-- Per-edge markers tinted to match stroke (incl. rgba custom colors) -->
+      @for (edge of filteredEdges(); track trackEdgeStyle(edge)) {
+        @if (edge.markerStart || edge.markerEnd) {
+          <marker [attr.id]="'ngx-workflow__arrow-' + edge.id" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="12.5" markerHeight="12.5" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" [attr.fill]="getEdgeStrokeColor(edge)" stroke="none" />
+          </marker>
+          <marker [attr.id]="'ngx-workflow__arrowclosed-' + edge.id" viewBox="0 0 10 10" refX="10" refY="5"
+            markerWidth="12.5" markerHeight="12.5" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" [attr.fill]="getEdgeStrokeColor(edge)"
+              [attr.stroke]="getEdgeStrokeColor(edge)" stroke-width="1" />
+          </marker>
+          <marker [attr.id]="'ngx-workflow__dot-' + edge.id" viewBox="0 0 10 10" refX="5" refY="5"
+            markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse">
+            <circle cx="5" cy="5" r="4" [attr.fill]="getEdgeStrokeColor(edge)" />
+          </marker>
+        }
+      }
 
       <!-- Custom Definitions -->
       <ng-container *ngTemplateOutlet="defsTemplate()"></ng-container>
     </defs>
 
-    <rect width="100%" height="100%" fill="url(#ngx-workflow__grid-pattern)" class="ngx-workflow__background" />
+    <!-- Transparent hit-target only; patterned fill comes from ngx-workflow-background -->
+    <rect width="100%" height="100%" fill="transparent" class="ngx-workflow__background" />
 
     <g class="ngx-workflow__viewport" [attr.transform]="transform">
       <!-- Group Backgrounds (Layer 1: Bottom) -->
@@ -52,34 +65,39 @@
               [class.ngx-workflow__group-node--hover]="hoveredGroupId() === node.id">
               <!-- Only the background rect -->
               <rect [attr.width]="node.width" [attr.height]="node.height" rx="4" ry="4"
+                class="ngx-workflow__node-rect"
                 [style.fill]="node.style?.['backgroundColor'] || 'rgba(240, 240, 240, 0.5)'"
-                [style.stroke]="node.selected ? '#2563eb' : (node.style?.['borderColor'] || '#e5e7eb')"
-              [style.stroke-width]="node.selected ? 2 : 1"></rect>
+                [style.stroke]="node.selected ? '#2563eb' : (node.borderColor || node.style?.['borderColor'] || '#e5e7eb')"
+                [style.stroke-width.px]="node.selected ? 2 : 1"></rect>
             </g>
           }
         </g>
       }
 
       <!-- Edges (Layer 2: Middle) -->
-      @for (edge of filteredEdges(); track edge.id) {
+      @for (edge of filteredEdges(); track trackEdgeStyle(edge)) {
         <g [class.selected]="edge.selected"
-          [class.animated]="edge.animated && edge.animationType !== 'dot'" [class.hidden]="edge.hidden"
-          [class.animated]="edge.animated && (edge.animationType === 'flow' || edge.animationType === 'both')"
+          [class.animated]="isEdgeFlowAnimated(edge)"
           [class.hidden]="edge.hidden" [class.shadow]="edge.shadow" class="ngx-workflow__edge"
+          [class.ngx-workflow__edge--custom-stroke]="!!edge.style?.['stroke']"
           role="img" [attr.aria-label]="getEdgeAriaLabel(edge)"
           (click)="onEdgeClick($event, edge)" (dblclick)="onEdgeDoubleClick($event, edge)"
           (mouseenter)="onEdgeMouseEnter($event, edge)" (mouseleave)="onEdgeMouseLeave($event, edge)">
-          <!-- Edge path with markers -->
+          <!-- Edge path with markers — custom stroke/width as inline styles so CSS cannot override -->
           <path [attr.id]="'edge-path-' + edge.id" [attr.d]="getEdgePath(edge)" class="ngx-workflow__edge-path"
-            [style]="edge.style" [class.dashed-type]="edge.type === 'dashed'"
-            [attr.marker-start]="getMarkerUrl(edge.markerStart)" [attr.marker-end]="getMarkerUrl(edge.markerEnd)"
-            [style.strokeDasharray]="edge.style?.['strokeDasharray'] || (edge.type === 'dashed' ? '5,5' : '')"
-            [style.animationDuration]="edge.animationDuration || '1s'">
+            [class.dashed-type]="edge.type === 'dashed'"
+            [attr.marker-start]="getMarkerUrlForEdge(edge, 'start')"
+            [attr.marker-end]="getMarkerUrlForEdge(edge, 'end')"
+            [attr.stroke]="getEdgeStrokeColor(edge)"
+            [style.stroke]="getEdgeStrokeColor(edge)"
+            [style.stroke-width.px]="getEdgeStrokeWidth(edge)"
+            [style.stroke-dasharray]="getEdgeStrokeDasharray(edge)"
+            [style.animation-duration]="isEdgeFlowAnimated(edge) ? (edge.animationDuration || '1s') : null">
           </path>
           <!-- SVG Motion Animation (Dot) -->
-          @if (edge.animated && (edge.animationType === 'dot' || edge.animationType === 'both')) {
+          @if (isEdgeDotAnimated(edge)) {
             <circle r="4"
-              [attr.fill]="edge.animationStyle?.['fill'] || '#3b82f6'">
+              [style.fill]="getEdgeAnimationFill(edge)">
               <animateMotion [attr.dur]="edge.animationDuration || '2s'" repeatCount="indefinite">
                 <mpath [attr.href]="'#edge-path-' + edge.id"></mpath>
               </animateMotion>
@@ -114,7 +132,10 @@
                 @if (editingEdgeId !== edge.id && !edgeLabelTemplate && edge.label) {
                   <text
                     [attr.x]="getEdgeLabelPosition(edge).x" [attr.y]="getEdgeLabelPosition(edge).y" text-anchor="middle"
-                    dominant-baseline="middle" class="ngx-workflow__edge-label-text" [style]="edge.labelStyle">
+                    dominant-baseline="middle" class="ngx-workflow__edge-label-text"
+                    [style.fill]="edge.labelStyle?.['fill'] || edge.labelStyle?.['color'] || null"
+                    [style.font-size]="edge.labelStyle?.['fontSize'] || null"
+                    [style.font-weight]="edge.labelStyle?.['fontWeight'] || null">
                     <!-- Label background -->
                     @if (edge.labelBgStyle) {
                       <tspan class="ngx-workflow__edge-label-bg" [style]="edge.labelBgStyle"></tspan>
@@ -158,13 +179,15 @@
         }
 
         <!-- Nodes -->
-        @for (node of sortedNodes(); track node.id) {
+        @for (node of sortedNodes(); track trackNodeStyle(node)) {
           <g class="ngx-workflow__node" [attr.data-id]="node.id"
             [attr.transform]="'translate(' + (node._renderPosition?.x ?? node.position.x) + ',' + (node._renderPosition?.y ?? node.position.y) + ')'"
             role="button" tabindex="0"
             [attr.aria-label]="getNodeAriaLabel(node)"
             [attr.aria-selected]="node.selected || false"
+            [class.selected]="!!node.selected"
             [class.ngx-workflow__node--focused]="focusedNodeId() === node.id"
+            [class.ngx-workflow__node--custom-stroke]="!!(node.borderColor || node.style?.['borderColor'])"
             (pointerdown)="onNodePointerDown($event, node)" (dblclick)="onNodeDoubleClick($event, node)"
             (mouseenter)="onNodeMouseEnter($event, node)" (mouseleave)="onNodeMouseLeave($event, node)"
             (mousemove)="onNodeMouseMove($event, node)"
@@ -174,7 +197,16 @@
             @if (isCustomNode(node)) {
               <foreignObject [attr.width]="node.width || defaultNodeWidth"
                 [attr.height]="node.height || defaultNodeHeight" style="overflow: visible;">
-                <div xmlns="http://www.w3.org/1999/xhtml" style="width: 100%; height: 100%;">
+                <div xmlns="http://www.w3.org/1999/xhtml" class="ngx-workflow__custom-node-host"
+                  [style.background]="node.style?.['backgroundColor'] || null"
+                  [style.color]="node.style?.['color'] || null"
+                  [style.border-color]="node.borderColor || node.style?.['borderColor'] || null"
+                  [style.border-style]="node.style?.['backgroundColor'] || node.borderColor || node.style?.['borderColor'] ? 'solid' : null"
+                  [style.border-width.px]="node.borderWidth ?? 1"
+                  [style.border-radius.px]="3"
+                  [style.width.%]="100"
+                  [style.height.%]="100"
+                  [style.box-sizing]="'border-box'">
             <ng-container *ngComponentOutlet="getCustomNodeComponent(node.type); inputs: { 
               id: node.id, 
               data: node.data, 
@@ -192,13 +224,14 @@
             <!-- Default Node Template (Rect + Text) -->
             @if (!isCustomNode(node) && node.type !== 'group') {
               <g>
-                <!-- Node outline and background (visual + dragging) -->
+                <!-- Inline style fill/stroke beat stylesheet rules (RGBA from sidebar) -->
                 <rect [attr.width]="node.width || defaultNodeWidth" [attr.height]="node.height || defaultNodeHeight" rx="3"
                   ry="3" class="ngx-workflow__node-rect"
-                  [style.filter]="node.shadow === true ? 'drop-shadow(0 10px 15px rgba(0,0,0,0.2))' : (node.shadow || null)"
+                  [style.fill]="getNodeFill(node)"
+                  [style.stroke]="getNodeStroke(node)"
+                  [style.stroke-width.px]="getNodeStrokeWidth(node)"
                   [style.stroke-dasharray]="node.borderStyle === 'dashed' ? '5,5' : (node.borderStyle === 'dotted' ? '2,2' : null)"
-                  [style.stroke]="node.borderColor" [style.stroke-width]="node.borderWidth"
-                [style.fill]="node.style?.['backgroundColor'] || 'var(--ngx-workflow-surface, #ffffff)'"></rect>
+                  [style.filter]="node.shadow === true ? 'drop-shadow(0 10px 15px rgba(0,0,0,0.2))' : (node.shadow || null)"></rect>
                 <!-- Node Badges -->
                 @if (node.badges?.length) {
                   <g>
@@ -217,7 +250,7 @@
                 <!-- Node Label -->
                 <text [attr.x]="(node.width || defaultNodeWidth) / 2" [attr.y]="(node.height || defaultNodeHeight) / 2"
                   text-anchor="middle" dominant-baseline="middle" class="ngx-workflow__node-label"
-                  [style.fill]="node.style?.['color'] || 'var(--ngx-workflow-text-primary)'">
+                  [style.fill]="getNodeLabelFill(node)">
                   {{ node.label }}
                 </text>
               </g>
@@ -359,26 +392,34 @@
 
 
     <!-- Unified Top Bar -->
-    <div class="ngx-workflow__top-bar">
-      <ngx-workflow-search-controls [nodes]="nodes()" (searchResults)="onSearchResults($event)"
-        (resultSelected)="onSearchResultSelected($event)" (close)="onSearchClose()">
-      </ngx-workflow-search-controls>
+    @if (showSearchControls() || showLayoutControls() || showExportControls()) {
+      <div class="ngx-workflow__top-bar">
+        @if (showSearchControls()) {
+          <ngx-workflow-search-controls [nodes]="nodes()" (searchResults)="onSearchResults($event)"
+            (resultSelected)="onSearchResultSelected($event)" (close)="onSearchClose()">
+          </ngx-workflow-search-controls>
+        }
 
-      <div class="divider"></div>
+        @if (showSearchControls() && (showLayoutControls() || showExportControls())) {
+          <div class="divider"></div>
+        }
 
-      @if (showLayoutControls()) {
-        <ngx-workflow-layout-alignment-controls
-        (applyLayout)="onApplyLayout($any($event))"></ngx-workflow-layout-alignment-controls>
-      }
+        @if (showLayoutControls()) {
+          <ngx-workflow-layout-alignment-controls
+          (applyLayout)="onApplyLayout($any($event))"></ngx-workflow-layout-alignment-controls>
+        }
 
-      <div class="divider"></div>
+        @if (showLayoutControls() && showExportControls()) {
+          <div class="divider"></div>
+        }
 
-      @if (showExportControls()) {
-        <ngx-workflow-export-controls (exportJSON)="exportToJSON()"
-          (importJSON)="triggerImport()">
-        </ngx-workflow-export-controls>
-      }
-    </div>
+        @if (showExportControls()) {
+          <ngx-workflow-export-controls (exportJSON)="exportToJSON()"
+            (importJSON)="triggerImport()">
+          </ngx-workflow-export-controls>
+        }
+      </div>
+    }
 
     @if (showMinimap()) {
       <ngx-workflow-minimap></ngx-workflow-minimap>
@@ -402,7 +443,7 @@
     }
 
     <ngx-workflow-properties-sidebar [node]="selectedNodeForEditing" [edge]="selectedEdgeForEditing"
-      (close)="closeSidebar()" (change)="onPropertiesChange($event)"
+      (close)="closeSidebar()" (nodeChange)="onPropertiesChange($event)"
     (edgeChange)="onEdgePropertiesChange($event)"></ngx-workflow-properties-sidebar>
 
     <!-- Node Toolbars (projected content) -->

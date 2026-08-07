@@ -22,9 +22,11 @@
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
-/* Dark Mode - Override variables when parent has dark theme */
-:host-context(html[data-theme='dark']),
-:host-context(html.dark-theme) {
+/* Dark Mode - Override variables when this host or an ancestor is dark */
+:host([data-theme='dark']),
+:host(.dark-theme),
+:host-context([data-theme='dark']),
+:host-context(.dark-theme) {
   --ngx-workflow-surface: #374151;
   --ngx-workflow-border: #4b5563;
   --ngx-workflow-text-primary: #f9fafb;
@@ -75,8 +77,8 @@
 }
 
 .ngx-workflow__background {
-  fill: url(#ngx-workflow__grid-pattern);
-  opacity: 0.6;
+  fill: transparent;
+  pointer-events: all;
 }
 
 .ngx-workflow__viewport {
@@ -94,36 +96,40 @@
     outline: none;
   }
 
-  /* Node Body */
+  /* Node body: fill/stroke come from inline [style.*] bindings (sidebar RGBA).
+     Do not set fill/stroke here — stylesheet rules beat SVG presentation attrs
+     and were blocking property-panel colors. */
   .ngx-workflow__node-rect {
-    fill: var(--ngx-workflow-surface);
-    stroke: var(--ngx-workflow-border);
-    stroke-width: 1.5px;
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.05));
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: filter 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+      transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     pointer-events: all;
   }
 
   .ngx-workflow__node-label {
     font-size: 12px;
     font-weight: 500;
-    fill: var(--ngx-workflow-text-primary);
     pointer-events: none;
     user-select: none;
   }
 
-  /* Hover State */
+  /* Hover / selected: glow only — never override custom stroke from sidebar */
   &:hover .ngx-workflow__node-rect {
-    stroke: var(--ngx-workflow-primary);
     filter: drop-shadow(0 4px 6px rgba(0,0,0,0.08));
     transform: translateY(-1px);
   }
 
-  /* Selected State */
   &.selected .ngx-workflow__node-rect {
+    filter: drop-shadow(0 0 10px color-mix(in srgb, var(--ngx-workflow-primary, #2dd4bf) 40%, transparent));
+  }
+
+  &:hover:not(.ngx-workflow__node--custom-stroke) .ngx-workflow__node-rect {
+    stroke: var(--ngx-workflow-primary);
+  }
+
+  &.selected:not(.ngx-workflow__node--custom-stroke) .ngx-workflow__node-rect {
     stroke: var(--ngx-workflow-primary, #2dd4bf);
     stroke-width: 2px;
-    filter: drop-shadow(0 0 10px color-mix(in srgb, var(--ngx-workflow-primary, #2dd4bf) 40%, transparent));
   }
 
   /* Dragging State */
@@ -137,8 +143,6 @@
   }
 
   &.highlighted .ngx-workflow__node-rect {
-    stroke: var(--ngx-workflow-primary);
-    stroke-width: 2px;
     filter: drop-shadow(0 0 0 4px rgba(59, 130, 246, 0.4));
   }
 
@@ -160,8 +164,10 @@
 }
 
 /* Dark mode node adjustments */
-:host-context(html[data-theme='dark']),
-:host-context(html.dark-theme) {
+:host([data-theme='dark']),
+:host(.dark-theme),
+:host-context([data-theme='dark']),
+:host-context(.dark-theme) {
   .ngx-workflow__node-rect {
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
   }
@@ -188,9 +194,10 @@ foreignObject {
 
   &-path {
     fill: none;
+    /* Default stroke only — custom colors use inline [style.stroke] from sidebar */
     stroke: var(--ngx-workflow-edge-stroke, #94a3b8);
     stroke-width: 2;
-    transition: stroke 0.2s ease, stroke-width 0.2s ease;
+    transition: filter 0.2s ease;
     pointer-events: stroke;
     cursor: pointer;
   }
@@ -203,21 +210,27 @@ foreignObject {
     cursor: pointer;
   }
 
-  /* Hover State */
-  &:hover .ngx-workflow__edge-path {
+  /* Hover / selected: glow only when a custom stroke is set */
+  &:hover:not(.ngx-workflow__edge--custom-stroke) .ngx-workflow__edge-path {
     stroke: var(--ngx-workflow-primary);
   }
 
-  /* Selected State */
   &.selected .ngx-workflow__edge-path {
-    stroke: var(--ngx-workflow-primary, #2dd4bf);
-    stroke-width: 3;
     filter: drop-shadow(0 0 6px color-mix(in srgb, var(--ngx-workflow-primary, #2dd4bf) 45%, transparent));
   }
 
+  &.selected:not(.ngx-workflow__edge--custom-stroke) .ngx-workflow__edge-path {
+    stroke: var(--ngx-workflow-primary, #2dd4bf);
+    stroke-width: 3;
+  }
+
   &.animated .ngx-workflow__edge-path {
+    /* Dash pattern also set inline when animated; keep CSS fallback */
     stroke-dasharray: 10;
-    animation: flowAnimation 1s linear infinite;
+    animation-name: flowAnimation;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    animation-duration: 1s; /* overridden by [style.animation-duration] */
   }
 
   @media (prefers-reduced-motion: reduce) {

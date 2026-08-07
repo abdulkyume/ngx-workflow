@@ -324,10 +324,18 @@ export class DiagramStateService {
     this.undoRedoService.saveState(this.getCurrentState());
     this.edges.update((currentEdges) =>
       currentEdges.map((edge) => {
-        if (edge.id === id) {
-          return { ...edge, ...changes };
+        if (edge.id !== id) return edge;
+        const next: Edge = { ...edge, ...changes };
+        if (changes.style) {
+          next.style = { ...(edge.style || {}), ...changes.style };
         }
-        return edge;
+        if (changes.labelStyle) {
+          next.labelStyle = { ...(edge.labelStyle || {}), ...changes.labelStyle };
+        }
+        if (changes.animationStyle) {
+          next.animationStyle = { ...(edge.animationStyle || {}), ...changes.animationStyle };
+        }
+        return next;
       })
     );
   }
@@ -355,10 +363,27 @@ export class DiagramStateService {
   // --- Viewport Management ---
 
   setViewport(viewport: Partial<Viewport>): void {
-    this.viewport.update((currentViewport) => ({ ...currentViewport, ...viewport }));
+    this.viewport.update((currentViewport) => {
+      const next = { ...currentViewport, ...viewport };
+      if (
+        next.x === currentViewport.x &&
+        next.y === currentViewport.y &&
+        next.zoom === currentViewport.zoom
+      ) {
+        return currentViewport;
+      }
+      return next;
+    });
   }
 
   setContainerDimensions(dimensions: { width: number; height: number }): void {
+    const current = this.containerDimensions();
+    if (
+      Math.abs(current.width - dimensions.width) < 0.5 &&
+      Math.abs(current.height - dimensions.height) < 0.5
+    ) {
+      return;
+    }
     this.containerDimensions.set(dimensions);
   }
 
@@ -893,10 +918,16 @@ export class DiagramStateService {
     }
     this.nodes.update((nodes) =>
       nodes.map((n) => {
-        if (n.id === id) {
-          return { ...n, ...changes };
+        if (n.id !== id) return n;
+        const next: Node = { ...n, ...changes };
+        // Deep-merge style so partial sidebar color updates keep other style keys
+        if (changes.style) {
+          next.style = { ...(n.style || {}), ...changes.style };
         }
-        return n;
+        if (changes.handleConfig) {
+          next.handleConfig = { ...(n.handleConfig || {}), ...changes.handleConfig };
+        }
+        return next;
       })
     );
   }
@@ -1599,29 +1630,32 @@ export class DiagramStateService {
   }
 
   // Box Selection Methods
+  private boxSelectionOrigin: { x: number; y: number } | null = null;
+
   startBoxSelection(x: number, y: number): void {
+    this.boxSelectionOrigin = { x, y };
     this.selectionBox.set({ x, y, width: 0, height: 0 });
   }
 
   updateBoxSelection(x: number, y: number): void {
-    const box = this.selectionBox();
-    if (!box) return;
-
-    // Calculate width and height based on drag direction
-    const width = x - box.x;
-    const height = y - box.y;
+    const origin = this.boxSelectionOrigin;
+    if (!origin) return;
 
     this.selectionBox.set({
-      x: width < 0 ? x : box.x,
-      y: height < 0 ? y : box.y,
-      width: Math.abs(width),
-      height: Math.abs(height),
+      x: Math.min(origin.x, x),
+      y: Math.min(origin.y, y),
+      width: Math.abs(x - origin.x),
+      height: Math.abs(y - origin.y),
     });
   }
 
   endBoxSelection(): void {
     const box = this.selectionBox();
-    if (!box) return;
+    this.boxSelectionOrigin = null;
+    if (!box || (box.width < 1 && box.height < 1)) {
+      this.selectionBox.set(null);
+      return;
+    }
 
     // Select all nodes that intersect with the selection box
     const currentNodes = this.nodes();
@@ -1646,6 +1680,7 @@ export class DiagramStateService {
   }
 
   cancelBoxSelection(): void {
+    this.boxSelectionOrigin = null;
     this.selectionBox.set(null);
   }
 

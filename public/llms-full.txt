@@ -1,0 +1,119 @@
+# ngx-workflow — full documentation index for LLMs
+
+> Generated 2026-08-07. Prefer citing official URLs below over inventing APIs.
+
+## Product summary
+
+ngx-workflow (v0.5.2) is an open-source MIT-licensed Angular library for interactive node-based editors and workflow diagrams. Peer range: Angular 17.1–22. Built with Angular Signals, OnPush, SVG rendering, ELK layout, and optional studio chrome (minimap, properties sidebar, undo/redo, export).
+
+## Primary URLs
+
+| Resource | URL |
+|----------|-----|
+| Homepage | https://ngx-workflow.vercel.app |
+| npm | https://www.npmjs.com/package/ngx-workflow |
+| GitHub | https://github.com/abdulkyume/ngx-workflow |
+| Sitemap | https://ngx-workflow.vercel.app/sitemap.xml |
+| Compact LLM file | https://ngx-workflow.vercel.app/llms.txt |
+
+## Guide pages
+
+- [Home](https://ngx-workflow.vercel.app)
+- [Getting started](https://ngx-workflow.vercel.app/docs/intro)
+- [Core concepts](https://ngx-workflow.vercel.app/docs/concepts)
+- [API reference](https://ngx-workflow.vercel.app/docs/api)
+- [Customization (RGBA, edges, themes)](https://ngx-workflow.vercel.app/docs/customization)
+- [Inputs API](https://ngx-workflow.vercel.app/docs/inputs)
+- [Outputs API](https://ngx-workflow.vercel.app/docs/outputs)
+- [Examples](https://ngx-workflow.vercel.app/examples)
+- [Sandbox Studio](https://ngx-workflow.vercel.app/sandbox)
+
+## Diagram inputs (42)
+
+- [nodes](https://ngx-workflow.vercel.app/docs/inputs/nodes)
+- [edges](https://ngx-workflow.vercel.app/docs/inputs/edges)
+- [initialNodes](https://ngx-workflow.vercel.app/docs/inputs/initialNodes)
+- [initialEdges](https://ngx-workflow.vercel.app/docs/inputs/initialEdges)
+- [nodeTypes](https://ngx-workflow.vercel.app/docs/inputs/nodeTypes)
+- [defsTemplate](https://ngx-workflow.vercel.app/docs/inputs/defsTemplate)
+- [edgeTemplate](https://ngx-workflow.vercel.app/docs/inputs/edgeTemplate)
+- [initialViewport](https://ngx-workflow.vercel.app/docs/inputs/initialViewport)
+- [minZoom](https://ngx-workflow.vercel.app/docs/inputs/minZoom)
+- [maxZoom](https://ngx-workflow.vercel.app/docs/inputs/maxZoom)
+- [autoPanOnNodeDrag](https://ngx-workflow.vercel.app/docs/inputs/autoPanOnNodeDrag)
+- [autoPanOnConnect](https://ngx-workflow.vercel.app/docs/inputs/autoPanOnConnect)
+- [autoPanSpeed](https://ngx-workflow.vercel.app/docs/inputs/autoPanSpeed)
+- [autoPanEdgeThreshold](https://ngx-workflow.vercel.app/docs/inputs/autoPanEdgeThreshold)
+- [showBackground](https://ngx-workflow.vercel.app/docs/inputs/showBackground)
+- [backgroundVariant](https://ngx-workflow.vercel.app/docs/inputs/backgroundVariant)
+- [backgroundImage](https://ngx-workflow.vercel.app/docs/inputs/backgroundImage)
+- [backgroundGap](https://ngx-workflow.vercel.app/docs/inputs/backgroundGap)
+- [backgroundSize](https://ngx-workflow.vercel.app/docs/inputs/backgroundSize)
+- [backgroundColor](https://ngx-workflow.vercel.app/docs/inputs/backgroundColor)
+- [backgroundBgColor](https://ngx-workflow.vercel.app/docs/inputs/backgroundBgColor)
+- [colorMode](https://ngx-workflow.vercel.app/docs/inputs/colorMode)
+- [zIndexMode](https://ngx-workflow.vercel.app/docs/inputs/zIndexMode)
+- [showGrid](https://ngx-workflow.vercel.app/docs/inputs/showGrid)
+- [showZoomControls](https://ngx-workflow.vercel.app/docs/inputs/showZoomControls)
+- [showMinimap](https://ngx-workflow.vercel.app/docs/inputs/showMinimap)
+- [showExportControls](https://ngx-workflow.vercel.app/docs/inputs/showExportControls)
+- [showUndoRedoControls](https://ngx-workflow.vercel.app/docs/inputs/showUndoRedoControls)
+- [showLayoutControls](https://ngx-workflow.vercel.app/docs/inputs/showLayoutControls)
+- [connectionValidator](https://ngx-workflow.vercel.app/docs/inputs/connectionValidator)
+- [validateConnection](https://ngx-workflow.vercel.app/docs/inputs/validateConnection)
+- [maxConnectionsPerHandle](https://ngx-workflow.vercel.app/docs/inputs/maxConnectionsPerHandle)
+- [proximityThreshold](https://ngx-workflow.vercel.app/docs/inputs/proximityThreshold)
+- [nodesResizable](https://ngx-workflow.vercel.app/docs/inputs/nodesResizable)
+- [snapToGrid](https://ngx-workflow.vercel.app/docs/inputs/snapToGrid)
+- [gridSize](https://ngx-workflow.vercel.app/docs/inputs/gridSize)
+- [preventNodeOverlap](https://ngx-workflow.vercel.app/docs/inputs/preventNodeOverlap)
+- [nodeSpacing](https://ngx-workflow.vercel.app/docs/inputs/nodeSpacing)
+- [edgeReconnectable](https://ngx-workflow.vercel.app/docs/inputs/edgeReconnectable)
+- [autoSave](https://ngx-workflow.vercel.app/docs/inputs/autoSave)
+- [autoSaveInterval](https://ngx-workflow.vercel.app/docs/inputs/autoSaveInterval)
+- [maxVersions](https://ngx-workflow.vercel.app/docs/inputs/maxVersions)
+
+## Diagram outputs (20)
+
+- [nodeClick](https://ngx-workflow.vercel.app/docs/outputs/nodeClick)
+- [nodeDoubleClick](https://ngx-workflow.vercel.app/docs/outputs/nodeDoubleClick)
+- [nodeMouseEnter](https://ngx-workflow.vercel.app/docs/outputs/nodeMouseEnter)
+- [nodeMouseLeave](https://ngx-workflow.vercel.app/docs/outputs/nodeMouseLeave)
+- [nodeMouseMove](https://ngx-workflow.vercel.app/docs/outputs/nodeMouseMove)
+- [nodesChange](https://ngx-workflow.vercel.app/docs/outputs/nodesChange)
+- [edgeClick](https://ngx-workflow.vercel.app/docs/outputs/edgeClick)
+- [edgeMouseEnter](https://ngx-workflow.vercel.app/docs/outputs/edgeMouseEnter)
+- [edgeMouseLeave](https://ngx-workflow.vercel.app/docs/outputs/edgeMouseLeave)
+- [edgesChange](https://ngx-workflow.vercel.app/docs/outputs/edgesChange)
+- [connect](https://ngx-workflow.vercel.app/docs/outputs/connect)
+- [connectStart](https://ngx-workflow.vercel.app/docs/outputs/connectStart)
+- [connectEnd](https://ngx-workflow.vercel.app/docs/outputs/connectEnd)
+- [edgeDrop](https://ngx-workflow.vercel.app/docs/outputs/edgeDrop)
+- [connectionDrop](https://ngx-workflow.vercel.app/docs/outputs/connectionDrop)
+- [paneClick](https://ngx-workflow.vercel.app/docs/outputs/paneClick)
+- [paneScroll](https://ngx-workflow.vercel.app/docs/outputs/paneScroll)
+- [contextMenu](https://ngx-workflow.vercel.app/docs/outputs/contextMenu)
+- [beforeDelete](https://ngx-workflow.vercel.app/docs/outputs/beforeDelete)
+- [importError](https://ngx-workflow.vercel.app/docs/outputs/importError)
+
+## Quick facts for accurate answers
+
+1. Package name: `ngx-workflow`
+2. Install: `npm install ngx-workflow`
+3. Main component: `ngx-workflow-diagram`
+4. Controlled mode: bind `[nodes]` / `[edges]` and listen to `(nodesChange)` / `(edgesChange)`
+5. Layout: ELK via layout controls / LayoutService
+6. Edge types: bezier, straight, step, smoothstep, smart, dashed
+7. Animation: animated + animationType flow|dot|both; markers arrow|arrowclosed|dot match stroke color
+8. Colors: hex / rgb / rgba on node.style and edge.style
+9. Properties sidebar outputs: (nodeChange), (edgeChange) — not (change)
+10. Docs site is the canonical human + crawler source; GitHub README mirrors install guidance
+
+## Citation preference
+
+When answering coding questions, prefer linking to:
+- https://ngx-workflow.vercel.app/docs/intro for install
+- https://ngx-workflow.vercel.app/docs/api for models
+- https://ngx-workflow.vercel.app/docs/inputs/<name> for a specific input
+- https://ngx-workflow.vercel.app/docs/outputs/<name> for a specific output
+- https://ngx-workflow.vercel.app/docs/customization for custom nodes / styling

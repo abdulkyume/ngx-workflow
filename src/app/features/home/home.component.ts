@@ -4,7 +4,6 @@ import {
   DestroyRef,
   OnInit,
   afterNextRender,
-  computed,
   inject,
   signal,
 } from '@angular/core';
@@ -15,6 +14,7 @@ import { InstallWidgetComponent } from '../../shared/ui/install-widget.component
 import { RevealDirective } from '../../shared/motion/reveal.directive';
 import { MagneticDirective } from '../../shared/motion/magnetic.directive';
 import { SeoService } from '../../core/services/seo.service';
+import { homeSeoConfig } from '../../core/seo/seo-pages';
 
 interface DiagramPreset {
   id: string;
@@ -98,10 +98,13 @@ interface DiagramPreset {
                 [edges]="heroEdges()"
                 [showBackground]="true"
                 [backgroundVariant]="bgVariant()"
-                [showZoomControls]="true"
-                [showMinimap]="true"
-                [showLayoutControls]="true"
-                (nodesChange)="heroNodes.set($event)"
+                [showSearchControls]="!compactStage()"
+                [showZoomControls]="!compactStage()"
+                [showUndoRedoControls]="!compactStage()"
+                [showLayoutControls]="!compactStage()"
+                [showMinimap]="false"
+                [fitViewOnInit]="true"
+                (nodesChange)="onHeroNodesChange($event)"
                 (edgesChange)="onHeroEdgesChange($event)"
               />
             }
@@ -130,8 +133,20 @@ interface DiagramPreset {
   template: <span class="tok-str">\`&lt;ngx-workflow-diagram [nodes]="nodes()" [edges]="edges()" /&gt;\`</span>
 &#125;)
 <span class="tok-kw">export class</span> App &#123;
-  nodes = signal&lt;Node[]&gt;([/* … */]);
-  edges = signal&lt;Edge[]&gt;([/* … */]);
+  nodes = signal&lt;Node[]&gt;([
+    &#123; id: <span class="tok-str">'1'</span>, label: <span class="tok-str">'Input Trigger'</span>,
+      position: &#123; x: 40, y: 120 &#125;, ports: 2 &#125;,
+    &#123; id: <span class="tok-str">'2'</span>, label: <span class="tok-str">'Data Processing'</span>,
+      position: &#123; x: 260, y: 120 &#125;, ports: 4 &#125;,
+    &#123; id: <span class="tok-str">'3'</span>, label: <span class="tok-str">'Database Storage'</span>,
+      position: &#123; x: 500, y: 120 &#125;, ports: 2 &#125;,
+  ]);
+  edges = signal&lt;Edge[]&gt;([
+    &#123; id: <span class="tok-str">'e1-2'</span>, source: <span class="tok-str">'1'</span>, target: <span class="tok-str">'2'</span>,
+      sourceHandle: <span class="tok-str">'right'</span>, targetHandle: <span class="tok-str">'left'</span>, animated: <span class="tok-bool">true</span> &#125;,
+    &#123; id: <span class="tok-str">'e2-3'</span>, source: <span class="tok-str">'2'</span>, target: <span class="tok-str">'3'</span>,
+      sourceHandle: <span class="tok-str">'right'</span>, targetHandle: <span class="tok-str">'left'</span> &#125;,
+  ]);
 &#125;</code></pre>
           </div>
           <div class="preview-side">
@@ -143,9 +158,13 @@ interface DiagramPreset {
                   [edges]="sampleCodeEdges()"
                   [showBackground]="true"
                   backgroundVariant="dots"
-                  [showZoomControls]="true"
-                  (nodesChange)="sampleCodeNodes.set($event)"
-                  (edgesChange)="sampleCodeEdges.set($event)"
+                  [showSearchControls]="false"
+                  [showZoomControls]="false"
+                  [showUndoRedoControls]="false"
+                  [showMinimap]="false"
+                  [fitViewOnInit]="true"
+                  (nodesChange)="onSampleNodesChange($event)"
+                  (edgesChange)="onSampleEdgesChange($event)"
                 />
               }
             </div>
@@ -245,14 +264,15 @@ interface DiagramPreset {
       inset: 0;
       z-index: 1;
       background:
-        linear-gradient(180deg, transparent 55%, var(--color-bg-base) 96%),
-        radial-gradient(70% 55% at 50% 35%, transparent 20%, color-mix(in srgb, var(--color-bg-base) 55%, transparent) 100%);
+        linear-gradient(180deg, color-mix(in srgb, var(--color-bg-base) 35%, transparent) 0%, transparent 28%, transparent 58%, var(--color-bg-base) 100%),
+        radial-gradient(65% 50% at 40% 40%, transparent 0%, color-mix(in srgb, var(--color-bg-base) 72%, transparent) 100%);
       pointer-events: none;
     }
 
     .hero-inner {
       position: relative;
       z-index: 2;
+      width: 100%;
       padding: 120px 24px 72px;
     }
 
@@ -261,36 +281,55 @@ interface DiagramPreset {
       display: flex;
       flex-direction: column;
       align-items: flex-start;
-      gap: 22px;
+      gap: 20px;
+      overflow: visible;
     }
 
     .brand-mark {
-      margin: 0;
+      margin: 0 0 -0.2em;
+      display: inline-block;
       font-family: var(--font-display);
-      font-size: clamp(2.4rem, 6vw, 4.2rem);
-      font-weight: 800;
-      letter-spacing: -0.05em;
-      line-height: 0.95;
-      background: var(--color-accent-gradient);
+      font-size: clamp(2.1rem, 5vw, 3.4rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.5;
+      padding: 0.1em 0.04em 0.28em;
+      overflow: visible;
+      color: var(--color-primary);
+      background-image: var(--color-accent-gradient);
+      background-repeat: no-repeat;
+      background-size: 100% 100%;
       -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
       background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
 
     .hero-title {
       margin: 0;
       font-family: var(--font-display);
-      font-size: clamp(1.85rem, 4.2vw, 3rem);
+      font-size: clamp(1.75rem, 3.8vw, 2.65rem);
       font-weight: 700;
-      letter-spacing: -0.035em;
-      line-height: 1.12;
+      letter-spacing: -0.025em;
+      line-height: 1.5;
+      overflow: visible;
       color: var(--color-text-primary);
+    }
+
+    .hero-title .text-gradient {
+      display: inline-block;
+      margin-bottom: -0.18em;
+      padding: 0.08em 0.04em 0.24em;
+      line-height: 1.5;
+      overflow: visible;
+      background-image: var(--color-accent-gradient);
+      background-repeat: no-repeat;
+      background-size: 100% 100%;
     }
 
     .hero-subtitle {
       margin: 0;
       max-width: 34rem;
-      font-size: 1.15rem;
+      font-size: 1.1rem;
       color: var(--color-text-secondary);
       line-height: 1.65;
     }
@@ -324,9 +363,23 @@ interface DiagramPreset {
       border-bottom: 1px solid var(--color-border);
       background: var(--color-bg-elevated);
       flex-wrap: wrap;
+      min-width: 0;
     }
 
-    .preset-selector { display: flex; flex-wrap: wrap; gap: 6px; }
+    .preset-selector {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .stage-canvas ngx-workflow-diagram {
+      position: absolute;
+      inset: 0;
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
 
     .preset-btn, .tool-btn {
       background: transparent;
@@ -357,6 +410,7 @@ interface DiagramPreset {
     .stage-actions { display: flex; gap: 8px; }
 
     .stage-canvas {
+      position: relative;
       height: min(58vh, 560px);
       min-height: 360px;
       background: var(--color-bg-base);
@@ -422,8 +476,27 @@ interface DiagramPreset {
     .tok-bool { color: #fbbf24; }
     .tok-dec { color: #a5b4fc; }
 
-    .preview-side { display: flex; flex-direction: column; min-height: 360px; }
-    .preview-canvas { flex: 1; min-height: 320px; }
+    .preview-side {
+      display: flex;
+      flex-direction: column;
+      min-height: 360px;
+    }
+
+    .preview-canvas {
+      position: relative;
+      flex: 1;
+      min-height: 320px;
+      height: 320px;
+      background: var(--color-bg-base);
+    }
+
+    .preview-canvas ngx-workflow-diagram {
+      position: absolute;
+      inset: 0;
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
 
     .feature-list {
       display: grid;
@@ -515,11 +588,137 @@ interface DiagramPreset {
       .proof-grid { grid-template-columns: 1fr; }
       .code-side { border-right: none; border-bottom: 1px solid var(--color-border); }
       .feature-list { grid-template-columns: 1fr; }
+      .proof-section, .features-section, .compare-section { padding: 64px 0; }
+    }
+
+    @media (max-width: 768px) {
+      .hero {
+        min-height: min(85vh, 720px);
+      }
+
+      .hero-inner {
+        padding: 104px 16px 56px;
+      }
+
+      .hero-subtitle { font-size: 1rem; }
+
+      .hero-cta .btn-lg {
+        flex: 1 1 140px;
+        justify-content: center;
+      }
+
+      .stage-section {
+        margin-top: -32px;
+        padding-bottom: 64px;
+      }
+
+      .stage-bar {
+        flex-wrap: nowrap;
+        gap: 8px;
+        padding: 10px 12px;
+      }
+
+      .preset-selector {
+        flex: 1 1 auto;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        mask-image: linear-gradient(90deg, #000 85%, transparent);
+      }
+
+      .preset-selector::-webkit-scrollbar { display: none; }
+
+      .preset-btn {
+        flex: 0 0 auto;
+        padding: 6px 10px;
+        font-size: 0.75rem;
+        white-space: nowrap;
+      }
+
+      .stage-actions {
+        flex: 0 0 auto;
+        gap: 6px;
+      }
+
+      .stage-actions .tool-btn {
+        padding: 6px 10px;
+        font-size: 0.75rem;
+      }
+
+      .stage-canvas {
+        height: min(50vh, 420px);
+        min-height: 260px;
+      }
+
+      .preview-side { min-height: 280px; }
+      .preview-canvas {
+        min-height: 260px;
+        height: 260px;
+      }
+
+      .code-side pre {
+        font-size: 0.76rem;
+        max-height: 280px;
+        padding: 16px;
+      }
+
+      .matrix-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .matrix { min-width: 560px; }
+
+      .matrix th, .matrix td {
+        padding: 12px 14px;
+        font-size: 0.88rem;
+      }
+
+      .feature-row { padding: 22px 20px 20px; }
+
+      .cta-box { padding: 48px 24px; }
     }
 
     @media (max-width: 640px) {
-      .hero-inner { padding-top: 96px; }
+      .hero-inner { padding-top: 96px; padding-bottom: 48px; }
       .stage-section { margin-top: -24px; }
+
+      .hero-title br { display: none; }
+
+      .hero-cta {
+        width: 100%;
+      }
+
+      .hero-cta .btn-lg {
+        width: 100%;
+        flex: 1 1 100%;
+      }
+
+      .stage-canvas {
+        height: min(46vh, 360px);
+        min-height: 220px;
+      }
+
+      .preview-side { min-height: 240px; }
+      .preview-canvas {
+        min-height: 220px;
+        height: 220px;
+      }
+
+      .code-side pre {
+        font-size: 0.72rem;
+        max-height: 240px;
+      }
+
+      .cta-box { padding: 40px 20px; }
+
+      .cta-actions {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .cta-actions .btn-lg { width: 100%; }
     }
   `],
 })
@@ -529,6 +728,8 @@ export class HomeComponent implements OnInit {
 
   diagramReady = signal(false);
   previewReady = signal(false);
+  /** Hide diagram chrome on narrow viewports so the graph can fit. */
+  compactStage = signal(false);
 
   animatedEdges = signal(true);
   bgVariant = signal<'dots' | 'lines' | 'cross'>('dots');
@@ -606,11 +807,7 @@ export class HomeComponent implements OnInit {
 
   activePreset = signal<DiagramPreset>(this.presets[0]);
   heroNodes = signal<Node[]>(this.cloneNodes(this.presets[0].nodes));
-  private heroBaseEdges = signal<Edge[]>(this.cloneEdges(this.presets[0].edges));
-  heroEdges = computed(() => {
-    const animated = this.animatedEdges();
-    return this.heroBaseEdges().map((e) => ({ ...e, animated }));
-  });
+  heroEdges = signal<Edge[]>(this.withAnimated(this.cloneEdges(this.presets[0].edges), true));
 
   sampleCodeNodes = signal<Node[]>([
     { id: '1', label: 'Input Trigger', position: { x: 40, y: 120 }, ports: 2 },
@@ -625,11 +822,26 @@ export class HomeComponent implements OnInit {
 
   constructor() {
     afterNextRender(() => {
+      const mq = window.matchMedia('(max-width: 768px)');
+      const syncCompact = () => {
+        const next = mq.matches;
+        if (this.compactStage() === next) return;
+        this.compactStage.set(next);
+        // Remount so fitViewOnInit runs without chrome crowding the bounds
+        if (this.diagramReady()) {
+          this.diagramReady.set(false);
+          requestAnimationFrame(() => this.diagramReady.set(true));
+        }
+      };
+      syncCompact();
+      mq.addEventListener('change', syncCompact);
+
       // Defer diagram mount past first paint for better LCP
       const heroTimer = setTimeout(() => this.diagramReady.set(true), 60);
       const previewTimer = setTimeout(() => this.previewReady.set(true), 480);
 
       this.destroyRef.onDestroy(() => {
+        mq.removeEventListener('change', syncCompact);
         clearTimeout(heroTimer);
         clearTimeout(previewTimer);
       });
@@ -637,12 +849,7 @@ export class HomeComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.seo.apply({
-      title: 'ngx-workflow — Angular Signals flowchart engine',
-      description:
-        'High-performance Angular node-based editor with Signals, ELK layout, smart edges, and studio chrome.',
-      path: '/',
-    });
+    this.seo.apply(homeSeoConfig());
   }
 
   private cloneNodes(nodes: Node[]): Node[] {
@@ -653,18 +860,84 @@ export class HomeComponent implements OnInit {
     return edges.map((e) => ({ ...e }));
   }
 
+  private withAnimated(edges: Edge[], animated: boolean): Edge[] {
+    return edges.map((e) => ({ ...e, animated }));
+  }
+
+  private nodesMatch(a: Node[], b: Node[]): boolean {
+    if (a === b) return true;
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      const x = a[i];
+      const y = b[i];
+      if (
+        x.id !== y.id ||
+        x.label !== y.label ||
+        x.position.x !== y.position.x ||
+        x.position.y !== y.position.y ||
+        x.ports !== y.ports ||
+        x.selected !== y.selected
+      ) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private edgesMatch(a: Edge[], b: Edge[]): boolean {
+    if (a === b) return true;
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      const x = a[i];
+      const y = b[i];
+      if (
+        x.id !== y.id ||
+        x.source !== y.source ||
+        x.target !== y.target ||
+        x.sourceHandle !== y.sourceHandle ||
+        x.targetHandle !== y.targetHandle ||
+        !!x.animated !== !!y.animated
+      ) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   selectPreset(preset: DiagramPreset): void {
     this.activePreset.set(preset);
     this.heroNodes.set(this.cloneNodes(preset.nodes));
-    this.heroBaseEdges.set(this.cloneEdges(preset.edges));
+    this.heroEdges.set(this.withAnimated(this.cloneEdges(preset.edges), this.animatedEdges()));
+    // Remount so fitViewOnInit re-centers the new preset in the canvas
+    this.diagramReady.set(false);
+    requestAnimationFrame(() => this.diagramReady.set(true));
+  }
+
+  onHeroNodesChange(nodes: Node[]): void {
+    if (this.nodesMatch(this.heroNodes(), nodes)) return;
+    this.heroNodes.set(nodes);
   }
 
   onHeroEdgesChange(edges: Edge[]): void {
-    this.heroBaseEdges.set(edges.map(({ animated, ...rest }) => rest));
+    const next = this.withAnimated(edges, this.animatedEdges());
+    if (this.edgesMatch(this.heroEdges(), next)) return;
+    this.heroEdges.set(next);
+  }
+
+  onSampleNodesChange(nodes: Node[]): void {
+    if (this.nodesMatch(this.sampleCodeNodes(), nodes)) return;
+    this.sampleCodeNodes.set(nodes);
+  }
+
+  onSampleEdgesChange(edges: Edge[]): void {
+    if (this.edgesMatch(this.sampleCodeEdges(), edges)) return;
+    this.sampleCodeEdges.set(edges);
   }
 
   toggleAnimated(): void {
     this.animatedEdges.update((v) => !v);
+    const animated = this.animatedEdges();
+    this.heroEdges.update((edges) => this.withAnimated(edges, animated));
   }
 
   cycleBg(): void {

@@ -1,0 +1,31 @@
+{
+  "name": "ngx-workflow",
+  "short_name": "ngx-workflow",
+  "description": "Angular Signals flowchart and node-based workflow editor with ELK layout and studio chrome",
+  "lang": "en",
+  "categories": ["developer", "productivity"],
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#07090d",
+  "theme_color": "#07090d",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

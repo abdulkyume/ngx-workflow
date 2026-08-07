@@ -1,17 +1,18 @@
 import {
   Component,
   signal,
-  OnInit,
-  Inject,
-  PLATFORM_ID,
+  computed,
   ChangeDetectionStrategy,
+  DestroyRef,
+  PLATFORM_ID,
   inject,
 } from '@angular/core';
+import { DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive, Router, NavigationEnd } from '@angular/router';
-import { isPlatformBrowser, DOCUMENT } from '@angular/common';
 import { filter } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { SeoService } from '../../core/services/seo.service';
+import { resolveRouteSeo } from '../../core/seo/seo-pages';
 import { AppThemeService } from '../../core/services/app-theme.service';
 
 @Component({
@@ -27,14 +28,14 @@ import { AppThemeService } from '../../core/services/app-theme.service';
         <div class="container navbar-container">
           <a routerLink="/" class="logo" aria-label="ngx-workflow home">
             <div class="logo-icon" aria-hidden="true">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="3" width="7" height="7" rx="2"></rect>
-                <rect x="14" y="3" width="7" height="7" rx="2"></rect>
-                <rect x="14" y="14" width="7" height="7" rx="2"></rect>
-                <rect x="3" y="14" width="7" height="7" rx="2"></rect>
-                <path d="M10 6.5h4"></path>
-                <path d="M6.5 10v4"></path>
-                <path d="M17.5 10v4"></path>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9.2 6.2 C13 6.2, 13 11, 14.2 12"></path>
+                <path d="M6.8 16.5 C10.5 16.5, 12.5 13.8, 14.2 12"></path>
+                <path d="M14.2 12 H17.2"></path>
+                <rect x="2.5" y="2.5" width="6.5" height="6.5" rx="1.8"></rect>
+                <rect x="2.5" y="15" width="6.5" height="6.5" rx="1.8"></rect>
+                <rect x="16.5" y="8.75" width="6.5" height="6.5" rx="1.8"></rect>
+                <circle cx="14.2" cy="12" r="1.55" fill="currentColor" stroke="none"></circle>
               </svg>
             </div>
             <span class="logo-text">ngx-workflow</span>
@@ -115,11 +116,14 @@ import { AppThemeService } from '../../core/services/app-theme.service';
             <div class="footer-brand">
               <div class="logo">
                 <div class="logo-icon" aria-hidden="true">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                    <rect x="3" y="3" width="7" height="7" rx="2"></rect>
-                    <rect x="14" y="3" width="7" height="7" rx="2"></rect>
-                    <rect x="14" y="14" width="7" height="7" rx="2"></rect>
-                    <rect x="3" y="14" width="7" height="7" rx="2"></rect>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9.2 6.2 C13 6.2, 13 11, 14.2 12"></path>
+                    <path d="M6.8 16.5 C10.5 16.5, 12.5 13.8, 14.2 12"></path>
+                    <path d="M14.2 12 H17.2"></path>
+                    <rect x="2.5" y="2.5" width="6.5" height="6.5" rx="1.8"></rect>
+                    <rect x="2.5" y="15" width="6.5" height="6.5" rx="1.8"></rect>
+                    <rect x="16.5" y="8.75" width="6.5" height="6.5" rx="1.8"></rect>
+                    <circle cx="14.2" cy="12" r="1.55" fill="currentColor" stroke="none"></circle>
                   </svg>
                 </div>
                 <span class="logo-text">ngx-workflow</span>
@@ -136,6 +140,8 @@ import { AppThemeService } from '../../core/services/app-theme.service';
               <a routerLink="/docs/concepts">Core Concepts</a>
               <a routerLink="/docs/api">API Reference</a>
               <a routerLink="/docs/customization">Customization</a>
+              <a routerLink="/docs/inputs">Inputs API</a>
+              <a routerLink="/docs/outputs">Outputs API</a>
             </div>
 
             <div class="footer-col">
@@ -366,6 +372,7 @@ import { AppThemeService } from '../../core/services/app-theme.service';
         left: 0;
         right: 0;
         bottom: 0;
+        z-index: 200;
         background: var(--color-bg-base);
         flex-direction: column;
         align-items: stretch;
@@ -373,9 +380,11 @@ import { AppThemeService } from '../../core/services/app-theme.service';
         gap: 8px;
         transform: translate3d(0, -12px, 0);
         opacity: 0;
+        visibility: hidden;
         pointer-events: none;
         transition: transform var(--motion-base) var(--ease-out),
-          opacity var(--motion-base) var(--ease-out);
+          opacity var(--motion-base) var(--ease-out),
+          visibility var(--motion-base) var(--ease-out);
         border-top: 1px solid var(--color-border);
         overflow: auto;
       }
@@ -383,6 +392,7 @@ import { AppThemeService } from '../../core/services/app-theme.service';
       .nav-links.open {
         transform: translate3d(0, 0, 0);
         opacity: 1;
+        visibility: visible;
         pointer-events: auto;
       }
 
@@ -392,76 +402,60 @@ import { AppThemeService } from '../../core/services/app-theme.service';
     }
   `],
 })
-export class MainLayoutComponent implements OnInit {
+export class MainLayoutComponent {
   private readonly themeService = inject(AppThemeService);
   private readonly seo = inject(SeoService);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly document = inject(DOCUMENT);
+  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = isPlatformBrowser(this.platformId);
 
   isOpen = signal(false);
-  isDark = signal(true);
+  readonly isDark = computed(() => this.themeService.effectiveTheme() === 'dark');
   currentYear = new Date().getFullYear();
 
-  constructor(@Inject(PLATFORM_ID) private platformId: object) {
+  constructor() {
+    this.destroyRef.onDestroy(() => {
+      this.setBodyScrollLocked(false);
+    });
+
     this.router.events
       .pipe(
         filter((e): e is NavigationEnd => e instanceof NavigationEnd),
         takeUntilDestroyed()
       )
-      .subscribe((e) => this.applyRouteSeo(e.urlAfterRedirects));
-  }
-
-  ngOnInit(): void {
-    if (isPlatformBrowser(this.platformId)) {
-      const savedTheme = localStorage.getItem('ngx-workflow-theme');
-      this.setTheme(savedTheme === 'light' ? 'light' : 'dark');
-    }
+      .subscribe((e) => {
+        this.closeMenu();
+        this.applyRouteSeo(e.urlAfterRedirects);
+      });
   }
 
   toggleTheme(): void {
-    this.setTheme(this.isDark() ? 'light' : 'dark');
-  }
-
-  private setTheme(theme: 'dark' | 'light'): void {
-    this.isDark.set(theme === 'dark');
-    this.themeService.setColorMode(theme);
-    if (isPlatformBrowser(this.platformId)) {
-      this.document.documentElement.setAttribute('data-theme', theme);
-      this.document.documentElement.classList.remove('light-theme', 'dark-theme');
-      this.document.documentElement.classList.add(`${theme}-theme`);
-      localStorage.setItem('ngx-workflow-theme', theme);
-    }
+    this.themeService.toggle();
   }
 
   toggleMenu(): void {
-    this.isOpen.update((v) => !v);
+    const next = !this.isOpen();
+    this.isOpen.set(next);
+    this.setBodyScrollLocked(next);
   }
 
   closeMenu(): void {
+    if (!this.isOpen()) return;
     this.isOpen.set(false);
+    this.setBodyScrollLocked(false);
+  }
+
+  private setBodyScrollLocked(locked: boolean): void {
+    if (!this.isBrowser) return;
+    this.document.body.style.overflow = locked ? 'hidden' : '';
   }
 
   private applyRouteSeo(url: string): void {
-    if (url === '/' || url === '') return; // Home sets its own
-
-    if (url.startsWith('/docs')) {
-      this.seo.apply({
-        title: 'Documentation',
-        description: 'Guides, API reference, and customization docs for ngx-workflow.',
-        path: url,
-      });
-    } else if (url.startsWith('/examples')) {
-      this.seo.apply({
-        title: 'Examples',
-        description: 'Interactive ngx-workflow scenarios: pipelines, ELK layout, routing, and density.',
-        path: url,
-      });
-    } else if (url.startsWith('/sandbox')) {
-      this.seo.apply({
-        title: 'Sandbox Studio',
-        description: 'Live playground to explore ngx-workflow inputs, outputs, and canvas behavior.',
-        path: url,
-      });
+    const config = resolveRouteSeo(url);
+    if (config) {
+      this.seo.apply(config);
     }
   }
 }

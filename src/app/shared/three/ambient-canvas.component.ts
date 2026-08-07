@@ -40,15 +40,17 @@ import type { AmbientSceneHandle } from './ambient-scene';
       position: absolute;
       inset: 0;
       background:
-        radial-gradient(1.5px 1.5px at 12% 18%, color-mix(in srgb, var(--color-primary) 70%, transparent), transparent),
-        radial-gradient(1.5px 1.5px at 28% 72%, color-mix(in srgb, var(--color-accent) 55%, transparent), transparent),
-        radial-gradient(1.2px 1.2px at 44% 32%, color-mix(in srgb, var(--color-primary) 60%, transparent), transparent),
-        radial-gradient(1.8px 1.8px at 62% 58%, color-mix(in srgb, var(--color-accent) 50%, transparent), transparent),
-        radial-gradient(1.2px 1.2px at 78% 22%, color-mix(in srgb, var(--color-primary) 65%, transparent), transparent),
-        radial-gradient(1.4px 1.4px at 88% 76%, color-mix(in srgb, var(--color-accent) 45%, transparent), transparent),
-        radial-gradient(40% 35% at 70% 20%, color-mix(in srgb, var(--color-primary) 16%, transparent), transparent),
-        radial-gradient(35% 30% at 20% 60%, color-mix(in srgb, var(--color-accent) 12%, transparent), transparent);
-      opacity: 0.9;
+        radial-gradient(42% 36% at 72% 22%, color-mix(in srgb, var(--color-primary) 14%, transparent), transparent 70%),
+        radial-gradient(38% 32% at 18% 62%, color-mix(in srgb, var(--color-accent) 10%, transparent), transparent 70%),
+        radial-gradient(1.2px 1.2px at 14% 24%, color-mix(in srgb, var(--color-primary) 45%, transparent), transparent),
+        radial-gradient(1.2px 1.2px at 36% 68%, color-mix(in srgb, var(--color-accent) 35%, transparent), transparent),
+        radial-gradient(1px 1px at 58% 30%, color-mix(in srgb, var(--color-primary) 40%, transparent), transparent),
+        radial-gradient(1.4px 1.4px at 82% 56%, color-mix(in srgb, var(--color-accent) 30%, transparent), transparent);
+      opacity: 0.55;
+    }
+    :host-context(html[data-theme='light']) .ambient-fallback,
+    :host-context(html.light-theme) .ambient-fallback {
+      opacity: 0.28;
     }
   `],
 })
@@ -81,10 +83,14 @@ export class AmbientCanvasComponent implements AfterViewInit {
       this.handle = createAmbientScene({
         host: this.hostRef.nativeElement,
         reducedMotion: shouldSimplify,
-        particleCount: shouldSimplify ? 140 : 320,
+        particleCount: shouldSimplify ? 80 : 180,
       });
 
       if (!this.handle) return;
+
+      // Soften CSS fallback once WebGL is live
+      const fallback = this.hostRef.nativeElement.previousElementSibling as HTMLElement | null;
+      if (fallback) fallback.style.opacity = '0.2';
 
       if (!shouldSimplify) {
         this.pointerHandler = (e: PointerEvent) => {

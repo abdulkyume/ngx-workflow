@@ -1,13 +1,20 @@
-import { Component, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, computed, effect, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { OUTPUT_DOCS } from '../data/output-docs.data';
 import { NgxWorkflowModule } from 'ngx-workflow';
+import { CodeBlockComponent } from '../../../shared/ui/code-block.component';
+import { SeoService } from '../../../core/services/seo.service';
+import {
+  DEFAULT_KEYWORDS,
+  breadcrumbJsonLd,
+  techArticleJsonLd,
+} from '../../../core/seo/seo-pages';
 
 @Component({
   selector: 'app-doc-output-detail',
   standalone: true,
-  imports: [RouterLink, NgxWorkflowModule],
+  imports: [RouterLink, NgxWorkflowModule, CodeBlockComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (output(); as item) {
@@ -37,7 +44,7 @@ import { NgxWorkflowModule } from 'ngx-workflow';
         @if (item.example) {
           <section>
             <h2>Usage</h2>
-            <pre><code>{{ item.example }}</code></pre>
+            <app-code-block label="Example" [code]="item.example" />
           </section>
         }
 
@@ -186,12 +193,38 @@ import { NgxWorkflowModule } from 'ngx-workflow';
 })
 export class DocOutputDetailComponent {
   private route = inject(ActivatedRoute);
+  private seo = inject(SeoService);
   private params = toSignal(this.route.params);
 
   output = computed(() => {
     const name = this.params()?.['id'];
     return OUTPUT_DOCS.find((i) => i.name === name);
   });
+
+  constructor() {
+    effect(() => {
+      const item = this.output();
+      if (!item) return;
+      const path = `/docs/outputs/${item.name}`;
+      const title = `${item.name} output`;
+      const description = `${item.description} — ngx-workflow-diagram @Output() event.`;
+      this.seo.apply({
+        title,
+        description,
+        path,
+        keywords: `${DEFAULT_KEYWORDS}, ${item.name}, Angular @Output, ${item.category}`,
+        type: 'article',
+        jsonLd: [
+          techArticleJsonLd({ title, description, path }),
+          breadcrumbJsonLd([
+            { name: 'Home', path: '/' },
+            { name: 'Outputs', path: '/docs/outputs' },
+            { name: item.name, path },
+          ]),
+        ],
+      });
+    });
+  }
 
   logs = signal<Array<{ time: string; event: string; data: string }>>([]);
 

@@ -95,8 +95,8 @@
 }
 
 // Dark theme support
-:host-context(html[data-theme='dark']),
-:host-context(html.dark-theme) {
+:host-context([data-theme='dark']),
+:host-context(.dark-theme) {
   .search-container {
     background: rgba(31, 41, 55, 0.95);
     border-color: rgba(255, 255, 255, 0.1);

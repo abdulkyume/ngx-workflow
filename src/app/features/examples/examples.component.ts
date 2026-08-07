@@ -84,7 +84,7 @@ interface ExampleScenario {
                 <ngx-workflow-diagram
                   [nodes]="activeScenario().nodes"
                   [edges]="getEdges()"
-                  [showMinimap]="true"
+                  [showMinimap]="false"
                   [showZoomControls]="true"
                   [showBackground]="true"
                   [backgroundVariant]="bgVariant()"

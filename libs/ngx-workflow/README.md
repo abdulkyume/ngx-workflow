@@ -5,7 +5,9 @@
 
 A powerful, highly customizable Angular library for building interactive node-based editors, flow charts, and diagrams. Built with Angular Signals for high performance and reactivity.
 
-> Live demo: clone the repo and run `npm start`, then open **Examples** or **Canvas Studio** (`/sandbox`).
+> Live demo & docs: [ngx-workflow.vercel.app](https://ngx-workflow.vercel.app) · local: `npm start` then **Examples** or **Canvas Studio** (`/sandbox`).
+>
+> AI / LLM index: [llms.txt](https://ngx-workflow.vercel.app/llms.txt) · [llms-full.txt](https://ngx-workflow.vercel.app/llms-full.txt)
 
 ## 🚀 Features
 
@@ -41,14 +43,15 @@ A powerful, highly customizable Angular library for building interactive node-ba
 - **Edge Reconnection**: Drag edge endpoints to reconnect them
 
 ### Visuals & Motion
-- **Edge Animation**: SVG motion particles on edges (`animated: true`)
+- **Edge Animation**: Flow dash animation and/or moving-dot particles (`animated`, `animationType`: `'flow' | 'dot' | 'both'`)
+- **RGBA Colors**: Node fill/text/border and edge stroke/label/animation colors support hex, `rgb()`, and `rgba()` (with opacity)
 - **Node Motion**: Programmatic API to animate nodes along edge paths
-- **Custom Markers**: Support for `arrow`, `arrowclosed`, `dot`, or fully custom SVG definitions via `[defsTemplate]`
+- **Markers**: Built-in `arrow`, `arrowclosed`, `dot` tinted to match the edge stroke; custom SVG markers via `[defsTemplate]`
 - **Background Images**: Support for custom background images via `[backgroundImage]`
 
 ### Built-in UI Components
 - **Search Bar**: Press `Ctrl+F` to search nodes by label/id.
-- **Properties Panel**: Sidebar for editing node and edge properties (auto-shows on selection/double-click).
+- **Properties Panel**: Sidebar for editing node and edge properties (auto-shows on selection/double-click), including RGBA color pickers and edge animation/marker controls.
 - **Context Menu**: Right-click canvas/nodes/edges for actions.
 - **Layout Alignment**: Auto-align selected nodes (if `showLayoutControls` is true).
 - **Minimap**: Navigable overview of complex flows.
@@ -252,12 +255,16 @@ interface Node {
   resizable?: boolean;     // Is this specific node resizable? (default: true)
   zIndex?: number;         // Manual Z-Index
   class?: string;          // Custom CSS class
-  style?: object;          // Custom inline styles
-  
-  // Styling
+  // Styling — colors accept hex / rgb() / rgba()
+  style?: {
+    backgroundColor?: string; // Node fill
+    color?: string;           // Label text
+    borderColor?: string;     // Border (also via borderColor)
+    [key: string]: any;
+  };
   shadow?: boolean | string;   // Drop shadow
   borderStyle?: 'solid' | 'dashed' | 'dotted' | 'none';
-  borderColor?: string;
+  borderColor?: string;        // Prefer rgba for opacity
   borderWidth?: number;
 
   // Behavior
@@ -292,16 +299,43 @@ interface Edge {
   targetHandle?: string;   // ID of target handle (optional)
   label?: string;          // Label text displayed on the edge
   type?: 'bezier' | 'straight' | 'step' | 'smoothstep' | 'smart' | 'dashed'; // Path type
-  animated?: boolean;      // Show animation?
-  animationType?: 'flow' | 'dot' | 'both'; // Type of animation
-  animationDuration?: string; // CSS duration (e.g., '2s')
-  animationStyle?: object; // Style for animation element (e.g., { fill: 'red' })
-  markerStart?: string;    // Start marker ID (e.g., 'arrow', 'dot')
-  markerEnd?: string;      // End marker ID
-  style?: object;          // SVG styles (stroke, stroke-width, strokeDasharray, etc.)
+  animated?: boolean;      // Enable animation (defaults animationType to 'flow' when unset)
+  animationType?: 'flow' | 'dot' | 'both'; // flow = dashed march; dot = moving circle
+  animationDuration?: string; // CSS duration (e.g. '0.5s', '1s', '2s')
+  animationStyle?: { fill?: string }; // Dot color (hex / rgba)
+  markerStart?: 'arrow' | 'arrowclosed' | 'dot' | string;
+  markerEnd?: 'arrow' | 'arrowclosed' | 'dot' | string; // Built-ins match stroke color
+  style?: {
+    stroke?: string;           // Edge color (hex / rgba)
+    strokeWidth?: string | number;
+    strokeDasharray?: string;  // e.g. '5,5'
+    [key: string]: any;
+  };
+  labelStyle?: { fill?: string; color?: string; [key: string]: any };
   waypoints?: Array<{ x: number; y: number }>; // Custom manual bendpoints
 }
 ```
+
+#### Properties sidebar (`ngx-workflow-properties-sidebar`)
+
+Built into the diagram; you can also use it standalone:
+
+```html
+<ngx-workflow-properties-sidebar
+  [node]="selectedNode"
+  [edge]="selectedEdge"
+  (nodeChange)="onNodePatch($event)"
+  (edgeChange)="onEdgePatch($event)"
+  (close)="closeSidebar()">
+</ngx-workflow-properties-sidebar>
+```
+
+| Output | Payload | Notes |
+|--------|---------|--------|
+| `nodeChange` | `Partial<Node>` | Was previously named `change` — renamed so native color-input `change` events do not collide |
+| `edgeChange` | `Partial<Edge>` | Edge style / animation / marker patches |
+
+Color fields emit `rgba(...)` when opacity is adjusted. Partial `style` / `animationStyle` / `labelStyle` updates are deep-merged in the store.
 
 #### `<ngx-workflow-palette>` (Component)
 
@@ -395,7 +429,13 @@ Similar to nodes, you can register custom edge components via the edge types tok
 ## 🎨 Custom Customization
 
 ### Edge Markers
-To use custom SVG markers, pass a template to `[defsTemplate]`:
+Built-in markers (`arrow`, `arrowclosed`, `dot`) are tinted to match `edge.style.stroke` (including `rgba`).
+
+```typescript
+{ id: 'e1', source: 'a', target: 'b', markerEnd: 'arrow', style: { stroke: 'rgba(239, 68, 68, 1)' } }
+```
+
+For fully custom SVG markers, pass a template to `[defsTemplate]`:
 
 ```html
 <ng-template #defs>

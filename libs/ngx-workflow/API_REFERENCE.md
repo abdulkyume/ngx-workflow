@@ -212,7 +212,13 @@ export interface Node<T = any> {
   dragging?: boolean;
   draggable?: boolean;  // Can this node be dragged?
   class?: string;       // Custom CSS class for the node
-  style?: Record<string, string>; // Inline styles for the node
+  /** Colors accept hex / rgb() / rgba(). Common keys: backgroundColor, color, borderColor */
+  style?: Record<string, string>;
+  borderColor?: string;
+  borderWidth?: number;
+  ports?: 0 | 1 | 2 | 3 | 4;
+  maxConnectionsPerPort?: number;
+  handleConfig?: Record<string, { isConnectable?: boolean | number; maxConnections?: number }>;
 }
 ```
 
@@ -227,14 +233,34 @@ export interface Edge {
   target: string;        // ID of the target node
   sourceHandle?: string; // ID of the source handle on the source node
   targetHandle?: string; // ID of the target handle on the target node
-  type?: string;         // Identifier for edge type (e.g., 'bezier', 'step', 'straight')
-  animated?: boolean;
+  type?: 'bezier' | 'straight' | 'step' | 'smoothstep' | 'smart' | 'dashed';
+  animated?: boolean;    // When true and animationType is unset, defaults to 'flow'
+  animationType?: 'flow' | 'dot' | 'both';
+  animationDuration?: string; // e.g. '1s', '2s'
+  animationStyle?: Record<string, string>; // e.g. { fill: 'rgba(59,130,246,1)' } for the moving dot
+  markerStart?: 'arrow' | 'arrowclosed' | 'dot' | string;
+  markerEnd?: 'arrow' | 'arrowclosed' | 'dot' | string; // Built-ins match style.stroke
   selected?: boolean;
-  data?: any;            // Custom data associated with the edge
+  label?: string;
+  labelStyle?: Record<string, string>; // e.g. { fill: '#fff' }
+  data?: any;
   class?: string;
+  /** Common keys: stroke, strokeWidth, strokeDasharray (hex / rgba supported for stroke) */
   style?: Record<string, string>;
 }
 ```
+
+### `PropertiesSidebarComponent`
+
+Standalone sidebar used by the diagram (or on its own).
+
+| Input / Output | Type | Description |
+|----------------|------|-------------|
+| `[node]` | `Node \| null` | Node being edited |
+| `[edge]` | `Edge \| null` | Edge being edited |
+| `(nodeChange)` | `Partial<Node>` | Node patch (use this — not `(change)`) |
+| `(edgeChange)` | `Partial<Edge>` | Edge patch |
+| `(close)` | `void` | Close request |
 
 ### `TempEdge`
 

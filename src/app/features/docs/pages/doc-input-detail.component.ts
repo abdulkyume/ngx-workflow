@@ -1,13 +1,20 @@
-import { Component, computed, inject, ChangeDetectionStrategy } from '@angular/core';
+import { Component, computed, effect, inject, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { INPUT_DOCS } from '../data/input-docs.data';
 import { NgxWorkflowModule } from 'ngx-workflow';
+import { CodeBlockComponent } from '../../../shared/ui/code-block.component';
+import { SeoService } from '../../../core/services/seo.service';
+import {
+  DEFAULT_KEYWORDS,
+  breadcrumbJsonLd,
+  techArticleJsonLd,
+} from '../../../core/seo/seo-pages';
 
 @Component({
   selector: 'app-doc-input-detail',
   standalone: true,
-  imports: [RouterLink, NgxWorkflowModule],
+  imports: [RouterLink, NgxWorkflowModule, CodeBlockComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (input(); as item) {
@@ -43,7 +50,7 @@ import { NgxWorkflowModule } from 'ngx-workflow';
         @if (item.example) {
           <section>
             <h2>Example</h2>
-            <pre class="prose"><code>{{ item.example }}</code></pre>
+            <app-code-block label="Example" [code]="item.example" />
           </section>
         }
 
@@ -75,26 +82,42 @@ import { NgxWorkflowModule } from 'ngx-workflow';
       font-size: 1.4rem;
       margin: 0 0 12px;
     }
-    pre {
-      background: var(--color-bg-elevated);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-md);
-      padding: 16px;
-      overflow: auto;
-      font-family: var(--font-mono);
-      font-size: 0.85rem;
-      color: var(--color-text-primary);
-    }
   `],
 })
 export class DocInputDetailComponent {
   private route = inject(ActivatedRoute);
+  private seo = inject(SeoService);
   private params = toSignal(this.route.params);
 
   input = computed(() => {
     const name = this.params()?.['id'];
     return INPUT_DOCS.find((i) => i.name === name);
   });
+
+  constructor() {
+    effect(() => {
+      const item = this.input();
+      if (!item) return;
+      const path = `/docs/inputs/${item.name}`;
+      const title = `${item.name} input`;
+      const description = `${item.description} — ngx-workflow-diagram @Input() (${item.type}).`;
+      this.seo.apply({
+        title,
+        description,
+        path,
+        keywords: `${DEFAULT_KEYWORDS}, ${item.name}, Angular @Input, ${item.category}`,
+        type: 'article',
+        jsonLd: [
+          techArticleJsonLd({ title, description, path }),
+          breadcrumbJsonLd([
+            { name: 'Home', path: '/' },
+            { name: 'Inputs', path: '/docs/inputs' },
+            { name: item.name, path },
+          ]),
+        ],
+      });
+    });
+  }
 
   nodes = [
     { id: '1', position: { x: 80, y: 100 }, label: 'Node A', ports: 4, maxConnectionsPerPort: 2 },

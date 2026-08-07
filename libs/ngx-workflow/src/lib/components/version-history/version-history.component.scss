@@ -1,6 +1,6 @@
 // Dark theme CSS variable overrides
-:host-context(html[data-theme='dark']),
-:host-context(html.dark-theme) {
+:host-context([data-theme='dark']),
+:host-context(.dark-theme) {
   --ngx-workflow-panel-bg: rgba(31, 41, 55, 0.95);
   --ngx-workflow-border-color: rgba(255, 255, 255, 0.1);
   --ngx-workflow-text-primary: #f9fafb;

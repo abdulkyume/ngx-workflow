@@ -95,6 +95,66 @@ Drag from a handle circle to another node’s handle. Listen with `(connect)`, `
 
 ---
 
+## 3b. Properties Sidebar Colors, Edge Animation & Markers
+
+The built-in properties sidebar (or standalone `<ngx-workflow-properties-sidebar>`) edits styles with RGBA pickers.
+
+### Node colors
+
+Set via the sidebar or programmatically. Values may be hex, `rgb()`, or `rgba()`:
+
+```typescript
+{
+  id: '1',
+  position: { x: 0, y: 0 },
+  style: {
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    color: '#0f172a',
+    borderColor: 'rgba(45, 212, 191, 0.8)'
+  },
+  borderColor: 'rgba(45, 212, 191, 0.8)'
+}
+```
+
+### Edge stroke, animation, markers
+
+```typescript
+{
+  id: 'e1',
+  source: '1',
+  target: '2',
+  animated: true,                 // defaults animationType to 'flow' when omitted
+  animationType: 'both',          // 'flow' | 'dot' | 'both'
+  animationDuration: '1s',
+  animationStyle: { fill: 'rgba(59, 130, 246, 1)' },
+  markerStart: 'arrowclosed',
+  markerEnd: 'arrow',             // built-in markers match stroke color
+  style: {
+    stroke: 'rgba(239, 68, 68, 1)',
+    strokeWidth: '3',
+    strokeDasharray: '5,5'
+  },
+  label: 'retry',
+  labelStyle: { fill: 'rgba(248, 250, 252, 0.9)' }
+}
+```
+
+### Standalone sidebar binding
+
+```html
+<ngx-workflow-properties-sidebar
+  [node]="selectedNode"
+  [edge]="selectedEdge"
+  (nodeChange)="applyNodePatch($event)"
+  (edgeChange)="applyEdgePatch($event)"
+  (close)="close()">
+</ngx-workflow-properties-sidebar>
+```
+
+> **Breaking (0.5.2):** use `(nodeChange)` instead of `(change)` for node updates.
+
+---
+
 ## 4. Edge Label Components
 
 Use custom Angular components for edge labels.

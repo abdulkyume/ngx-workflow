@@ -1,10 +1,25 @@
-import { Component, ChangeDetectionStrategy } from '@angular/core';
+import { Component, ChangeDetectionStrategy, DestroyRef, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { CodeBlockComponent } from '../../../shared/ui/code-block.component';
+import { CopyCodeComponent } from '../../../shared/ui/copy-code.component';
+
+interface InputRow {
+  name: string;
+  type: string;
+  defaultValue: string;
+  description: string;
+}
+
+interface OutputRow {
+  name: string;
+  payload: string;
+  description: string;
+}
 
 @Component({
   selector: 'app-doc-api',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, CodeBlockComponent, CopyCodeComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <article class="prose">
@@ -22,243 +37,108 @@ import { RouterLink } from '@angular/router';
       <p>
         Limit how many edges can attach to a port. Resolution order (first wins):
       </p>
-      <ol>
-        <li><code>node.handleConfig[port].maxConnections</code></li>
-        <li><code>node.maxConnectionsPerPort</code></li>
-        <li><code>[maxConnectionsPerHandle]</code> on the diagram</li>
+      <ol class="priority-list">
+        <li>
+          <app-copy-code code="node.handleConfig[port].maxConnections" />
+        </li>
+        <li>
+          <app-copy-code code="node.maxConnectionsPerPort" />
+        </li>
+        <li>
+          <app-copy-code code="[maxConnectionsPerHandle]" />
+          <span class="suffix">on the diagram</span>
+        </li>
       </ol>
 
-      <pre><code>&lt;ngx-workflow-diagram
-  [nodes]="nodes()"
-  [edges]="edges()"
-  [maxConnectionsPerHandle]="2"
-  (nodesChange)="nodes.set($event)"
-  (edgesChange)="edges.set($event)"
-  (connect)="onConnect($event)"
-/&gt;
-
-nodes = signal&lt;Node[]&gt;([
-  &#123;
-    id: 'a',
-    label: 'Source',
-    position: &#123; x: 80, y: 100 &#125;,
-    ports: 4,
-    maxConnectionsPerPort: 1,
-    handleConfig: &#123;
-      bottom: &#123; maxConnections: 3 &#125; // override one port
-    &#125;
-  &#125;,
-  &#123;
-    id: 'b',
-    label: 'Target',
-    position: &#123; x: 360, y: 100 &#125;,
-    ports: 4
-  &#125;
-]);</code></pre>
+      <app-code-block label="TypeScript" [code]="connectionLimitsSnippet" />
 
       <p>
         In the sandbox / properties sidebar you can edit
         <strong>Max connections / port</strong> and <strong>Per-port limits</strong> when a node is selected.
+        The same sidebar exposes RGBA pickers for node and edge colors, plus edge animation type/speed and markers.
+        If you mount <code>&lt;ngx-workflow-properties-sidebar&gt;</code> yourself, bind
+        <code>(nodeChange)</code> (not <code>(change)</code>) and <code>(edgeChange)</code>.
       </p>
 
       <h2 id="diagram-component-inputs">Key Diagram Inputs</h2>
       <p><a routerLink="/docs/inputs">Browse all inputs →</a></p>
 
-      <table class="matrix-table">
-        <thead>
-          <tr>
-            <th>Property</th>
-            <th>Type</th>
-            <th>Default</th>
-            <th>Description</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><code>[nodes]</code></td>
-            <td><code>Node[]</code></td>
-            <td><code>[]</code></td>
-            <td>Controlled nodes array.</td>
-          </tr>
-          <tr>
-            <td><code>[edges]</code></td>
-            <td><code>Edge[] | undefined</code></td>
-            <td><code>undefined</code></td>
-            <td>Controlled edges; pass <code>[]</code> after deleting the last edge.</td>
-          </tr>
-          <tr>
-            <td><code>[maxConnectionsPerHandle]</code></td>
-            <td><code>number</code></td>
-            <td><code>undefined</code></td>
-            <td>Global max edges per port (unlimited if unset).</td>
-          </tr>
-          <tr>
-            <td><code>[proximityThreshold]</code></td>
-            <td><code>number</code></td>
-            <td><code>200</code></td>
-            <td>Auto-connect distance when dragging nodes.</td>
-          </tr>
-          <tr>
-            <td><code>[connectionValidator]</code></td>
-            <td><code>(s, t) => boolean</code></td>
-            <td><code>undefined</code></td>
-            <td>Custom global connection validator.</td>
-          </tr>
-          <tr>
-            <td><code>[validateConnection]</code></td>
-            <td><code>(connection) => boolean</code></td>
-            <td><code>undefined</code></td>
-            <td>Validator with handle ids.</td>
-          </tr>
-          <tr>
-            <td><code>[edgeReconnectable]</code></td>
-            <td><code>boolean</code></td>
-            <td><code>false</code></td>
-            <td>Drag edge endpoints to reconnect.</td>
-          </tr>
-          <tr>
-            <td><code>[showBackground]</code></td>
-            <td><code>boolean</code></td>
-            <td><code>true</code></td>
-            <td>Render background pattern.</td>
-          </tr>
-          <tr>
-            <td><code>[backgroundVariant]</code></td>
-            <td><code>'dots' | 'lines' | 'cross'</code></td>
-            <td><code>'dots'</code></td>
-            <td>Background pattern style.</td>
-          </tr>
-          <tr>
-            <td><code>[showMinimap]</code></td>
-            <td><code>boolean</code></td>
-            <td><code>true</code></td>
-            <td>Show minimap overlay.</td>
-          </tr>
-          <tr>
-            <td><code>[showZoomControls]</code></td>
-            <td><code>boolean</code></td>
-            <td><code>true</code></td>
-            <td>Show zoom / fit controls.</td>
-          </tr>
-          <tr>
-            <td><code>[showUndoRedoControls]</code></td>
-            <td><code>boolean</code></td>
-            <td><code>true</code></td>
-            <td>Show undo / redo controls.</td>
-          </tr>
-          <tr>
-            <td><code>[snapToGrid]</code></td>
-            <td><code>boolean</code></td>
-            <td><code>false</code></td>
-            <td>Snap nodes while dragging.</td>
-          </tr>
-          <tr>
-            <td><code>[nodeTypes]</code></td>
-            <td><code>Record&lt;string, Type&gt;</code></td>
-            <td><code>&#123;&#125;</code></td>
-            <td>Custom node type → component map.</td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="matrix-table-wrap">
+        <table class="matrix-table cols-4">
+          <thead>
+            <tr>
+              <th>Property</th>
+              <th>Type</th>
+              <th>Default</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of inputRows; track row.name) {
+              <tr>
+                <td>
+                  <div class="cell-stack">
+                    <code class="mono">{{ row.name }}</code>
+                    <button
+                      type="button"
+                      class="mini-copy"
+                      [class.copied]="copiedKey() === row.name"
+                      (click)="copyText(row.name)">
+                      {{ copiedKey() === row.name ? 'Copied' : 'Copy' }}
+                    </button>
+                  </div>
+                </td>
+                <td><code class="mono">{{ row.type }}</code></td>
+                <td><code class="mono">{{ row.defaultValue }}</code></td>
+                <td class="desc">{{ row.description }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
 
       <h2 id="diagram-component-outputs">Key Diagram Outputs</h2>
       <p><a routerLink="/docs/outputs">Browse all outputs →</a></p>
 
-      <table class="matrix-table">
-        <thead>
-          <tr>
-            <th>Event</th>
-            <th>Payload</th>
-            <th>Description</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><code>(nodesChange)</code></td>
-            <td><code>Node[]</code></td>
-            <td>Nodes moved, added, deleted, or edited.</td>
-          </tr>
-          <tr>
-            <td><code>(edgesChange)</code></td>
-            <td><code>Edge[]</code></td>
-            <td>Edges added, reconnected, or deleted.</td>
-          </tr>
-          <tr>
-            <td><code>(connect)</code></td>
-            <td><code>&#123; source, target, sourceHandle?, targetHandle? &#125;</code></td>
-            <td>New port-to-port connection created.</td>
-          </tr>
-          <tr>
-            <td><code>(connectStart)</code> / <code>(connectEnd)</code></td>
-            <td><code>&#123; nodeId, handleId? &#125;</code></td>
-            <td>Connection drag lifecycle.</td>
-          </tr>
-          <tr>
-            <td><code>(edgeDrop)</code></td>
-            <td><code>&#123; sourceNodeId, sourceHandleId, position &#125;</code></td>
-            <td>Connection dropped on empty canvas.</td>
-          </tr>
-          <tr>
-            <td><code>(beforeDelete)</code></td>
-            <td><code>&#123; nodes, edges, cancel &#125;</code></td>
-            <td>Cancellable delete.</td>
-          </tr>
-          <tr>
-            <td><code>(importError)</code></td>
-            <td><code>&#123; message, error? &#125;</code></td>
-            <td>JSON import failure.</td>
-          </tr>
-          <tr>
-            <td><code>(paneClick)</code></td>
-            <td><code>&#123; event, position &#125;</code></td>
-            <td>Empty canvas click.</td>
-          </tr>
-          <tr>
-            <td><code>(contextMenu)</code></td>
-            <td><code>&#123; type, item?, event &#125;</code></td>
-            <td>Right-click on canvas / node / edge.</td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="matrix-table-wrap">
+        <table class="matrix-table cols-3">
+          <thead>
+            <tr>
+              <th>Event</th>
+              <th>Payload</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of outputRows; track row.name) {
+              <tr>
+                <td>
+                  <div class="cell-stack">
+                    <code class="mono">{{ row.name }}</code>
+                    <button
+                      type="button"
+                      class="mini-copy"
+                      [class.copied]="copiedKey() === row.name"
+                      (click)="copyText(row.name)">
+                      {{ copiedKey() === row.name ? 'Copied' : 'Copy' }}
+                    </button>
+                  </div>
+                </td>
+                <td><code class="mono">{{ row.payload }}</code></td>
+                <td class="desc">{{ row.description }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
 
       <h2 id="exported-models">Core TypeScript Models</h2>
 
       <h3>Node</h3>
-      <pre><code>export interface Node &#123;
-  id: string;
-  label?: string;
-  type?: string;
-  position: &#123; x: number; y: number &#125;;
-  data?: Record&lt;string, any&gt;;
-  width?: number;
-  height?: number;
-  selected?: boolean;
-  /** 0=None, 1=Top, 2=Top/Bottom, 3=Left/Right, 4=All */
-  ports?: 0 | 1 | 2 | 3 | 4;
-  /** Default max edges for every port on this node */
-  maxConnectionsPerPort?: number;
-  handleConfig?: &#123;
-    [handleId: string]: &#123;
-      isConnectable?: boolean | number | ((node: Node, edges: Edge[]) => boolean);
-      maxConnections?: number;
-    &#125;;
-  &#125;;
-  easyConnect?: boolean;
-&#125;</code></pre>
+      <app-code-block label="TypeScript" [code]="nodeInterfaceSnippet" />
 
       <h3>Edge</h3>
-      <pre><code>export interface Edge &#123;
-  id: string;
-  source: string;
-  target: string;
-  sourceHandle?: string;
-  targetHandle?: string;
-  type?: 'bezier' | 'step' | 'smoothstep' | 'straight' | 'smart' | 'dashed';
-  animated?: boolean;
-  label?: string;
-  markerEnd?: string;
-  style?: Record&lt;string, string&gt;;
-&#125;</code></pre>
+      <app-code-block label="TypeScript" [code]="edgeInterfaceSnippet" />
 
       <h2 id="injectable-services">Injectable Services</h2>
 
@@ -277,4 +157,126 @@ nodes = signal&lt;Node[]&gt;([
     </article>
   `
 })
-export class DocApiComponent {}
+export class DocApiComponent {
+  private readonly destroyRef = inject(DestroyRef);
+  readonly copiedKey = signal<string | null>(null);
+  private copyTimer: ReturnType<typeof setTimeout> | null = null;
+
+  constructor() {
+    this.destroyRef.onDestroy(() => {
+      if (this.copyTimer) clearTimeout(this.copyTimer);
+    });
+  }
+
+  readonly inputRows: InputRow[] = [
+    { name: '[nodes]', type: 'Node[]', defaultValue: '[]', description: 'Controlled nodes array.' },
+    { name: '[edges]', type: 'Edge[] | undefined', defaultValue: 'undefined', description: 'Controlled edges; pass [] after deleting the last edge.' },
+    { name: '[maxConnectionsPerHandle]', type: 'number', defaultValue: 'undefined', description: 'Global max edges per port (unlimited if unset).' },
+    { name: '[proximityThreshold]', type: 'number', defaultValue: '200', description: 'Auto-connect distance when dragging nodes.' },
+    { name: '[connectionValidator]', type: '(s, t) => boolean', defaultValue: 'undefined', description: 'Custom global connection validator.' },
+    { name: '[validateConnection]', type: '(connection) => boolean', defaultValue: 'undefined', description: 'Validator with handle ids.' },
+    { name: '[edgeReconnectable]', type: 'boolean', defaultValue: 'false', description: 'Drag edge endpoints to reconnect.' },
+    { name: '[showBackground]', type: 'boolean', defaultValue: 'true', description: 'Render background pattern.' },
+    { name: '[backgroundVariant]', type: "'dots' | 'lines' | 'cross'", defaultValue: "'dots'", description: 'Background pattern style.' },
+    { name: '[showMinimap]', type: 'boolean', defaultValue: 'true', description: 'Show minimap overlay.' },
+    { name: '[showZoomControls]', type: 'boolean', defaultValue: 'true', description: 'Show zoom / fit controls.' },
+    { name: '[showUndoRedoControls]', type: 'boolean', defaultValue: 'true', description: 'Show undo / redo controls.' },
+    { name: '[snapToGrid]', type: 'boolean', defaultValue: 'false', description: 'Snap nodes while dragging.' },
+    { name: '[nodeTypes]', type: 'Record<string, Type>', defaultValue: '{}', description: 'Custom node type → component map.' },
+  ];
+
+  readonly outputRows: OutputRow[] = [
+    { name: '(nodesChange)', payload: 'Node[]', description: 'Nodes moved, added, deleted, or edited.' },
+    { name: '(edgesChange)', payload: 'Edge[]', description: 'Edges added, reconnected, or deleted.' },
+    { name: '(connect)', payload: '{ source, target, sourceHandle?, targetHandle? }', description: 'New port-to-port connection created.' },
+    { name: '(connectStart) / (connectEnd)', payload: '{ nodeId, handleId? }', description: 'Connection drag lifecycle.' },
+    { name: '(edgeDrop)', payload: '{ sourceNodeId, sourceHandleId, position }', description: 'Connection dropped on empty canvas.' },
+    { name: '(beforeDelete)', payload: '{ nodes, edges, cancel }', description: 'Cancellable delete.' },
+    { name: '(importError)', payload: '{ message, error? }', description: 'JSON import failure.' },
+    { name: '(paneClick)', payload: '{ event, position }', description: 'Empty canvas click.' },
+    { name: '(contextMenu)', payload: '{ type, item?, event }', description: 'Right-click on canvas / node / edge.' },
+  ];
+
+  readonly connectionLimitsSnippet = `<ngx-workflow-diagram
+  [nodes]="nodes()"
+  [edges]="edges()"
+  [maxConnectionsPerHandle]="2"
+  (nodesChange)="nodes.set($event)"
+  (edgesChange)="edges.set($event)"
+  (connect)="onConnect($event)"
+/>
+
+nodes = signal<Node[]>([
+  {
+    id: 'a',
+    label: 'Source',
+    position: { x: 80, y: 100 },
+    ports: 4,
+    maxConnectionsPerPort: 1,
+    handleConfig: {
+      bottom: { maxConnections: 3 } // override one port
+    }
+  },
+  {
+    id: 'b',
+    label: 'Target',
+    position: { x: 360, y: 100 },
+    ports: 4
+  }
+]);`;
+
+  readonly nodeInterfaceSnippet = `export interface Node {
+  id: string;
+  label?: string;
+  type?: string;
+  position: { x: number; y: number };
+  data?: Record<string, any>;
+  width?: number;
+  height?: number;
+  selected?: boolean;
+  /** Colors: hex / rgb() / rgba() — backgroundColor, color, borderColor */
+  style?: Record<string, string>;
+  borderColor?: string;
+  borderWidth?: number;
+  /** 0=None, 1=Top, 2=Top/Bottom, 3=Left/Right, 4=All */
+  ports?: 0 | 1 | 2 | 3 | 4;
+  /** Default max edges for every port on this node */
+  maxConnectionsPerPort?: number;
+  handleConfig?: {
+    [handleId: string]: {
+      isConnectable?: boolean | number | ((node: Node, edges: Edge[]) => boolean);
+      maxConnections?: number;
+    };
+  };
+  easyConnect?: boolean;
+}`;
+
+  readonly edgeInterfaceSnippet = `export interface Edge {
+  id: string;
+  source: string;
+  target: string;
+  sourceHandle?: string;
+  targetHandle?: string;
+  type?: 'bezier' | 'step' | 'smoothstep' | 'straight' | 'smart' | 'dashed';
+  animated?: boolean; // defaults animationType to 'flow' when unset
+  animationType?: 'flow' | 'dot' | 'both';
+  animationDuration?: string; // e.g. '1s'
+  animationStyle?: { fill?: string }; // moving-dot color (rgba ok)
+  markerStart?: 'arrow' | 'arrowclosed' | 'dot' | string;
+  markerEnd?: 'arrow' | 'arrowclosed' | 'dot' | string; // built-ins match stroke
+  label?: string;
+  labelStyle?: Record<string, string>;
+  style?: Record<string, string>; // stroke, strokeWidth, strokeDasharray
+}`;
+
+  async copyText(value: string): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(value);
+    } catch {
+      // ignore
+    }
+    this.copiedKey.set(value);
+    if (this.copyTimer) clearTimeout(this.copyTimer);
+    this.copyTimer = setTimeout(() => this.copiedKey.set(null), 1600);
+  }
+}

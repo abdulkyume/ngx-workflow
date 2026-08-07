@@ -35,7 +35,16 @@ export class MyFlowComponent implements OnInit {
     ];
 
     const initialEdges: Edge[] = [
-      { id: 'e1-2', source: '1', target: '2', type: 'bezier', animated: true },
+      {
+        id: 'e1-2',
+        source: '1',
+        target: '2',
+        type: 'bezier',
+        animated: true, // defaults to flow animation when animationType is omitted
+        animationType: 'both',
+        markerEnd: 'arrow',
+        style: { stroke: 'rgba(59, 130, 246, 1)', strokeWidth: '2' },
+      },
     ];
 
     initialNodes.forEach(node => this.diagramStateService.addNode(node));

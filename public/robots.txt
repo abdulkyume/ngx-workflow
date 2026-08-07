@@ -1,0 +1,51 @@
+# ngx-workflow — https://ngx-workflow.vercel.app
+# AI-oriented docs: https://ngx-workflow.vercel.app/llms.txt
+# Full LLM index: https://ngx-workflow.vercel.app/llms-full.txt
+
+User-agent: *
+Allow: /
+
+# --- AI / documentation crawlers ---
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: GoogleOther
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: Bytespider
+Allow: /
+
+User-agent: Amazonbot
+Allow: /
+
+User-agent: meta-externalagent
+Allow: /
+
+User-agent: FacebookBot
+Allow: /
+
+Sitemap: https://ngx-workflow.vercel.app/sitemap.xml

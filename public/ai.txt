@@ -1,0 +1,9 @@
+# AI discovery for ngx-workflow
+# https://ngx-workflow.vercel.app
+
+llms: https://ngx-workflow.vercel.app/llms.txt
+llms-full: https://ngx-workflow.vercel.app/llms-full.txt
+sitemap: https://ngx-workflow.vercel.app/sitemap.xml
+docs: https://ngx-workflow.vercel.app/docs/intro
+npm: https://www.npmjs.com/package/ngx-workflow
+github: https://github.com/abdulkyume/ngx-workflow

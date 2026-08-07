@@ -503,6 +503,9 @@ If you were using the properties sidebar for node actions, you can migrate to to
 ```html
 <ngx-workflow-properties-sidebar 
   [node]="selectedNode"
+  [edge]="selectedEdge"
+  (nodeChange)="onNodePatch($event)"
+  (edgeChange)="onEdgePatch($event)"
   (close)="closeSidebar()">
 </ngx-workflow-properties-sidebar>
 ```

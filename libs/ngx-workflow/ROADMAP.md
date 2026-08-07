@@ -1,6 +1,6 @@
 # ngx-workflow Roadmap
 
-## Currently Available (v0.5.1)
+## Currently Available (v0.5.2)
 
 ### Core Features
 - Node grouping with parent/child relationships
@@ -8,6 +8,9 @@
 - Fit view & viewport management
 - Edge types (bezier, straight, step, smoothstep, smart)
 - Smart edge routing with obstacle avoidance
+- Edge animation (`flow` / `dot` / `both`) with duration + animation color
+- Built-in markers tinted to match edge stroke (incl. `rgba`)
+- RGBA node/edge colors via properties sidebar or `style` fields
 - Export controls (JSON, PNG, SVG)
 - Layout controls (ELK + force / hierarchical / circular helpers)
 - Background patterns (dots, lines, cross)
@@ -15,7 +18,7 @@
 - Edge reconnection (`edgeReconnectable`)
 - Manual port-to-port connect + proximity auto-connect
 - Connection limits: global (`maxConnectionsPerHandle`), per-node (`maxConnectionsPerPort`), per-port (`handleConfig.maxConnections`)
-- Properties sidebar port / connection-limit editors
+- Properties sidebar: port limits, RGBA pickers, edge animation & markers (`nodeChange` / `edgeChange`)
 - Copy/paste/duplicate
 - Undo/redo (including built-in controls)
 - Before delete hook

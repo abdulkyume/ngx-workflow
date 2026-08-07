@@ -1,6 +1,6 @@
-import { Component, ElementRef, OnInit, OnDestroy, AfterViewInit, ViewChild, ChangeDetectorRef, Inject, PLATFORM_ID, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, ElementRef, OnInit, OnDestroy, AfterViewInit, ViewChild, ChangeDetectorRef, Inject, PLATFORM_ID, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet, Router, NavigationEnd } from '@angular/router';
-import { isPlatformBrowser, ViewportScroller } from '@angular/common';
+import { isPlatformBrowser } from '@angular/common';
 import { filter, Subscription } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 
@@ -16,20 +16,28 @@ interface TocItem {
   imports: [RouterOutlet, RouterLink, RouterLinkActive, FormsModule],
   template: `
     <div class="docs-layout container">
-      <div class="mobile-docs-nav">
-        <label class="mobile-label" for="docs-nav-select">Documentation</label>
-        <select
-          id="docs-nav-select"
-          class="mobile-select"
-          [value]="currentPath()"
-          (change)="onMobileNav($event)">
-          <option value="/docs/intro">Introduction & Setup</option>
-          <option value="/docs/concepts">Signals & State Model</option>
-          <option value="/docs/api">API Reference</option>
-          <option value="/docs/customization">Custom Nodes & Edges</option>
-          <option value="/docs/inputs">Input Properties</option>
-          <option value="/docs/outputs">Outputs & Events</option>
-        </select>
+      <div class="mobile-docs-nav glass-panel">
+        <div class="mobile-nav-head">
+          <span class="badge badge-accent">Docs</span>
+          <label class="mobile-label" for="docs-nav-select">Jump to section</label>
+        </div>
+        <div class="mobile-select-wrap">
+          <select
+            id="docs-nav-select"
+            class="mobile-select"
+            [value]="mobileNavPath()"
+            (change)="onMobileNav($event)">
+            <option value="/docs/intro">Introduction & Setup</option>
+            <option value="/docs/concepts">Signals & State Model</option>
+            <option value="/docs/api">API Reference</option>
+            <option value="/docs/customization">Custom Nodes & Edges</option>
+            <option value="/docs/inputs">Input Properties</option>
+            <option value="/docs/outputs">Outputs & Events</option>
+          </select>
+          <svg class="mobile-select-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M6 9l6 6 6-6"/>
+          </svg>
+        </div>
       </div>
 
       <aside class="docs-sidebar" aria-label="Documentation">
@@ -111,7 +119,7 @@ interface TocItem {
   styles: [`
     .docs-layout {
       display: grid;
-      grid-template-columns: 240px 1fr 220px;
+      grid-template-columns: 240px minmax(0, 1fr);
       gap: 48px;
       padding-top: 40px;
       padding-bottom: 80px;
@@ -200,6 +208,9 @@ interface TocItem {
     }
 
     @media (min-width: 1280px) {
+      .docs-layout:has(.docs-toc) {
+        grid-template-columns: 240px minmax(0, 1fr) 220px;
+      }
       .docs-toc { display: block; }
     }
 
@@ -241,40 +252,82 @@ interface TocItem {
     }
 
     /* Responsive */
+    @media (max-width: 1100px) {
+      .docs-layout { gap: 28px; }
+    }
+
     @media (max-width: 1024px) {
       .docs-layout {
-        grid-template-columns: 200px 1fr;
+        grid-template-columns: 200px minmax(0, 1fr);
       }
       .docs-toc { display: none; }
     }
 
     .mobile-docs-nav {
       display: none;
-      margin-bottom: 24px;
+      margin-bottom: 28px;
       flex-direction: column;
-      gap: 8px;
+      gap: 12px;
+      padding: 14px 14px 16px;
+      border-radius: var(--radius-lg);
+    }
+
+    .mobile-nav-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
 
     .mobile-label {
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--color-text-muted);
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--color-text-secondary);
+      letter-spacing: 0;
+      text-transform: none;
+    }
+
+    .mobile-select-wrap {
+      position: relative;
+      display: block;
     }
 
     .mobile-select {
       width: 100%;
-      padding: 10px 12px;
-      border-radius: var(--radius-sm);
+      appearance: none;
+      -webkit-appearance: none;
+      padding: 12px 40px 12px 14px;
+      border-radius: var(--radius-md);
       border: 1px solid var(--color-border);
-      background: var(--color-bg-surface);
+      background: var(--color-bg-elevated);
       color: var(--color-text-primary);
-      font-size: 0.9rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      font-family: var(--font-sans);
+      line-height: 1.3;
+      cursor: pointer;
+    }
+
+    .mobile-select:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px var(--color-primary-soft);
+    }
+
+    .mobile-select-icon {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--color-text-muted);
+      pointer-events: none;
     }
 
     @media (max-width: 768px) {
-      .docs-layout { display: block; }
+      .docs-layout {
+        display: block;
+        padding-top: 20px;
+        padding-bottom: 56px;
+      }
       .docs-sidebar { display: none; }
       .mobile-docs-nav { display: flex; }
     }
@@ -287,6 +340,14 @@ export class DocsComponent implements OnInit, OnDestroy, AfterViewInit {
   activeFragment: string | null = null;
   searchQuery = signal('');
   currentPath = signal('/docs/intro');
+
+  /** Map detail routes to their parent section for the mobile select. */
+  readonly mobileNavPath = computed(() => {
+    const path = this.currentPath().split('#')[0];
+    if (path.startsWith('/docs/inputs')) return '/docs/inputs';
+    if (path.startsWith('/docs/outputs')) return '/docs/outputs';
+    return path || '/docs/intro';
+  });
 
   private observer: IntersectionObserver | null = null;
   private routerSubscription!: Subscription;

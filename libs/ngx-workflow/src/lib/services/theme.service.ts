@@ -10,6 +10,9 @@ export class ThemeService {
     private colorModeSignal = signal<ColorMode>('light');
     readonly colorMode = this.colorModeSignal.asReadonly();
 
+    /** Host elements that should receive scoped theme attributes (never document root). */
+    private readonly hosts = new Set<HTMLElement>();
+
     // Computed: actual theme being used (resolves 'system' to 'light' or 'dark')
     readonly effectiveTheme = computed(() => {
         const mode = this.colorMode();
@@ -25,7 +28,7 @@ export class ThemeService {
             const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
             const onChange = (e: MediaQueryListEvent) => {
                 if (this.colorMode() === 'system') {
-                    this.applyTheme(e.matches ? 'dark' : 'light');
+                    this.applyThemeToHosts(e.matches ? 'dark' : 'light');
                 }
             };
 
@@ -35,10 +38,9 @@ export class ThemeService {
             }
         }
 
-        // Apply initial theme
+        // Keep registered hosts in sync with the effective theme
         effect(() => {
-            const theme = this.effectiveTheme();
-            this.applyTheme(theme);
+            this.applyThemeToHosts(this.effectiveTheme());
         });
     }
 
@@ -48,6 +50,21 @@ export class ThemeService {
      */
     setColorMode(mode: ColorMode): void {
         this.colorModeSignal.set(mode);
+    }
+
+    /**
+     * Scope theme attributes to a diagram host. Does not mutate document.documentElement,
+     * so embedding the library cannot override a host application's page theme.
+     */
+    registerHost(host: HTMLElement): void {
+        this.hosts.add(host);
+        this.applyThemeToElement(host, this.effectiveTheme());
+    }
+
+    unregisterHost(host: HTMLElement): void {
+        this.hosts.delete(host);
+        host.removeAttribute('data-theme');
+        host.classList.remove('light-theme', 'dark-theme');
     }
 
     /**
@@ -63,20 +80,13 @@ export class ThemeService {
             : 'light';
     }
 
-    /**
-     * Apply the theme to the document.
-     * @param theme - 'light' or 'dark'
-     */
-    private applyTheme(theme: 'light' | 'dark'): void {
-        if (typeof document === 'undefined') return;
+    private applyThemeToHosts(theme: 'light' | 'dark'): void {
+        this.hosts.forEach((host) => this.applyThemeToElement(host, theme));
+    }
 
-        const root = document.documentElement;
-
-        // Set data attribute for CSS targeting
-        root.setAttribute('data-theme', theme);
-
-        // Also set class for easier CSS targeting
-        root.classList.remove('light-theme', 'dark-theme');
-        root.classList.add(`${theme}-theme`);
+    private applyThemeToElement(el: HTMLElement, theme: 'light' | 'dark'): void {
+        el.setAttribute('data-theme', theme);
+        el.classList.remove('light-theme', 'dark-theme');
+        el.classList.add(`${theme}-theme`);
     }
 }

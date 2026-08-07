@@ -1,40 +1,52 @@
 {
   "name": "ngx-workflow",
-  "version": "0.5.1",
-  "description": "A powerful Angular library for building interactive node-based editors, flow charts, and diagrams with Signals",
+  "version": "0.5.2",
+  "description": "High-performance Angular Signals flowchart and node-based workflow editor with ELK layout, smart edges, and studio chrome",
   "peerDependencies": {
     "@angular/common": ">=17.1.0 <23.0.0",
     "@angular/core": ">=17.1.0 <23.0.0",
-    "@angular/forms": ">=17.1.0 <23.0.0"
+    "@angular/forms": ">=17.1.0 <23.0.0",
+    "rxjs": ">=7.0.0"
   },
   "dependencies": {
     "tslib": "^2.3.0",
     "elkjs": "^0.11.0",
     "uuid": "^13.0.0"
   },
-  "devDependencies": {
-    "@types/uuid": "^9.0.8"
-  },
   "keywords": [
     "angular",
-    "flow",
-    "diagram",
+    "angular-signals",
+    "angular-flowchart",
     "flowchart",
+    "workflow",
+    "diagram",
     "node-based",
-    "editor",
+    "node-editor",
+    "workflow-editor",
+    "elk",
+    "elkjs",
     "svg",
     "signals",
     "react-flow",
-    "ngx"
+    "xyflow",
+    "ngx-workflow",
+    "ngx",
+    "canvas",
+    "graph-editor"
   ],
   "author": "Abdul Kyume",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/abdulkyume/ngx-workflow.git"
+    "url": "https://github.com/abdulkyume/ngx-workflow.git",
+    "directory": "libs/ngx-workflow"
   },
   "bugs": {
     "url": "https://github.com/abdulkyume/ngx-workflow/issues"
   },
-  "homepage": "https://github.com/abdulkyume/ngx-workflow#readme"
+  "homepage": "https://ngx-workflow.vercel.app",
+  "publishConfig": {
+    "access": "public"
+  },
+  "sideEffects": false
 }

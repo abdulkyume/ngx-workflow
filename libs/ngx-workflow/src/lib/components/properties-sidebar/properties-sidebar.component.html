@@ -57,43 +57,145 @@
         </div>
       }
       <div class="ngx-workflow__form-group">
-        <label>Background Color</label>
-        <input type="color" [ngModel]="node.style?.['backgroundColor'] || '#ffffff'"
-          (ngModelChange)="updateBackgroundColor($event)" class="ngx-workflow__input"
-          style="height: 40px; padding: 2px;">
+        <label>Background color</label>
+        <div class="ngx-workflow__color-picker">
+          <div class="ngx-workflow__color-picker-row">
+            <input
+              type="color"
+              class="ngx-workflow__color-swatch"
+              [ngModel]="toHex(getNodeColorValue('backgroundColor', '#ffffff'), '#ffffff')"
+              (ngModelChange)="onColorHexChange('backgroundColor', $event, getNodeColorValue('backgroundColor', '#ffffff'), '#ffffff')"
+              [style.--swatch-preview]="toRgbaString(getNodeColorValue('backgroundColor', '#ffffff'), '#ffffff')"
+              aria-label="Background color">
+            <input
+              type="text"
+              class="ngx-workflow__input ngx-workflow__color-text"
+              [ngModel]="toRgbaString(getNodeColorValue('backgroundColor', '#ffffff'), '#ffffff')"
+              [ngModelOptions]="{ updateOn: 'blur' }"
+              (ngModelChange)="onColorTextChange('backgroundColor', $event, '#ffffff')"
+              spellcheck="false"
+              aria-label="Background color RGBA">
+          </div>
+          <div class="ngx-workflow__color-opacity">
+            <label>Opacity</label>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="1"
+              class="ngx-workflow__opacity-slider"
+              [ngModel]="toOpacityPercent(getNodeColorValue('backgroundColor', '#ffffff'), '#ffffff')"
+              (ngModelChange)="onColorOpacityChange('backgroundColor', $event, getNodeColorValue('backgroundColor', '#ffffff'), '#ffffff')"
+              aria-label="Background opacity">
+            <span class="ngx-workflow__opacity-value">
+              {{ toOpacityPercent(getNodeColorValue('backgroundColor', '#ffffff'), '#ffffff') }}%
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="ngx-workflow__form-group">
+        <label>Text color</label>
+        <div class="ngx-workflow__color-picker">
+          <div class="ngx-workflow__color-picker-row">
+            <input
+              type="color"
+              class="ngx-workflow__color-swatch"
+              [ngModel]="toHex(getNodeColorValue('color', '#000000'), '#000000')"
+              (ngModelChange)="onColorHexChange('color', $event, getNodeColorValue('color', '#000000'), '#000000')"
+              [style.--swatch-preview]="toRgbaString(getNodeColorValue('color', '#000000'), '#000000')"
+              aria-label="Text color">
+            <input
+              type="text"
+              class="ngx-workflow__input ngx-workflow__color-text"
+              [ngModel]="toRgbaString(getNodeColorValue('color', '#000000'), '#000000')"
+              [ngModelOptions]="{ updateOn: 'blur' }"
+              (ngModelChange)="onColorTextChange('color', $event, '#000000')"
+              spellcheck="false"
+              aria-label="Text color RGBA">
+          </div>
+          <div class="ngx-workflow__color-opacity">
+            <label>Opacity</label>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="1"
+              class="ngx-workflow__opacity-slider"
+              [ngModel]="toOpacityPercent(getNodeColorValue('color', '#000000'), '#000000')"
+              (ngModelChange)="onColorOpacityChange('color', $event, getNodeColorValue('color', '#000000'), '#000000')"
+              aria-label="Text opacity">
+            <span class="ngx-workflow__opacity-value">
+              {{ toOpacityPercent(getNodeColorValue('color', '#000000'), '#000000') }}%
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="ngx-workflow__form-group">
+        <label>Border color</label>
+        <div class="ngx-workflow__color-picker">
+          <div class="ngx-workflow__color-picker-row">
+            <input
+              type="color"
+              class="ngx-workflow__color-swatch"
+              [ngModel]="toHex(getNodeColorValue('borderColor', '#e5e7eb'), '#e5e7eb')"
+              (ngModelChange)="onColorHexChange('borderColor', $event, getNodeColorValue('borderColor', '#e5e7eb'), '#e5e7eb')"
+              [style.--swatch-preview]="toRgbaString(getNodeColorValue('borderColor', '#e5e7eb'), '#e5e7eb')"
+              aria-label="Border color">
+            <input
+              type="text"
+              class="ngx-workflow__input ngx-workflow__color-text"
+              [ngModel]="toRgbaString(getNodeColorValue('borderColor', '#e5e7eb'), '#e5e7eb')"
+              [ngModelOptions]="{ updateOn: 'blur' }"
+              (ngModelChange)="onColorTextChange('borderColor', $event, '#e5e7eb')"
+              spellcheck="false"
+              aria-label="Border color RGBA">
+          </div>
+          <div class="ngx-workflow__color-opacity">
+            <label>Opacity</label>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="1"
+              class="ngx-workflow__opacity-slider"
+              [ngModel]="toOpacityPercent(getNodeColorValue('borderColor', '#e5e7eb'), '#e5e7eb')"
+              (ngModelChange)="onColorOpacityChange('borderColor', $event, getNodeColorValue('borderColor', '#e5e7eb'), '#e5e7eb')"
+              aria-label="Border opacity">
+            <span class="ngx-workflow__opacity-value">
+              {{ toOpacityPercent(getNodeColorValue('borderColor', '#e5e7eb'), '#e5e7eb') }}%
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="ngx-workflow__form-row">
+        <div class="ngx-workflow__form-group">
+          <label>X</label>
+          <input type="number" [ngModel]="node.position.x" (ngModelChange)="updateX($event)"
+            class="ngx-workflow__input">
         </div>
         <div class="ngx-workflow__form-group">
-          <label>Text Color</label>
-          <input type="color" [ngModel]="node.style?.['color'] || '#000000'"
-            (ngModelChange)="updateLabelColor($event)" class="ngx-workflow__input"
-            style="height: 40px; padding: 2px;">
-          </div>
-          <div class="ngx-workflow__form-row">
-            <div class="ngx-workflow__form-group">
-              <label>X</label>
-              <input type="number" [ngModel]="node.position.x" (ngModelChange)="updateX($event)"
-                class="ngx-workflow__input">
-              </div>
-              <div class="ngx-workflow__form-group">
-                <label>Y</label>
-                <input type="number" [ngModel]="node.position.y" (ngModelChange)="updateY($event)"
-                  class="ngx-workflow__input">
-                </div>
-              </div>
-              <div class="ngx-workflow__form-row">
-                <div class="ngx-workflow__form-group">
-                  <label>Width</label>
-                  <input type="number" [ngModel]="node.width || 170" (ngModelChange)="updateWidth($event)"
-                    class="ngx-workflow__input">
-                  </div>
-                  <div class="ngx-workflow__form-group">
-                    <label>Height</label>
-                    <input type="number" [ngModel]="node.height || 60" (ngModelChange)="updateHeight($event)"
-                      class="ngx-workflow__input">
-                    </div>
-                  </div>
-                </div>
-              }
+          <label>Y</label>
+          <input type="number" [ngModel]="node.position.y" (ngModelChange)="updateY($event)"
+            class="ngx-workflow__input">
+        </div>
+      </div>
+      <div class="ngx-workflow__form-row">
+        <div class="ngx-workflow__form-group">
+          <label>Width</label>
+          <input type="number" [ngModel]="node.width || 170" (ngModelChange)="updateWidth($event)"
+            class="ngx-workflow__input">
+        </div>
+        <div class="ngx-workflow__form-group">
+          <label>Height</label>
+          <input type="number" [ngModel]="node.height || 60" (ngModelChange)="updateHeight($event)"
+            class="ngx-workflow__input">
+        </div>
+      </div>
+    </div>
+  }
 
               @if (edge) {
                 <div class="ngx-workflow__sidebar-content">
@@ -148,26 +250,118 @@
                         </div>
                       }
                       @if (edge.animated && (edge.animationType === 'dot' || edge.animationType === 'both')) {
-                        <div class="ngx-workflow__form-group"
-                          >
-                          <label>Animation Color</label>
-                          <input type="color" [ngModel]="edge.animationStyle?.['fill'] || '#3b82f6'"
-                            (ngModelChange)="updateEdgeAnimationColor($event)" class="ngx-workflow__input"
-                            style="height: 40px; padding: 2px;">
-                          </div>
-                        }
                         <div class="ngx-workflow__form-group">
-                          <label>Color</label>
-                          <input type="color" [ngModel]="edge.style?.['stroke'] || '#b1b1b7'"
-                            (ngModelChange)="updateEdgeColor($event)" class="ngx-workflow__input"
-                            style="height: 40px; padding: 2px;">
-                          </div>
-                          <div class="ngx-workflow__form-group">
-                            <label>Label Color</label>
-                            <input type="color" [ngModel]="edge.labelStyle?.['fill'] || '#000000'"
-                              (ngModelChange)="updateEdgeLabelColor($event)" class="ngx-workflow__input"
-                              style="height: 40px; padding: 2px;">
+                          <label>Animation Color</label>
+                          <div class="ngx-workflow__color-picker">
+                            <div class="ngx-workflow__color-picker-row">
+                              <input
+                                type="color"
+                                class="ngx-workflow__color-swatch"
+                                [ngModel]="toHex(getEdgeColorValue('animationFill', '#3b82f6'), '#3b82f6')"
+                                (ngModelChange)="onEdgeColorHexChange('animationFill', $event, getEdgeColorValue('animationFill', '#3b82f6'), '#3b82f6')"
+                                [style.--swatch-preview]="toRgbaString(getEdgeColorValue('animationFill', '#3b82f6'), '#3b82f6')"
+                                aria-label="Animation color">
+                              <input
+                                type="text"
+                                class="ngx-workflow__input ngx-workflow__color-text"
+                                [ngModel]="toRgbaString(getEdgeColorValue('animationFill', '#3b82f6'), '#3b82f6')"
+                                [ngModelOptions]="{ updateOn: 'blur' }"
+                                (ngModelChange)="onEdgeColorTextChange('animationFill', $event, '#3b82f6')"
+                                spellcheck="false"
+                                aria-label="Animation color RGBA">
                             </div>
+                            <div class="ngx-workflow__color-opacity">
+                              <label>Opacity</label>
+                              <input
+                                type="range"
+                                min="0"
+                                max="100"
+                                step="1"
+                                class="ngx-workflow__opacity-slider"
+                                [ngModel]="toOpacityPercent(getEdgeColorValue('animationFill', '#3b82f6'), '#3b82f6')"
+                                (ngModelChange)="onEdgeColorOpacityChange('animationFill', $event, getEdgeColorValue('animationFill', '#3b82f6'), '#3b82f6')"
+                                aria-label="Animation opacity">
+                              <span class="ngx-workflow__opacity-value">
+                                {{ toOpacityPercent(getEdgeColorValue('animationFill', '#3b82f6'), '#3b82f6') }}%
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      }
+                      <div class="ngx-workflow__form-group">
+                        <label>Color</label>
+                        <div class="ngx-workflow__color-picker">
+                          <div class="ngx-workflow__color-picker-row">
+                            <input
+                              type="color"
+                              class="ngx-workflow__color-swatch"
+                              [ngModel]="toHex(getEdgeColorValue('stroke', '#b1b1b7'), '#b1b1b7')"
+                              (ngModelChange)="onEdgeColorHexChange('stroke', $event, getEdgeColorValue('stroke', '#b1b1b7'), '#b1b1b7')"
+                              [style.--swatch-preview]="toRgbaString(getEdgeColorValue('stroke', '#b1b1b7'), '#b1b1b7')"
+                              aria-label="Edge color">
+                            <input
+                              type="text"
+                              class="ngx-workflow__input ngx-workflow__color-text"
+                              [ngModel]="toRgbaString(getEdgeColorValue('stroke', '#b1b1b7'), '#b1b1b7')"
+                              [ngModelOptions]="{ updateOn: 'blur' }"
+                              (ngModelChange)="onEdgeColorTextChange('stroke', $event, '#b1b1b7')"
+                              spellcheck="false"
+                              aria-label="Edge color RGBA">
+                          </div>
+                          <div class="ngx-workflow__color-opacity">
+                            <label>Opacity</label>
+                            <input
+                              type="range"
+                              min="0"
+                              max="100"
+                              step="1"
+                              class="ngx-workflow__opacity-slider"
+                              [ngModel]="toOpacityPercent(getEdgeColorValue('stroke', '#b1b1b7'), '#b1b1b7')"
+                              (ngModelChange)="onEdgeColorOpacityChange('stroke', $event, getEdgeColorValue('stroke', '#b1b1b7'), '#b1b1b7')"
+                              aria-label="Edge opacity">
+                            <span class="ngx-workflow__opacity-value">
+                              {{ toOpacityPercent(getEdgeColorValue('stroke', '#b1b1b7'), '#b1b1b7') }}%
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="ngx-workflow__form-group">
+                        <label>Label Color</label>
+                        <div class="ngx-workflow__color-picker">
+                          <div class="ngx-workflow__color-picker-row">
+                            <input
+                              type="color"
+                              class="ngx-workflow__color-swatch"
+                              [ngModel]="toHex(getEdgeColorValue('labelFill', '#000000'), '#000000')"
+                              (ngModelChange)="onEdgeColorHexChange('labelFill', $event, getEdgeColorValue('labelFill', '#000000'), '#000000')"
+                              [style.--swatch-preview]="toRgbaString(getEdgeColorValue('labelFill', '#000000'), '#000000')"
+                              aria-label="Edge label color">
+                            <input
+                              type="text"
+                              class="ngx-workflow__input ngx-workflow__color-text"
+                              [ngModel]="toRgbaString(getEdgeColorValue('labelFill', '#000000'), '#000000')"
+                              [ngModelOptions]="{ updateOn: 'blur' }"
+                              (ngModelChange)="onEdgeColorTextChange('labelFill', $event, '#000000')"
+                              spellcheck="false"
+                              aria-label="Edge label color RGBA">
+                          </div>
+                          <div class="ngx-workflow__color-opacity">
+                            <label>Opacity</label>
+                            <input
+                              type="range"
+                              min="0"
+                              max="100"
+                              step="1"
+                              class="ngx-workflow__opacity-slider"
+                              [ngModel]="toOpacityPercent(getEdgeColorValue('labelFill', '#000000'), '#000000')"
+                              (ngModelChange)="onEdgeColorOpacityChange('labelFill', $event, getEdgeColorValue('labelFill', '#000000'), '#000000')"
+                              aria-label="Edge label opacity">
+                            <span class="ngx-workflow__opacity-value">
+                              {{ toOpacityPercent(getEdgeColorValue('labelFill', '#000000'), '#000000') }}%
+                            </span>
+                          </div>
+                        </div>
+                      </div>
                             <div class="ngx-workflow__form-group">
                               <label>Stroke Width</label>
                               <input type="number" [ngModel]="edge.style?.['strokeWidth'] || 2" (ngModelChange)="updateEdgeWidth($event)"

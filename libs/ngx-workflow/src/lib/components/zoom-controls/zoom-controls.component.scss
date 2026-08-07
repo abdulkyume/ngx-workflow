@@ -60,8 +60,8 @@
 }
 
 /* Dark Mode */
-:host-context(html[data-theme='dark']),
-:host-context(html.dark-theme) {
+:host-context([data-theme='dark']),
+:host-context(.dark-theme) {
   .ngx-workflow__zoom-controls {
     background: rgba(55, 65, 81, 0.7);
     border-color: rgba(75, 85, 99, 0.3);

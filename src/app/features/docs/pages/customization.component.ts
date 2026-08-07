@@ -1,10 +1,11 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { CodeBlockComponent } from '../../../shared/ui/code-block.component';
 
 @Component({
   selector: 'app-doc-customization',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, CodeBlockComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <article class="prose">
@@ -20,36 +21,7 @@ import { RouterLink } from '@angular/router';
         You can create custom Angular components to render inside nodes. Use <code>&lt;ngx-workflow-handle&gt;</code> to declare input/output connection ports:
       </p>
 
-      <pre><code>import &#123; Component, input &#125; from '&#64;angular/core';
-import &#123; HandleComponent &#125; from 'ngx-workflow';
-
-&#64;Component(&#123;
-  selector: 'app-custom-card-node',
-  standalone: true,
-  imports: [HandleComponent],
-  template: \`
-    &lt;div class="custom-card"&gt;
-      &lt;!-- Input Connection Port --&gt;
-      &lt;ngx-workflow-handle type="target" position="left" id="input-port" /&gt;
-
-      &lt;div class="card-header"&gt;
-        &lt;span class="status-dot"&gt;&lt;/span&gt;
-        &lt;h4&gt;Custom Card Node Title&lt;/h4&gt;
-      &lt;/div&gt;
-
-      &lt;div class="card-body"&gt;
-        &lt;p&gt;Custom node content and metrics...&lt;/p&gt;
-        &lt;span class="badge"&gt;CPU Metrics&lt;/span&gt;
-      &lt;/div&gt;
-
-      &lt;!-- Output Connection Port --&gt;
-      &lt;ngx-workflow-handle type="source" position="right" id="output-port" /&gt;
-    &lt;/div&gt;
-  \`
-&#125;)
-export class CustomCardNodeComponent &#123;
-  data = input.required&lt;any&gt;();
-&#125;</code></pre>
+      <app-code-block label="TypeScript" [code]="customNodeSnippet" />
 
       <h2 id="connection-limits">2. Connection Limits on Ports</h2>
       <p>
@@ -57,60 +29,31 @@ export class CustomCardNodeComponent &#123;
         <code>isConnectable</code> also act as a max connection count.
       </p>
 
-      <pre><code>nodes = signal([
-  &#123;
-    id: 'card-1',
-    type: 'card',
-    position: &#123; x: 100, y: 80 &#125;,
-    maxConnectionsPerPort: 1,
-    handleConfig: &#123;
-      'output-port': &#123; maxConnections: 2, isConnectable: true &#125;,
-      'input-port': &#123; maxConnections: 1 &#125;
-    &#125;
-  &#125;
-]);
-
-// Or globally for every port in the diagram:
-// &lt;ngx-workflow-diagram [maxConnectionsPerHandle]="1" /&gt;</code></pre>
+      <app-code-block label="TypeScript" [code]="connectionLimitsSnippet" />
 
       <h2 id="custom-edge-styles">3. Custom Edge Styling & Animations</h2>
       <p>
-        Customize stroke colors, dash arrays, glow effects, or edge markers directly via edge properties:
+        Stroke, labels, and animation dots accept hex / <code>rgb()</code> / <code>rgba()</code>.
+        Built-in markers (<code>arrow</code>, <code>arrowclosed</code>, <code>dot</code>) match the edge stroke color.
+        When <code>animated</code> is true and <code>animationType</code> is omitted, flow animation is used.
       </p>
 
-      <pre><code>edges = signal&lt;Edge[]&gt;([
-  &#123;
-    id: 'e-animated',
-    source: 'n1',
-    target: 'n2',
-    animated: true,
-    style: &#123;
-      stroke: '#3b82f6',
-      strokeWidth: '3px',
-      strokeDasharray: '5,5'
-    &#125;
-  &#125;
-]);</code></pre>
+      <app-code-block label="TypeScript" [code]="edgeStylesSnippet" />
 
-      <h2 id="css-variables">4. CSS Theme Customization Tokens</h2>
+      <h2 id="node-colors">4. Node Colors (RGBA)</h2>
+      <p>
+        Set fill, text, and border via <code>style</code> / <code>borderColor</code>, or edit them in the
+        properties sidebar RGBA pickers (swatch + opacity + <code>rgba()</code> text).
+      </p>
+
+      <app-code-block label="TypeScript" [code]="nodeColorsSnippet" />
+
+      <h2 id="css-variables">5. CSS Theme Customization Tokens</h2>
       <p>
         Override default CSS variables in your application stylesheet to match your corporate design system:
       </p>
 
-      <pre><code>:root &#123;
-  /* Brand Accent Colors */
-  --ngx-workflow-accent: #3b82f6;
-  --ngx-workflow-node-bg: #1e293b;
-  --ngx-workflow-node-border: #334155;
-  --ngx-workflow-node-text: #f8fafc;
-
-  /* Handle Ports */
-  --ngx-workflow-handle-color: #60a5fa;
-  --ngx-workflow-handle-hover: #2563eb;
-  
-  /* Selected Node Border Glow */
-  --ngx-workflow-selected-glow: 0 0 0 2px #3b82f6;
-&#125;</code></pre>
+      <app-code-block label="CSS" [code]="themeTokensSnippet" />
 
       <div class="next-steps flex gap-4 margin-top-8">
         <a routerLink="/sandbox" class="btn btn-primary">Try Customization in Sandbox →</a>
@@ -118,4 +61,113 @@ export class CustomCardNodeComponent &#123;
     </article>
   `
 })
-export class DocCustomizationComponent {}
+export class DocCustomizationComponent {
+  readonly customNodeSnippet = `import { Component, input } from '@angular/core';
+import { HandleComponent } from 'ngx-workflow';
+
+@Component({
+  selector: 'app-custom-card-node',
+  standalone: true,
+  imports: [HandleComponent],
+  template: \`
+    <div class="custom-card">
+      <!-- Input Connection Port -->
+      <ngx-workflow-handle type="target" position="left" id="input-port" />
+
+      <div class="card-header">
+        <span class="status-dot"></span>
+        <h4>Custom Card Node Title</h4>
+      </div>
+
+      <div class="card-body">
+        <p>Custom node content and metrics...</p>
+        <span class="badge">CPU Metrics</span>
+      </div>
+
+      <!-- Output Connection Port -->
+      <ngx-workflow-handle type="source" position="right" id="output-port" />
+    </div>
+  \`
+})
+export class CustomCardNodeComponent {
+  data = input.required<any>();
+}`;
+
+  readonly connectionLimitsSnippet = `nodes = signal([
+  {
+    id: 'card-1',
+    type: 'card',
+    position: { x: 100, y: 80 },
+    maxConnectionsPerPort: 1,
+    handleConfig: {
+      'output-port': { maxConnections: 2, isConnectable: true },
+      'input-port': { maxConnections: 1 }
+    }
+  }
+]);
+
+// Or globally for every port in the diagram:
+// <ngx-workflow-diagram [maxConnectionsPerHandle]="1" />`;
+
+  readonly edgeStylesSnippet = `edges = signal<Edge[]>([
+  {
+    id: 'e-animated',
+    source: 'n1',
+    target: 'n2',
+    animated: true,
+    animationType: 'both',          // 'flow' | 'dot' | 'both'
+    animationDuration: '1s',
+    animationStyle: { fill: 'rgba(59, 130, 246, 1)' },
+    markerStart: 'dot',
+    markerEnd: 'arrow',             // tinted to match stroke
+    label: 'retry',
+    labelStyle: { fill: 'rgba(248, 250, 252, 0.9)' },
+    style: {
+      stroke: 'rgba(239, 68, 68, 1)',
+      strokeWidth: '3',
+      strokeDasharray: '5,5'
+    }
+  }
+]);`;
+
+  readonly nodeColorsSnippet = `nodes = signal<Node[]>([
+  {
+    id: 'n1',
+    position: { x: 80, y: 100 },
+    label: 'Opaque',
+    style: {
+      backgroundColor: '#ffffff',
+      color: '#0f172a',
+      borderColor: '#94a3b8'
+    }
+  },
+  {
+    id: 'n2',
+    position: { x: 320, y: 100 },
+    label: 'Glass',
+    style: {
+      backgroundColor: 'rgba(15, 23, 42, 0.65)',
+      color: 'rgba(248, 250, 252, 0.95)',
+      borderColor: 'rgba(45, 212, 191, 0.8)'
+    },
+    borderColor: 'rgba(45, 212, 191, 0.8)'
+  }
+]);`;
+
+  readonly themeTokensSnippet = `:root {
+  /* Brand Accent Colors */
+  --ngx-workflow-accent: #3b82f6;
+  --ngx-workflow-primary: #2dd4bf;
+  --ngx-workflow-node-bg: #1e293b;
+  --ngx-workflow-node-border: #334155;
+  --ngx-workflow-node-text: #f8fafc;
+  --ngx-workflow-edge-stroke: #94a3b8;
+
+  /* Handle Ports */
+  --ngx-workflow-handle-color: #60a5fa;
+  --ngx-workflow-handle-hover: #2563eb;
+  
+  /* Selected Node Border Glow */
+  --ngx-workflow-selected-glow: 0 0 0 2px #3b82f6;
+}`;
+}

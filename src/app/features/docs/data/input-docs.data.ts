@@ -184,9 +184,9 @@ export const INPUT_DOCS: InputDoc[] = [
   },
   {
     name: 'colorMode',
-    type: "'light' | 'dark'",
-    default: "'light'",
-    description: 'Color theme mode for the diagram.',
+    type: "'light' | 'dark' | 'system'",
+    default: 'undefined (inherit host app)',
+    description: 'Color theme for this diagram only. When unset, inherits the host page theme and never mutates document.documentElement.',
     category: 'Appearance'
   },
   {

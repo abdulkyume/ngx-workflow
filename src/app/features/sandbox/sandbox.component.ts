@@ -26,12 +26,8 @@ interface OutputLogEntry {
 }
 
 /**
- * Layout follows researched developer-tool patterns:
- * - React Flow Playground: left props sidebar → canvas result
- * - Storybook: dominant preview + bottom Actions panel for emits
- * - Evil Martians: left controls right; canvas is primary; ≤3 options use radios;
- *   label–value property rows; compact toolbar; collapsible panels
- * - IDE (Unity / Luna Park): console/logs along the bottom, not a second sidebar
+ * Studio IA: left props → canvas → bottom actions (React Flow / Storybook / IDE).
+ * Visual shell matches Examples: page header, glass panels, shared tool buttons.
  */
 interface SandboxInputState {
   showBackground: boolean;
@@ -107,59 +103,30 @@ const CONTROLLABLE_INPUTS = new Set<keyof SandboxInputState>([
   imports: [NgxWorkflowModule, FormsModule, JsonPipe],
   template: `
     <div
-      class="studio"
+      class="sandbox-page container"
       [class.props-collapsed]="!showProps()"
       [class.actions-collapsed]="!showActions()"
     >
-      <!-- Compact toolbar (Evil Martians: reduce chrome; keep frequent actions) -->
-      <header class="studio-toolbar">
-        <div class="toolbar-brand">
-          <span class="badge badge-accent">Studio</span>
-          <h1>Canvas Studio</h1>
-        </div>
+      <div class="sandbox-header">
+        <span class="badge badge-accent">Studio</span>
+        <h1>Canvas Studio</h1>
+        <p class="text-muted">
+          Tweak every diagram input live, then watch emits in the action log — same API surface as production.
+        </p>
+      </div>
 
-        <div class="toolbar-group" role="group" aria-label="Canvas actions">
-          <button type="button" class="tool-btn" (click)="addNode()">Add node</button>
-          <button type="button" class="tool-btn" (click)="fitView()">Fit view</button>
-          <button type="button" class="tool-btn" (click)="reset()">Reset</button>
-        </div>
-
-        <div class="toolbar-group panel-toggles" role="group" aria-label="Panel visibility">
-          <button
-            type="button"
-            class="tool-btn"
-            [class.active]="showProps()"
-            (click)="showProps.set(!showProps())"
-            title="Toggle props panel"
-          >
-            Props
-          </button>
-          <button
-            type="button"
-            class="tool-btn"
-            [class.active]="showActions()"
-            (click)="showActions.set(!showActions())"
-            title="Toggle actions panel"
-          >
-            Actions
-            @if (outputLog().length) {
-              <span class="count-pill">{{ outputLog().length }}</span>
-            }
-          </button>
-        </div>
-      </header>
-
-      <div class="studio-body">
-        <!-- Left: props / inputs (React Flow Playground + Storybook Controls) -->
+      <div class="studio-layout">
         @if (showProps()) {
-          <aside class="props-panel" aria-label="Diagram inputs">
+          <aside class="props-panel glass-panel" aria-label="Diagram inputs">
             <div class="panel-head">
               <div>
                 <span class="panel-kicker">Inputs</span>
                 <h2>Props</h2>
               </div>
-              <button type="button" class="icon-btn" (click)="showProps.set(false)" title="Hide props">
-                ✕
+              <button type="button" class="icon-btn" (click)="showProps.set(false)" title="Hide props" aria-label="Hide props">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path d="M18 6L6 18M6 6l12 12"/>
+                </svg>
               </button>
             </div>
 
@@ -174,7 +141,6 @@ const CONTROLLABLE_INPUTS = new Set<keyof SandboxInputState>([
               />
             </div>
 
-            <!-- Top-of-panel tabs control content below (Evil Martians layout rule) -->
             <div class="category-tabs" role="tablist" aria-label="Input categories">
               <button
                 type="button"
@@ -289,68 +255,103 @@ const CONTROLLABLE_INPUTS = new Set<keyof SandboxInputState>([
         }
 
         <div class="main-column">
-          <!-- Dominant canvas (Evil Martians / React Flow) -->
-          <main class="canvas-panel" aria-label="Workflow canvas">
-            <ngx-workflow-diagram
-              [nodes]="nodes()"
-              [edges]="edges()"
-              [showBackground]="inputs().showBackground"
-              [backgroundVariant]="inputs().backgroundVariant"
-              [backgroundGap]="inputs().backgroundGap"
-              [backgroundSize]="inputs().backgroundSize"
-              [backgroundColor]="inputs().backgroundColor"
-              [backgroundBgColor]="inputs().backgroundBgColor"
-              [colorMode]="inputs().colorMode"
-              [zIndexMode]="inputs().zIndexMode"
-              [showGrid]="inputs().showGrid"
-              [showZoomControls]="inputs().showZoomControls"
-              [showMinimap]="inputs().showMinimap"
-              [showExportControls]="inputs().showExportControls"
-              [showUndoRedoControls]="inputs().showUndoRedoControls"
-              [showLayoutControls]="inputs().showLayoutControls"
-              [minZoom]="inputs().minZoom"
-              [maxZoom]="inputs().maxZoom"
-              [autoPanOnNodeDrag]="inputs().autoPanOnNodeDrag"
-              [autoPanOnConnect]="inputs().autoPanOnConnect"
-              [autoPanSpeed]="inputs().autoPanSpeed"
-              [autoPanEdgeThreshold]="inputs().autoPanEdgeThreshold"
-              [maxConnectionsPerHandle]="inputs().maxConnectionsPerHandle"
-              [proximityThreshold]="inputs().proximityThreshold"
-              [nodesResizable]="inputs().nodesResizable"
-              [snapToGrid]="inputs().snapToGrid"
-              [gridSize]="inputs().gridSize"
-              [preventNodeOverlap]="inputs().preventNodeOverlap"
-              [nodeSpacing]="inputs().nodeSpacing"
-              [edgeReconnectable]="inputs().edgeReconnectable"
-              [autoSave]="inputs().autoSave"
-              [autoSaveInterval]="inputs().autoSaveInterval"
-              [maxVersions]="inputs().maxVersions"
-              (nodesChange)="onNodesChange($event)"
-              (edgesChange)="onEdgesChange($event)"
-              (nodeClick)="onEmit('nodeClick', $event)"
-              (nodeDoubleClick)="onEmit('nodeDoubleClick', $event)"
-              (nodeMouseEnter)="onEmit('nodeMouseEnter', $event)"
-              (nodeMouseLeave)="onEmit('nodeMouseLeave', $event)"
-              (nodeMouseMove)="onEmit('nodeMouseMove', summarizeMouseMove($event))"
-              (edgeClick)="onEmit('edgeClick', $event)"
-              (edgeMouseEnter)="onEmit('edgeMouseEnter', $event)"
-              (edgeMouseLeave)="onEmit('edgeMouseLeave', $event)"
-              (connect)="onEmit('connect', $event)"
-              (connectStart)="onEmit('connectStart', $event)"
-              (connectEnd)="onEmit('connectEnd', $event)"
-              (edgeDrop)="onEmit('edgeDrop', $event)"
-              (connectionDrop)="onEmit('connectionDrop', summarizeConnectionDrop($event))"
-              (paneClick)="onEmit('paneClick', summarizePaneClick($event))"
-              (paneScroll)="onEmit('paneScroll', summarizeWheel($event))"
-              (contextMenu)="onEmit('contextMenu', summarizeContextMenu($event))"
-              (beforeDelete)="onEmit('beforeDelete', summarizeBeforeDelete($event))"
-              (importError)="onEmit('importError', $event)"
-            ></ngx-workflow-diagram>
+          <main class="viewer-panel glass-panel" aria-label="Workflow canvas">
+            <header class="viewer-toolbar">
+              <div class="active-info">
+                <h3>Live canvas</h3>
+              </div>
+
+              <div class="toolbar-controls" role="group" aria-label="Canvas actions">
+                <button type="button" class="tool-btn" (click)="addNode()">Add node</button>
+                <button type="button" class="tool-btn" (click)="fitView()">Fit view</button>
+                <button type="button" class="tool-btn" (click)="reset()">Reset</button>
+                <button
+                  type="button"
+                  class="tool-btn"
+                  [class.active]="showProps()"
+                  (click)="showProps.set(!showProps())"
+                  title="Toggle props panel"
+                  [attr.aria-pressed]="showProps()"
+                >
+                  Props
+                </button>
+                <button
+                  type="button"
+                  class="tool-btn"
+                  [class.active]="showActions()"
+                  (click)="showActions.set(!showActions())"
+                  title="Toggle actions panel"
+                  [attr.aria-pressed]="showActions()"
+                >
+                  Actions
+                  @if (outputLog().length) {
+                    <span class="count-pill">{{ outputLog().length }}</span>
+                  }
+                </button>
+              </div>
+            </header>
+
+            <div class="canvas-panel">
+              <ngx-workflow-diagram
+                [nodes]="nodes()"
+                [edges]="edges()"
+                [showBackground]="inputs().showBackground"
+                [backgroundVariant]="inputs().backgroundVariant"
+                [backgroundGap]="inputs().backgroundGap"
+                [backgroundSize]="inputs().backgroundSize"
+                [backgroundColor]="inputs().backgroundColor"
+                [backgroundBgColor]="inputs().backgroundBgColor"
+                [colorMode]="inputs().colorMode"
+                [zIndexMode]="inputs().zIndexMode"
+                [showGrid]="inputs().showGrid"
+                [showZoomControls]="inputs().showZoomControls"
+                [showMinimap]="inputs().showMinimap"
+                [showExportControls]="inputs().showExportControls"
+                [showUndoRedoControls]="inputs().showUndoRedoControls"
+                [showLayoutControls]="inputs().showLayoutControls"
+                [minZoom]="inputs().minZoom"
+                [maxZoom]="inputs().maxZoom"
+                [autoPanOnNodeDrag]="inputs().autoPanOnNodeDrag"
+                [autoPanOnConnect]="inputs().autoPanOnConnect"
+                [autoPanSpeed]="inputs().autoPanSpeed"
+                [autoPanEdgeThreshold]="inputs().autoPanEdgeThreshold"
+                [maxConnectionsPerHandle]="inputs().maxConnectionsPerHandle"
+                [proximityThreshold]="inputs().proximityThreshold"
+                [nodesResizable]="inputs().nodesResizable"
+                [snapToGrid]="inputs().snapToGrid"
+                [gridSize]="inputs().gridSize"
+                [preventNodeOverlap]="inputs().preventNodeOverlap"
+                [nodeSpacing]="inputs().nodeSpacing"
+                [edgeReconnectable]="inputs().edgeReconnectable"
+                [autoSave]="inputs().autoSave"
+                [autoSaveInterval]="inputs().autoSaveInterval"
+                [maxVersions]="inputs().maxVersions"
+                (nodesChange)="onNodesChange($event)"
+                (edgesChange)="onEdgesChange($event)"
+                (nodeClick)="onEmit('nodeClick', $event)"
+                (nodeDoubleClick)="onEmit('nodeDoubleClick', $event)"
+                (nodeMouseEnter)="onEmit('nodeMouseEnter', $event)"
+                (nodeMouseLeave)="onEmit('nodeMouseLeave', $event)"
+                (nodeMouseMove)="onEmit('nodeMouseMove', summarizeMouseMove($event))"
+                (edgeClick)="onEmit('edgeClick', $event)"
+                (edgeMouseEnter)="onEmit('edgeMouseEnter', $event)"
+                (edgeMouseLeave)="onEmit('edgeMouseLeave', $event)"
+                (connect)="onEmit('connect', $event)"
+                (connectStart)="onEmit('connectStart', $event)"
+                (connectEnd)="onEmit('connectEnd', $event)"
+                (edgeDrop)="onEmit('edgeDrop', $event)"
+                (connectionDrop)="onEmit('connectionDrop', summarizeConnectionDrop($event))"
+                (paneClick)="onEmit('paneClick', summarizePaneClick($event))"
+                (paneScroll)="onEmit('paneScroll', summarizeWheel($event))"
+                (contextMenu)="onEmit('contextMenu', summarizeContextMenu($event))"
+                (beforeDelete)="onEmit('beforeDelete', summarizeBeforeDelete($event))"
+                (importError)="onEmit('importError', $event)"
+              ></ngx-workflow-diagram>
+            </div>
           </main>
 
-          <!-- Bottom: Actions / console (Storybook Actions + IDE console) -->
           @if (showActions()) {
-            <section class="actions-panel" aria-label="Output actions">
+            <section class="actions-panel glass-panel" aria-label="Output actions">
               <div class="actions-head">
                 <div class="bottom-tabs" role="tablist" aria-label="Actions views">
                   <button
@@ -384,8 +385,11 @@ const CONTROLLABLE_INPUTS = new Set<keyof SandboxInputState>([
                     class="icon-btn"
                     (click)="showActions.set(false)"
                     title="Hide actions"
+                    aria-label="Hide actions"
                   >
-                    ✕
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path d="M18 6L6 18M6 6l12 12"/>
+                </svg>
                   </button>
                 </div>
               </div>
@@ -443,90 +447,142 @@ const CONTROLLABLE_INPUTS = new Set<keyof SandboxInputState>([
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
-    .studio {
+    .sandbox-page {
+      padding-top: 40px;
+      padding-bottom: 80px;
+    }
+
+    .sandbox-header {
+      margin-bottom: 28px;
+    }
+
+    .sandbox-header h1 {
+      font-family: var(--font-display);
+      font-size: 2.2rem;
+      font-weight: 800;
+      margin: 8px 0;
+      letter-spacing: -0.03em;
+    }
+
+    .sandbox-header .text-muted {
+      margin: 0;
+      max-width: 40rem;
+    }
+
+    .studio-layout {
+      display: grid;
+      grid-template-columns: 300px minmax(0, 1fr);
+      gap: 24px;
+      align-items: stretch;
+      min-height: min(72vh, 780px);
+    }
+
+    .sandbox-page.props-collapsed .studio-layout {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .props-panel,
+    .main-column,
+    .viewer-panel,
+    .actions-panel {
+      min-width: 0;
+      min-height: 0;
+    }
+
+    .props-panel {
       display: flex;
       flex-direction: column;
-      height: calc(100vh - 120px);
-      min-height: 560px;
-      margin: 0 12px 20px;
-      border: 1px solid var(--color-border, #1e293b);
-      border-radius: 14px;
+      border-radius: var(--radius-lg);
       overflow: hidden;
-      background: var(--color-bg-surface, #111827);
+      max-height: min(72vh, 780px);
     }
 
-    .studio-toolbar {
+    .main-column {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      min-height: min(72vh, 780px);
+    }
+
+    .viewer-panel {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      min-height: 420px;
+    }
+
+    .viewer-toolbar {
+      height: 56px;
+      background: var(--color-bg-surface);
+      border-bottom: 1px solid var(--color-border);
       display: flex;
       align-items: center;
+      justify-content: space-between;
       gap: 12px;
+      padding: 0 16px;
       flex-wrap: wrap;
-      padding: 8px 12px;
-      border-bottom: 1px solid var(--color-border, #1e293b);
-      background: var(--color-bg-glass, rgba(17, 24, 39, 0.85));
-      backdrop-filter: blur(8px);
     }
 
-    .toolbar-brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-right: auto;
-    }
-
-    .toolbar-brand h1 {
+    .active-info h3 {
+      font-family: var(--font-display);
+      font-size: 1.05rem;
+      font-weight: 700;
       margin: 0;
-      font-size: 0.95rem;
-      font-weight: 600;
+      letter-spacing: -0.02em;
     }
 
-    .toolbar-group {
+    .toolbar-controls {
       display: flex;
       align-items: center;
-      gap: 6px;
+      flex-wrap: wrap;
+      gap: 8px;
     }
 
     .tool-btn,
     .mini-btn,
     .icon-btn {
-      background: var(--color-bg-base, #090d16);
-      border: 1px solid var(--color-border, #1e293b);
-      color: var(--color-text-secondary, #94a3b8);
-      border-radius: 8px;
-      font-size: 0.8rem;
+      background: var(--color-bg-base);
+      border: 1px solid var(--color-border);
+      color: var(--color-text-secondary);
+      border-radius: var(--radius-sm);
+      font-size: 0.82rem;
       font-weight: 500;
       cursor: pointer;
+      transition: color var(--motion-fast) var(--ease-out),
+        background var(--motion-fast) var(--ease-out),
+        border-color var(--motion-fast) var(--ease-out);
     }
 
     .tool-btn {
-      padding: 6px 10px;
+      padding: 6px 12px;
       display: inline-flex;
       align-items: center;
       gap: 6px;
     }
 
-    .tool-btn.active {
-      border-color: rgba(59, 130, 246, 0.55);
-      color: var(--color-text-primary, #f8fafc);
-      background: rgba(59, 130, 246, 0.12);
+    .tool-btn:hover,
+    .tool-btn.active,
+    .mini-btn:hover,
+    .icon-btn:hover {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+      background: var(--color-primary-soft);
     }
 
     .mini-btn {
-      padding: 4px 8px;
-      font-size: 0.72rem;
+      padding: 4px 10px;
+      font-size: 0.75rem;
     }
 
     .icon-btn {
-      width: 28px;
-      height: 28px;
+      width: 30px;
+      height: 30px;
       padding: 0;
-      line-height: 1;
-    }
-
-    .tool-btn:hover,
-    .mini-btn:hover,
-    .icon-btn:hover {
-      border-color: var(--color-primary, #3b82f6);
-      color: var(--color-primary, #3b82f6);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .count-pill {
@@ -536,35 +592,12 @@ const CONTROLLABLE_INPUTS = new Set<keyof SandboxInputState>([
       min-width: 18px;
       height: 18px;
       padding: 0 5px;
-      border-radius: 999px;
-      background: rgba(59, 130, 246, 0.2);
-      color: var(--color-text-primary, #f8fafc);
+      border-radius: var(--radius-full);
+      background: var(--color-primary-soft);
+      color: var(--color-primary);
       font-size: 0.68rem;
-      font-family: var(--font-mono, monospace);
-    }
-
-    .studio-body {
-      display: grid;
-      grid-template-columns: 300px minmax(0, 1fr);
-      min-height: 0;
-      flex: 1;
-    }
-
-    .studio.props-collapsed .studio-body {
-      grid-template-columns: minmax(0, 1fr);
-    }
-
-    .props-panel,
-    .main-column {
-      min-height: 0;
-      min-width: 0;
-    }
-
-    .props-panel {
-      display: flex;
-      flex-direction: column;
-      border-right: 1px solid var(--color-border, #1e293b);
-      background: var(--color-bg-surface, #111827);
+      font-family: var(--font-mono);
+      font-weight: 650;
     }
 
     .panel-head {
@@ -572,17 +605,17 @@ const CONTROLLABLE_INPUTS = new Set<keyof SandboxInputState>([
       justify-content: space-between;
       align-items: flex-start;
       gap: 8px;
-      padding: 12px 12px 8px;
+      padding: 16px 16px 10px;
     }
 
     .panel-kicker {
       display: block;
-      font-size: 0.68rem;
-      letter-spacing: 0.08em;
+      font-size: 0.72rem;
+      letter-spacing: 0.05em;
       text-transform: uppercase;
-      color: var(--color-primary, #3b82f6);
-      font-weight: 600;
-      margin-bottom: 2px;
+      color: var(--color-text-muted);
+      font-weight: 700;
+      margin-bottom: 4px;
     }
 
     .panel-head h2,
@@ -592,38 +625,51 @@ const CONTROLLABLE_INPUTS = new Set<keyof SandboxInputState>([
     }
 
     .panel-head h2 {
-      font-size: 1rem;
+      font-family: var(--font-display);
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
     }
 
     .props-search {
-      padding: 0 12px 8px;
+      padding: 0 16px 10px;
     }
 
     .category-tabs {
       display: flex;
       gap: 4px;
-      padding: 0 12px 8px;
+      padding: 0 12px 10px;
       overflow-x: auto;
-      border-bottom: 1px solid var(--color-border, #1e293b);
+      border-bottom: 1px solid var(--color-border);
     }
 
     .cat-tab,
     .bottom-tab {
-      border: 0;
+      border: 1px solid transparent;
       background: transparent;
-      color: var(--color-text-muted, #64748b);
-      font-size: 0.72rem;
+      color: var(--color-text-muted);
+      font-size: 0.75rem;
       font-weight: 600;
-      padding: 6px 8px;
-      border-radius: 6px;
+      padding: 6px 10px;
+      border-radius: 8px;
       cursor: pointer;
       white-space: nowrap;
+      transition: color var(--motion-fast) var(--ease-out),
+        background var(--motion-fast) var(--ease-out),
+        border-color var(--motion-fast) var(--ease-out);
+    }
+
+    .cat-tab:hover,
+    .bottom-tab:hover {
+      color: var(--color-text-primary);
+      background: var(--color-bg-surface-hover);
     }
 
     .cat-tab.active,
     .bottom-tab.active {
-      background: rgba(59, 130, 246, 0.14);
-      color: var(--color-text-primary, #f8fafc);
+      color: var(--color-primary);
+      border-color: var(--color-border-strong);
+      background: var(--color-primary-soft);
     }
 
     .props-scroll,
@@ -643,29 +689,29 @@ const CONTROLLABLE_INPUTS = new Set<keyof SandboxInputState>([
     }
 
     .prop-group + .prop-group {
-      border-top: 1px solid var(--color-border, #1e293b);
+      border-top: 1px solid var(--color-border);
     }
 
     .prop-group h3,
     .filter-group h3 {
-      padding: 8px 12px 4px;
-      font-size: 0.68rem;
+      padding: 10px 16px 4px;
+      font-size: 0.7rem;
       text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--color-text-muted, #64748b);
+      letter-spacing: 0.05em;
+      color: var(--color-text-muted);
+      font-weight: 700;
     }
 
-    /* Label–value property rows (Evil Martians / Figma / Storybook Controls) */
     .prop-row {
       display: grid;
       grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
       gap: 8px;
       align-items: center;
-      padding: 7px 12px;
+      padding: 8px 16px;
     }
 
     .prop-row:hover {
-      background: var(--color-bg-surface-hover, #1f293d);
+      background: var(--color-bg-surface-hover);
     }
 
     .prop-label {
@@ -678,9 +724,9 @@ const CONTROLLABLE_INPUTS = new Set<keyof SandboxInputState>([
     .prop-label code,
     .log-meta code,
     .filter-item code {
-      font-family: var(--font-mono, monospace);
+      font-family: var(--font-mono);
       font-size: 0.74rem;
-      color: var(--color-text-primary, #f8fafc);
+      color: var(--color-text-primary);
     }
 
     .prop-type,
@@ -688,8 +734,8 @@ const CONTROLLABLE_INPUTS = new Set<keyof SandboxInputState>([
     .panel-footer,
     .empty-hint,
     .filters-hint {
-      font-size: 0.68rem;
-      color: var(--color-text-muted, #64748b);
+      font-size: 0.7rem;
+      color: var(--color-text-muted);
     }
 
     .prop-control {
@@ -700,12 +746,18 @@ const CONTROLLABLE_INPUTS = new Set<keyof SandboxInputState>([
 
     .field {
       width: 100%;
-      background: var(--color-bg-base, #090d16);
-      border: 1px solid var(--color-border, #1e293b);
-      color: var(--color-text-primary, #f8fafc);
-      border-radius: 8px;
-      padding: 6px 8px;
-      font-size: 0.78rem;
+      background: var(--color-bg-base);
+      border: 1px solid var(--color-border);
+      color: var(--color-text-primary);
+      border-radius: var(--radius-sm);
+      padding: 7px 10px;
+      font-size: 0.8rem;
+      font-family: var(--font-sans);
+    }
+
+    .field:focus {
+      outline: none;
+      border-color: var(--color-primary);
     }
 
     .field-num {
@@ -714,7 +766,7 @@ const CONTROLLABLE_INPUTS = new Set<keyof SandboxInputState>([
 
     .field.color {
       width: 42px;
-      height: 30px;
+      height: 32px;
       padding: 2px;
     }
 
@@ -722,12 +774,11 @@ const CONTROLLABLE_INPUTS = new Set<keyof SandboxInputState>([
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      font-size: 0.72rem;
-      color: var(--color-text-secondary, #94a3b8);
+      font-size: 0.75rem;
+      color: var(--color-text-secondary);
       cursor: pointer;
     }
 
-    /* ≤3 options → radios (Evil Martians friction rule) */
     .radio-group {
       display: flex;
       flex-wrap: wrap;
@@ -738,13 +789,15 @@ const CONTROLLABLE_INPUTS = new Set<keyof SandboxInputState>([
     .radio-chip {
       display: inline-flex;
       align-items: center;
-      gap: 0;
-      border: 1px solid var(--color-border, #1e293b);
-      border-radius: 999px;
-      padding: 3px 8px;
-      font-size: 0.68rem;
-      color: var(--color-text-secondary, #94a3b8);
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
+      padding: 4px 8px;
+      font-size: 0.7rem;
+      color: var(--color-text-secondary);
       cursor: pointer;
+      transition: color var(--motion-fast) var(--ease-out),
+        background var(--motion-fast) var(--ease-out),
+        border-color var(--motion-fast) var(--ease-out);
     }
 
     .radio-chip input {
@@ -754,9 +807,9 @@ const CONTROLLABLE_INPUTS = new Set<keyof SandboxInputState>([
     }
 
     .radio-chip.active {
-      border-color: rgba(59, 130, 246, 0.55);
-      background: rgba(59, 130, 246, 0.12);
-      color: var(--color-text-primary, #f8fafc);
+      border-color: var(--color-border-strong);
+      background: var(--color-primary-soft);
+      color: var(--color-primary);
     }
 
     .optional-number {
@@ -767,37 +820,43 @@ const CONTROLLABLE_INPUTS = new Set<keyof SandboxInputState>([
 
     .bound-tag {
       font-size: 0.66rem;
-      padding: 2px 8px;
-      border-radius: 999px;
-      border: 1px solid var(--color-border, #1e293b);
-      color: var(--color-text-muted, #64748b);
+      padding: 3px 8px;
+      border-radius: var(--radius-full);
+      border: 1px solid var(--color-border);
+      color: var(--color-text-muted);
+      background: var(--color-bg-base);
     }
 
     .panel-footer {
-      padding: 8px 12px;
-      border-top: 1px solid var(--color-border, #1e293b);
-      line-height: 1.35;
-    }
-
-    .main-column {
-      display: flex;
-      flex-direction: column;
+      padding: 10px 16px;
+      border-top: 1px solid var(--color-border);
+      line-height: 1.4;
+      background: var(--color-bg-surface);
     }
 
     .canvas-panel {
       flex: 1;
-      min-height: 280px;
+      min-height: 360px;
       position: relative;
       overflow: hidden;
-      background: var(--color-bg-base, #090d16);
+      background: var(--color-bg-base);
+    }
+
+    .canvas-panel ngx-workflow-diagram {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
     }
 
     .actions-panel {
       display: flex;
       flex-direction: column;
       height: 240px;
-      border-top: 1px solid var(--color-border, #1e293b);
-      background: var(--color-bg-surface, #111827);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      flex-shrink: 0;
     }
 
     .actions-head {
@@ -805,8 +864,9 @@ const CONTROLLABLE_INPUTS = new Set<keyof SandboxInputState>([
       justify-content: space-between;
       align-items: center;
       gap: 8px;
-      padding: 6px 10px;
-      border-bottom: 1px solid var(--color-border, #1e293b);
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--color-border);
+      background: var(--color-bg-surface);
     }
 
     .bottom-tabs {
@@ -822,33 +882,35 @@ const CONTROLLABLE_INPUTS = new Set<keyof SandboxInputState>([
     }
 
     .live-emit {
-      font-family: var(--font-mono, monospace);
-      font-size: 0.7rem;
-      color: var(--color-success, #10b981);
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--color-success);
     }
 
     .log-scroll,
     .filters-scroll {
-      padding: 8px 10px 12px;
+      padding: 10px 12px 14px;
+      background: var(--color-bg-elevated);
     }
 
     .log-row {
       display: grid;
       grid-template-columns: 180px minmax(0, 1fr);
       gap: 10px;
-      padding: 6px 8px;
-      border-radius: 8px;
+      padding: 8px 10px;
+      border-radius: var(--radius-sm);
       border: 1px solid transparent;
     }
 
     .log-row:hover,
     .log-row.latest {
-      background: var(--color-bg-base, #090d16);
-      border-color: var(--color-border, #1e293b);
+      background: var(--color-bg-base);
+      border-color: var(--color-border);
     }
 
     .log-row.latest {
-      border-color: rgba(59, 130, 246, 0.45);
+      border-color: var(--color-border-strong);
+      background: var(--color-primary-soft);
     }
 
     .log-meta {
@@ -859,16 +921,16 @@ const CONTROLLABLE_INPUTS = new Set<keyof SandboxInputState>([
 
     .log-meta time {
       font-size: 0.66rem;
-      color: var(--color-text-muted, #64748b);
+      color: var(--color-text-muted);
     }
 
     .log-row pre {
       margin: 0;
       white-space: pre-wrap;
       word-break: break-word;
-      font-family: var(--font-mono, monospace);
-      font-size: 0.68rem;
-      color: var(--color-text-secondary, #94a3b8);
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--color-text-secondary);
       max-height: 96px;
       overflow: auto;
     }
@@ -876,13 +938,14 @@ const CONTROLLABLE_INPUTS = new Set<keyof SandboxInputState>([
     .filters-hint,
     .empty-hint {
       margin: 0 0 10px;
-      line-height: 1.4;
+      line-height: 1.45;
+      padding: 0 4px;
     }
 
     .filter-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-      gap: 6px;
+      gap: 8px;
       padding: 0 0 12px;
     }
 
@@ -891,11 +954,18 @@ const CONTROLLABLE_INPUTS = new Set<keyof SandboxInputState>([
       grid-template-columns: auto 1fr;
       gap: 8px;
       align-items: start;
-      padding: 8px;
-      border: 1px solid var(--color-border, #1e293b);
-      border-radius: 8px;
+      padding: 10px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
       cursor: pointer;
-      background: var(--color-bg-base, #090d16);
+      background: var(--color-bg-base);
+      transition: border-color var(--motion-fast) var(--ease-out),
+        background var(--motion-fast) var(--ease-out);
+    }
+
+    .filter-item:hover {
+      border-color: var(--color-border-hover);
+      background: var(--color-bg-surface-hover);
     }
 
     .filter-item span {
@@ -906,23 +976,26 @@ const CONTROLLABLE_INPUTS = new Set<keyof SandboxInputState>([
     }
 
     .filter-item small {
-      line-height: 1.3;
+      line-height: 1.35;
     }
 
     @media (max-width: 960px) {
-      .studio {
-        height: auto;
-        min-height: calc(100vh - 100px);
-      }
-
-      .studio-body {
+      .studio-layout {
         grid-template-columns: 1fr;
+        min-height: 0;
       }
 
       .props-panel {
-        border-right: 0;
-        border-bottom: 1px solid var(--color-border, #1e293b);
-        max-height: 280px;
+        max-height: 300px;
+      }
+
+      .main-column {
+        min-height: 0;
+      }
+
+      .viewer-toolbar {
+        height: auto;
+        padding: 12px 14px;
       }
 
       .canvas-panel {
@@ -935,6 +1008,7 @@ const CONTROLLABLE_INPUTS = new Set<keyof SandboxInputState>([
     }
   `,
 })
+
 export class SandboxComponent implements AfterViewChecked {
   @ViewChild(DiagramComponent) diagram?: DiagramComponent;
   @ViewChild('logScroll') logScroll?: ElementRef<HTMLDivElement>;

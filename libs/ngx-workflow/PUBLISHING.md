@@ -58,24 +58,24 @@ After successful publication, your library will be available on the npm registry
 Preferred scripts from the repo root:
 
 ```bash
-npm run build:lib
 npm run test:lib
-npm run pack:lib
-# then:
+npm run pack:lib          # build + inspect tarball
+npm run publish:lib       # build + npm publish ./dist/ngx-workflow
+```
+
+Or manually:
+
+```bash
+npm run build:lib
 cd dist/ngx-workflow && npm publish --access public
 ```
 
 Before releasing a new version:
 
-1.  **Update `version` in `libs/ngx-workflow/package.json`:**
-    Modify the `version` field in the library's `package.json` according to SemVer rules.
-2.  **Commit the version change:**
-    Create a commit specifically for the version update (e.g., `git commit -m "chore: release 0.1.0"`).
-3.  **Create a Git tag:**
-    Tag the commit with the new version number: `git tag v0.1.0`.
-4.  **Push to remote:**
-    Push both the commits and the tags to your remote repository: `git push && git push --tags`.
-5.  **Re-build and Publish:**
-    Follow steps 2-5 to build and publish the new version.
+1.  **Update `version` in `libs/ngx-workflow/package.json`** (SemVer) and add a `CHANGELOG.md` entry.
+2.  **Commit** the release (`git commit -m "chore: release 0.5.2"`).
+3.  **Tag**: `git tag v0.5.2`
+4.  **Push**: `git push && git push --tags`
+5.  **Publish**: `npm run publish:lib` (requires `npm login`)
 
 ---

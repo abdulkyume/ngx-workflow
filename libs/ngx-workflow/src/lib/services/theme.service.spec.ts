@@ -30,17 +30,28 @@ describe('ThemeService', () => {
     expect(['light', 'dark']).toContain(service.effectiveTheme());
   });
 
-  it('should apply data-theme attribute and CSS class to document root', () => {
+  it('should apply data-theme to registered hosts only, not document root', () => {
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    const htmlThemeBefore = document.documentElement.getAttribute('data-theme');
+
+    service.registerHost(host);
     service.setColorMode('dark');
     TestBed.flushEffects();
 
-    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
-    expect(document.documentElement.classList.contains('dark-theme')).toBe(true);
+    expect(host.getAttribute('data-theme')).toBe('dark');
+    expect(host.classList.contains('dark-theme')).toBe(true);
+    expect(document.documentElement.getAttribute('data-theme')).toBe(htmlThemeBefore);
 
     service.setColorMode('light');
     TestBed.flushEffects();
 
-    expect(document.documentElement.getAttribute('data-theme')).toBe('light');
-    expect(document.documentElement.classList.contains('light-theme')).toBe(true);
+    expect(host.getAttribute('data-theme')).toBe('light');
+    expect(host.classList.contains('light-theme')).toBe(true);
+    expect(document.documentElement.getAttribute('data-theme')).toBe(htmlThemeBefore);
+
+    service.unregisterHost(host);
+    expect(host.getAttribute('data-theme')).toBeNull();
+    host.remove();
   });
 });

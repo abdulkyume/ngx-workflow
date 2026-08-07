@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="ngx-workflow">
+  <defs>
+    <linearGradient id="nw-edge" x1="12" y1="16" x2="52" y2="40" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2dd4bf"/>
+      <stop offset="1" stop-color="#38bdf8"/>
+    </linearGradient>
+    <linearGradient id="nw-node" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#2dd4bf"/>
+      <stop offset="1" stop-color="#5eead4"/>
+    </linearGradient>
+    <filter id="nw-glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="1.2" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- App tile -->
+  <rect width="64" height="64" rx="14" fill="#0B1220"/>
+  <rect x="1" y="1" width="62" height="62" rx="13" stroke="#1a2330" stroke-width="1"/>
+
+  <!-- Edges: merge into signal junction, then to output -->
+  <path d="M26 20 C34 20, 34 30, 36 32" stroke="url(#nw-edge)" stroke-width="2.4" stroke-linecap="round" fill="none"/>
+  <path d="M20 42 C28 42, 32 36, 36 32" stroke="url(#nw-edge)" stroke-width="2.4" stroke-linecap="round" fill="none"/>
+  <path d="M36 32 H46" stroke="url(#nw-edge)" stroke-width="2.4" stroke-linecap="round"/>
+
+  <!-- Nodes -->
+  <rect x="10" y="12" width="16" height="16" rx="4" fill="#121821" stroke="url(#nw-node)" stroke-width="2.2"/>
+  <rect x="10" y="36" width="16" height="16" rx="4" fill="#121821" stroke="url(#nw-node)" stroke-width="2.2"/>
+  <rect x="46" y="24" width="16" height="16" rx="4" fill="#121821" stroke="url(#nw-node)" stroke-width="2.2"/>
+
+  <!-- Signal junction (unique pulse mark) -->
+  <g filter="url(#nw-glow)">
+    <circle cx="36" cy="32" r="4.2" fill="#0B1220" stroke="#2dd4bf" stroke-width="1.8"/>
+    <circle cx="36" cy="32" r="2" fill="#5eead4"/>
+  </g>
+</svg>
