@@ -18,7 +18,10 @@ import type { AmbientSceneHandle } from './ambient-scene';
   selector: 'app-ambient-canvas',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `<div #host class="ambient-host" aria-hidden="true"></div>`,
+  template: `
+    <div class="ambient-fallback" aria-hidden="true"></div>
+    <div #host class="ambient-host" aria-hidden="true"></div>
+  `,
   styles: [`
     :host {
       position: absolute;
@@ -28,8 +31,24 @@ import type { AmbientSceneHandle } from './ambient-scene';
       overflow: hidden;
     }
     .ambient-host {
+      position: absolute;
+      inset: 0;
       width: 100%;
       height: 100%;
+    }
+    .ambient-fallback {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(1.5px 1.5px at 12% 18%, color-mix(in srgb, var(--color-primary) 70%, transparent), transparent),
+        radial-gradient(1.5px 1.5px at 28% 72%, color-mix(in srgb, var(--color-accent) 55%, transparent), transparent),
+        radial-gradient(1.2px 1.2px at 44% 32%, color-mix(in srgb, var(--color-primary) 60%, transparent), transparent),
+        radial-gradient(1.8px 1.8px at 62% 58%, color-mix(in srgb, var(--color-accent) 50%, transparent), transparent),
+        radial-gradient(1.2px 1.2px at 78% 22%, color-mix(in srgb, var(--color-primary) 65%, transparent), transparent),
+        radial-gradient(1.4px 1.4px at 88% 76%, color-mix(in srgb, var(--color-accent) 45%, transparent), transparent),
+        radial-gradient(40% 35% at 70% 20%, color-mix(in srgb, var(--color-primary) 16%, transparent), transparent),
+        radial-gradient(35% 30% at 20% 60%, color-mix(in srgb, var(--color-accent) 12%, transparent), transparent);
+      opacity: 0.9;
     }
   `],
 })
@@ -43,7 +62,7 @@ export class AmbientCanvasComponent implements AfterViewInit {
   private pointerHandler: ((e: PointerEvent) => void) | null = null;
 
   constructor(@Inject(PLATFORM_ID) private platformId: object) {
-    afterNextRender(() => this.mount());
+    afterNextRender(() => void this.mount());
   }
 
   ngAfterViewInit(): void {
@@ -55,15 +74,14 @@ export class AmbientCanvasComponent implements AfterViewInit {
 
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const coarse = window.matchMedia('(pointer: coarse)').matches;
-    const lowMem = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
-    const shouldSimplify = reducedMotion || coarse || (typeof lowMem === 'number' && lowMem <= 4);
+    const shouldSimplify = reducedMotion || coarse;
 
     try {
       const { createAmbientScene } = await import('./ambient-scene');
       this.handle = createAmbientScene({
         host: this.hostRef.nativeElement,
         reducedMotion: shouldSimplify,
-        particleCount: shouldSimplify ? 70 : 220,
+        particleCount: shouldSimplify ? 140 : 320,
       });
 
       if (!this.handle) return;
@@ -86,7 +104,7 @@ export class AmbientCanvasComponent implements AfterViewInit {
         this.handle = null;
       });
     } catch {
-      // WebGL unavailable — silently degrade
+      // WebGL unavailable — CSS fallback remains visible
     }
   }
 }
