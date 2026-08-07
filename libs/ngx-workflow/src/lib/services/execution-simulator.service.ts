@@ -1,4 +1,4 @@
-import { Injectable, signal, computed, WritableSignal, inject } from '@angular/core';
+import { Injectable, signal, computed, WritableSignal, inject, DestroyRef } from '@angular/core';
 import { DiagramStateService } from './diagram-state.service';
 import { Node, Edge } from '../models';
 
@@ -16,6 +16,11 @@ export interface NodeExecutionState {
 })
 export class ExecutionSimulatorService {
   private diagramStateService = inject(DiagramStateService);
+  private readonly destroyRef = inject(DestroyRef);
+
+  constructor() {
+    this.destroyRef.onDestroy(() => this.pause());
+  }
 
   readonly isPlaying: WritableSignal<boolean> = signal(false);
   readonly speedMs: WritableSignal<number> = signal(1000);

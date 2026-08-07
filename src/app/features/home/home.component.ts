@@ -1,6 +1,20 @@
-import { Component, signal, computed, ChangeDetectionStrategy } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  OnInit,
+  afterNextRender,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { NgxWorkflowModule, Node, Edge } from 'ngx-workflow';
+import { AmbientCanvasComponent } from '../../shared/three/ambient-canvas.component';
+import { InstallWidgetComponent } from '../../shared/ui/install-widget.component';
+import { RevealDirective } from '../../shared/motion/reveal.directive';
+import { MagneticDirective } from '../../shared/motion/magnetic.directive';
+import { SeoService } from '../../core/services/seo.service';
 
 interface DiagramPreset {
   id: string;
@@ -12,96 +26,73 @@ interface DiagramPreset {
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [RouterLink, NgxWorkflowModule],
+  imports: [
+    RouterLink,
+    NgxWorkflowModule,
+    AmbientCanvasComponent,
+    InstallWidgetComponent,
+    RevealDirective,
+    MagneticDirective,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <!-- Hero Section -->
-    <section class="hero-section">
-      <div class="hero-bg-glow"></div>
-      
-      <div class="container hero-container animate-fade-in">
-        
-        <!-- Top Announcement Badge -->
-        <a routerLink="/docs/intro" class="hero-badge">
-          <span class="badge-sparkle">✨</span>
-          <span>Built for Angular 18/19 & Signals</span>
-          <span class="badge-arrow">→</span>
-        </a>
+    <section class="hero">
+      <app-ambient-canvas />
+      <div class="hero-veil"></div>
 
-        <!-- Headline & Subtitle -->
-        <h1 class="hero-title">
-          The Flowchart Engine for<br>
-          <span class="text-gradient">Modern Angular Applications</span>.
-        </h1>
-        
-        <p class="hero-subtitle">
-          A high-performance, fully customizable node-based workflow builder. Pure Signals reactivity,
-          built-in ELK.js layout algorithms, and zero heavy dependency overhead.
-        </p>
-        
-        <!-- Call to Actions -->
-        <div class="hero-actions">
-          <a routerLink="/docs" class="btn btn-primary btn-lg">
-            <span>Get Started Docs</span>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-          </a>
-          <a routerLink="/sandbox" class="btn btn-secondary btn-lg">
-            <span>Launch Sandbox</span>
-          </a>
+      <div class="container hero-inner">
+        <div class="hero-copy animate-fade-in">
+          <p class="brand-mark">ngx-workflow</p>
+          <h1 class="hero-title">
+            Node editors for Angular,<br />
+            <span class="text-gradient">built on Signals.</span>
+          </h1>
+          <p class="hero-subtitle">
+            A cinematic, high-performance workflow canvas with ELK layout,
+            smart edges, and zero Zone.js overhead.
+          </p>
+          <div class="hero-cta">
+            <a routerLink="/docs" class="btn btn-primary btn-lg" appMagnetic>Get started</a>
+            <a routerLink="/sandbox" class="btn btn-secondary btn-lg" appMagnetic>Open studio</a>
+          </div>
+          <app-install-widget />
+        </div>
+      </div>
+    </section>
 
-          <!-- Install snippet widget -->
-          <div class="install-widget">
-            <div class="pkg-tabs">
-              <span [class.active]="pkgManager() === 'npm'" (click)="setPkg('npm')">npm</span>
-              <span [class.active]="pkgManager() === 'pnpm'" (click)="setPkg('pnpm')">pnpm</span>
-              <span [class.active]="pkgManager() === 'yarn'" (click)="setPkg('yarn')">yarn</span>
+    <section class="stage-section">
+      <div class="container">
+        <div class="stage-chrome glass-panel" appReveal>
+          <div class="stage-bar">
+            <div class="preset-selector" role="tablist" aria-label="Workflow presets">
+              @for (preset of presets; track preset.id) {
+                <button
+                  type="button"
+                  role="tab"
+                  class="preset-btn"
+                  [class.active]="activePreset().id === preset.id"
+                  [attr.aria-selected]="activePreset().id === preset.id"
+                  (click)="selectPreset(preset)">
+                  {{ preset.name }}
+                </button>
+              }
             </div>
-            <div class="install-cmd" (click)="copyInstallCommand()">
-              <span class="cmd-text">{{ getInstallCommand() }}</span>
-              <button class="copy-btn" [class.copied]="copied()">
-                @if (copied()) { Copied! } @else { Copy }
+            <div class="stage-actions">
+              <button
+                type="button"
+                class="tool-btn"
+                [class.active]="animatedEdges()"
+                (click)="toggleAnimated()"
+                [attr.aria-pressed]="animatedEdges()">
+                Animate
+              </button>
+              <button type="button" class="tool-btn" (click)="cycleBg()">
+                {{ bgVariant() }}
               </button>
             </div>
           </div>
-        </div>
-
-        <!-- Interactive Hero Flowchart Demo Window -->
-        <div class="hero-visual">
-          <div class="editor-window glass-panel">
-            <div class="editor-bar">
-              <div class="traffic-lights">
-                <span class="light red"></span>
-                <span class="light yellow"></span>
-                <span class="light green"></span>
-              </div>
-
-              <!-- Preset Selector -->
-              <div class="preset-selector">
-                @for (preset of presets; track preset.id) {
-                  <button 
-                    class="preset-btn" 
-                    [class.active]="activePreset().id === preset.id"
-                    (click)="selectPreset(preset)">
-                    {{ preset.name }}
-                  </button>
-                }
-              </div>
-
-              <!-- Controls Right -->
-              <div class="editor-actions">
-                <button class="editor-tool-btn" [class.active]="animatedEdges()" (click)="toggleAnimated()" title="Toggle Edge Animation">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                  Anim
-                </button>
-                <button class="editor-tool-btn" (click)="cycleBg()" title="Cycle Background Variant">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                  {{ bgVariant() }}
-                </button>
-              </div>
-            </div>
-
-            <!-- Canvas Viewport -->
-            <div class="editor-content">
+          <div class="stage-canvas">
+            @if (diagramReady()) {
               <ngx-workflow-diagram
                 [nodes]="heroNodes()"
                 [edges]="heroEdges()"
@@ -112,210 +103,111 @@ interface DiagramPreset {
                 [showLayoutControls]="true"
                 (nodesChange)="heroNodes.set($event)"
                 (edgesChange)="onHeroEdgesChange($event)"
-              ></ngx-workflow-diagram>
-            </div>
+              />
+            }
           </div>
         </div>
-
       </div>
     </section>
 
-    <!-- Code & Live Preview Split Section -->
-    <section class="code-preview-section">
+    <section class="proof-section">
       <div class="container">
-        <div class="section-header text-center">
-          <span class="badge badge-accent">Developer Experience</span>
-          <h2>Simple, Clean & Signal-Native API</h2>
-          <p class="text-muted">Define reactive state with Angular Signals and bind directly to the diagram component.</p>
+        <div class="section-header" appReveal>
+          <span class="badge badge-accent">Developer experience</span>
+          <h2>Signal-native API. Instant canvas.</h2>
+          <p class="text-muted">Define nodes and edges as signals — the diagram stays in sync.</p>
         </div>
 
-        <div class="code-preview-grid glass-panel">
-          <!-- Code Side -->
+        <div class="proof-grid glass-panel" appReveal>
           <div class="code-side">
-            <div class="code-header">
-              <span class="file-tab active">app.component.ts</span>
-            </div>
-            <pre><code><span class="token-keyword">import</span> &#123; Component, signal &#125; <span class="token-keyword">from</span> <span class="token-string">'&#64;angular/core'</span>;
-<span class="token-keyword">import</span> &#123; NgxWorkflowModule, Node, Edge &#125; <span class="token-keyword">from</span> <span class="token-string">'ngx-workflow'</span>;
+            <div class="pane-header"><span>app.component.ts</span></div>
+            <pre><code><span class="tok-kw">import</span> &#123; Component, signal &#125; <span class="tok-kw">from</span> <span class="tok-str">'&#64;angular/core'</span>;
+<span class="tok-kw">import</span> &#123; NgxWorkflowModule, Node, Edge &#125; <span class="tok-kw">from</span> <span class="tok-str">'ngx-workflow'</span>;
 
-<span class="token-decorator">&#64;Component</span>(&#123;
-  selector: <span class="token-string">'app-root'</span>,
-  standalone: <span class="token-boolean">true</span>,
+<span class="tok-dec">&#64;Component</span>(&#123;
+  standalone: <span class="tok-bool">true</span>,
   imports: [NgxWorkflowModule],
-  template: <span class="token-string">\`
-    &lt;ngx-workflow-diagram
-      [nodes]="nodes()"
-      [edges]="edges()"
-      [showBackground]="true"
-      [showZoomControls]="true"
-      [showMinimap]="true"
-    &gt;&lt;/ngx-workflow-diagram&gt;
-  \`</span>
+  template: <span class="tok-str">\`&lt;ngx-workflow-diagram [nodes]="nodes()" [edges]="edges()" /&gt;\`</span>
 &#125;)
-<span class="token-keyword">export class</span> AppComponent &#123;
-  nodes = signal&lt;Node[]&gt;([
-    &#123; id: <span class="token-string">'1'</span>, label: <span class="token-string">'Input Trigger'</span>, position: &#123; x: 100, y: 120 &#125;, ports: 2 &#125;,
-    &#123; id: <span class="token-string">'2'</span>, label: <span class="token-string">'Data Processing'</span>, position: &#123; x: 380, y: 120 &#125;, ports: 4 &#125;,
-    &#123; id: <span class="token-string">'3'</span>, label: <span class="token-string">'Database Storage'</span>, position: &#123; x: 660, y: 120 &#125;, ports: 2 &#125;
-  ]);
-
-  edges = signal&lt;Edge[]&gt;([
-    &#123; id: <span class="token-string">'e1-2'</span>, source: <span class="token-string">'1'</span>, target: <span class="token-string">'2'</span>, animated: <span class="token-boolean">true</span> &#125;,
-    &#123; id: <span class="token-string">'e2-3'</span>, source: <span class="token-string">'2'</span>, target: <span class="token-string">'3'</span> &#125;
-  ]);
+<span class="tok-kw">export class</span> App &#123;
+  nodes = signal&lt;Node[]&gt;([/* … */]);
+  edges = signal&lt;Edge[]&gt;([/* … */]);
 &#125;</code></pre>
           </div>
-
-          <!-- Preview Side -->
           <div class="preview-side">
-            <div class="preview-header">
-              <span class="preview-title">Rendered Output</span>
-            </div>
+            <div class="pane-header"><span>Live output</span></div>
             <div class="preview-canvas">
-              <ngx-workflow-diagram
-                [nodes]="sampleCodeNodes()"
-                [edges]="sampleCodeEdges()"
-                [showBackground]="true"
-                backgroundVariant="dots"
-                [showZoomControls]="true"
-                (nodesChange)="sampleCodeNodes.set($event)"
-                (edgesChange)="sampleCodeEdges.set($event)"
-              ></ngx-workflow-diagram>
+              @if (previewReady()) {
+                <ngx-workflow-diagram
+                  [nodes]="sampleCodeNodes()"
+                  [edges]="sampleCodeEdges()"
+                  [showBackground]="true"
+                  backgroundVariant="dots"
+                  [showZoomControls]="true"
+                  (nodesChange)="sampleCodeNodes.set($event)"
+                  (edgesChange)="sampleCodeEdges.set($event)"
+                />
+              }
             </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Bento Grid Features -->
     <section class="features-section">
       <div class="container">
-        <div class="section-header text-center">
-          <span class="badge badge-accent">Everything You Need</span>
-          <h2>Architected for Power & Flexibility</h2>
-          <p class="text-muted">Built from the ground up for modern Angular enterprise applications.</p>
+        <div class="section-header" appReveal>
+          <span class="badge badge-accent">Capabilities</span>
+          <h2>Enterprise graph tooling, Angular-native.</h2>
+          <p class="text-muted">Performance, layout, projection, and studio chrome — without the canvas bridge tax.</p>
         </div>
 
-        <div class="bento-grid">
-          
-          <!-- Row 1, Card 1: Performance (Span 2) -->
-          <div class="bento-card col-span-2 glass-panel">
-            <div class="card-content">
-              <div class="icon-wrapper">⚡</div>
-              <h3>Signals-Native Performance</h3>
-              <p>Renders 1000+ nodes smoothly at 60FPS. Built on OnPush change detection strategies and Angular Signals, avoiding heavy Zone.js digest cycles.</p>
-            </div>
-            <div class="card-metric">
-              <div class="metric-item">
-                <span class="metric-val">60 FPS</span>
-                <span class="metric-label">Smooth Pan & Zoom</span>
-              </div>
-              <div class="metric-item">
-                <span class="metric-val">&lt; 15 KB</span>
-                <span class="metric-label">Minimal Gzip Overhead</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Row 1, Card 2: Auto Layout (Span 1) -->
-          <div class="bento-card glass-panel">
-            <div class="card-content">
-              <div class="icon-wrapper">📐</div>
-              <h3>ELK.js Auto-Layout Engine</h3>
-              <p>Integrated automatic hierarchical, tree, and force-directed diagram positioning algorithm powered by ELK.js.</p>
-            </div>
-          </div>
-
-          <!-- Row 2, Card 3: Customization (Span 1) -->
-          <div class="bento-card glass-panel">
-            <div class="card-content">
-              <div class="icon-wrapper">🎨</div>
-              <h3>Template Projection</h3>
-              <p>Bring your own HTML/CSS or Angular components. Custom node headers, handles, ports, and edge paths seamlessly project.</p>
-            </div>
-          </div>
-
-          <!-- Row 2, Card 4: History & State (Span 1) -->
-          <div class="bento-card glass-panel">
-            <div class="card-content">
-              <div class="icon-wrapper">🔄</div>
-              <h3>State Sync & Undo/Redo</h3>
-              <p>Built-in reactive state service with state snapshots, undo/redo stack, and instant JSON export/import capability.</p>
-            </div>
-          </div>
-
-          <!-- Row 2, Card 5: Type Safety (Span 1) -->
-          <div class="bento-card glass-panel">
-            <div class="card-content">
-              <div class="icon-wrapper">🛡️</div>
-              <h3>100% Type-Safe API</h3>
-              <p>Strict TypeScript definitions for Nodes, Edges, Handles, Viewport state, and Connection events out of the box.</p>
-            </div>
-          </div>
-
-          <!-- Row 3, Card 6: Overlays & Controls (Span 3 - Full Width) -->
-          <div class="bento-card col-span-3 glass-panel">
-            <div class="card-content">
-              <div class="icon-wrapper">🎛️</div>
-              <h3>Composable Plugin System</h3>
-              <p>Plug-and-play UI controls: Interactive Minimap, Zoom toolbar, Undo/Redo panel, Node search overlay, Properties sidebar, and Context menu.</p>
-            </div>
-            <div class="card-tags">
-              <span class="tag">Minimap</span>
-              <span class="tag">Zoom Controls</span>
-              <span class="tag">Undo/Redo</span>
-              <span class="tag">Search Panel</span>
-              <span class="tag">Layout Align</span>
-              <span class="tag">Properties Sidebar</span>
-            </div>
-          </div>
-
+        <div class="feature-list">
+          @for (feature of features; track feature.title; let i = $index) {
+            <article class="feature-row" appReveal [revealDelay]="i * 60">
+              <h3>{{ feature.title }}</h3>
+              <p>{{ feature.body }}</p>
+            </article>
+          }
         </div>
       </div>
     </section>
 
-    <!-- Comparison Matrix -->
-    <section class="comparison-section">
+    <section class="compare-section">
       <div class="container">
-        <div class="section-header text-center">
-          <span class="badge badge-accent">Why Choose Us</span>
-          <h2>ngx-workflow vs Generic Graph Libraries</h2>
+        <div class="section-header" appReveal>
+          <span class="badge badge-accent">Why ngx-workflow</span>
+          <h2>Built for Angular, not ported to it.</h2>
         </div>
-
-        <div class="matrix-table-wrapper glass-panel">
-          <table class="matrix-table">
+        <div class="matrix-wrap glass-panel" appReveal>
+          <table class="matrix">
             <thead>
               <tr>
-                <th>Feature</th>
-                <th class="highlight-col">ngx-workflow</th>
-                <th>Generic Flow Libraries</th>
+                <th>Capability</th>
+                <th class="hi">ngx-workflow</th>
+                <th>Generic libraries</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td class="feat-name">Angular Signals Native</td>
-                <td class="highlight-col text-success">✓ Built-in Signals</td>
-                <td class="text-muted">✗ RxJS / Zone.js Heavy</td>
+                <td>Angular Signals</td>
+                <td class="hi text-success">Native</td>
+                <td class="text-muted">Zone / RxJS heavy</td>
               </tr>
               <tr>
-                <td class="feat-name">HTML & Component Projection</td>
-                <td class="highlight-col text-success">✓ Direct Template Projection</td>
-                <td class="text-muted">✗ Complex Canvas Bridge</td>
+                <td>Component projection</td>
+                <td class="hi text-success">Direct templates</td>
+                <td class="text-muted">Canvas bridge</td>
               </tr>
               <tr>
-                <td class="feat-name">Auto-Layout Algorithms</td>
-                <td class="highlight-col text-success">✓ ELK.js Built-in Service</td>
-                <td class="text-muted">✗ Requires Third-party Setup</td>
+                <td>Auto-layout</td>
+                <td class="hi text-success">ELK built-in</td>
+                <td class="text-muted">Third-party setup</td>
               </tr>
               <tr>
-                <td class="feat-name">Built-in Undo/Redo & State Service</td>
-                <td class="highlight-col text-success">✓ Included</td>
-                <td class="text-muted">✗ Manual Implementation</td>
-              </tr>
-              <tr>
-                <td class="feat-name">Standalone Component Support</td>
-                <td class="highlight-col text-success">✓ 100% Standalone</td>
-                <td class="text-muted">Partial / Legacy NgModule</td>
+                <td>Undo / redo</td>
+                <td class="hi text-success">Included</td>
+                <td class="text-muted">Manual</td>
               </tr>
             </tbody>
           </table>
@@ -323,313 +215,176 @@ interface DiagramPreset {
       </div>
     </section>
 
-    <!-- Quickstart 4 Steps -->
-    <section class="quickstart-section">
-      <div class="container">
-        <div class="section-header text-center">
-          <span class="badge badge-accent">Quick Onboarding</span>
-          <h2>Up and Running in 4 Steps</h2>
-        </div>
-
-        <div class="steps-grid">
-          <div class="step-card glass-panel">
-            <div class="step-num">01</div>
-            <h4>Install Package</h4>
-            <pre><code>npm i ngx-workflow</code></pre>
-          </div>
-
-          <div class="step-card glass-panel">
-            <div class="step-num">02</div>
-            <h4>Import Module</h4>
-            <pre><code>imports: [NgxWorkflowModule]</code></pre>
-          </div>
-
-          <div class="step-card glass-panel">
-            <div class="step-num">03</div>
-            <h4>Define Signals</h4>
-            <pre><code>nodes = signal([...])</code></pre>
-          </div>
-
-          <div class="step-card glass-panel">
-            <div class="step-num">04</div>
-            <h4>Render Canvas</h4>
-            <pre><code>&lt;ngx-workflow-diagram ...&gt;</code></pre>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Final CTA Banner -->
     <section class="cta-section">
-      <div class="container text-center">
-        <div class="cta-box glass-panel">
-          <h2>Ready to Supercharge Your Angular Diagrams?</h2>
-          <p class="text-muted">Open-source, developer-friendly, and free to use under MIT license.</p>
+      <div class="container">
+        <div class="cta-box glass-panel" appReveal>
+          <h2>Ship your next diagram surface.</h2>
+          <p class="text-muted">MIT licensed. Angular 17.1–22. Ready for production editors.</p>
           <div class="cta-actions">
-            <a routerLink="/docs" class="btn btn-primary btn-lg">Explore Documentation</a>
-            <a routerLink="/sandbox" class="btn btn-secondary btn-lg">Open Interactive Sandbox</a>
+            <a routerLink="/docs" class="btn btn-primary btn-lg">Explore docs</a>
+            <a routerLink="/sandbox" class="btn btn-outline btn-lg">Launch sandbox</a>
           </div>
         </div>
       </div>
     </section>
   `,
   styles: [`
-    :host { display: block; overflow-x: hidden; }
+    :host { display: block; }
 
-    /* Hero Section */
-    .hero-section {
-      padding: 90px 0 60px;
+    .hero {
       position: relative;
+      min-height: min(92vh, 860px);
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+      isolation: isolate;
     }
 
-    .hero-bg-glow {
+    .hero-veil {
       position: absolute;
-      top: -150px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 900px;
-      height: 500px;
-      background: radial-gradient(ellipse at center, rgba(59, 130, 246, 0.15) 0%, rgba(99, 102, 241, 0.08) 45%, transparent 70%);
+      inset: 0;
+      z-index: 1;
+      background:
+        linear-gradient(180deg, transparent 40%, var(--color-bg-base) 95%),
+        radial-gradient(60% 50% at 50% 30%, transparent, var(--color-bg-base) 90%);
       pointer-events: none;
-      z-index: -1;
-      filter: blur(60px);
     }
 
-    .hero-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-      gap: 32px;
+    .hero-inner {
+      position: relative;
+      z-index: 2;
+      padding: 120px 24px 72px;
     }
 
-    .hero-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 16px;
-      border-radius: var(--radius-full);
-      background: var(--color-bg-surface);
-      border: 1px solid var(--color-border);
-      color: var(--color-text-primary);
-      font-size: 0.85rem;
-      font-weight: 500;
-      text-decoration: none;
-      transition: all 0.2s ease;
-      box-shadow: var(--shadow-sm);
-    }
-
-    .hero-badge:hover {
-      border-color: var(--color-primary);
-      transform: translateY(-1px);
-    }
-
-    .badge-sparkle { color: #f59e0b; }
-    .badge-arrow { color: var(--color-primary); font-weight: 700; }
-
-    .hero-title {
-      font-size: 3.8rem;
-      font-weight: 800;
-      line-height: 1.1;
-      letter-spacing: -0.04em;
-      margin: 0;
-      max-width: 900px;
-    }
-
-    .hero-subtitle {
-      font-size: 1.25rem;
-      color: var(--color-text-secondary);
-      max-width: 680px;
-      line-height: 1.6;
-      margin: 0;
-    }
-
-    .hero-actions {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      flex-wrap: wrap;
-      justify-content: center;
-      margin-top: 8px;
-    }
-
-    /* Install Widget */
-    .install-widget {
+    .hero-copy {
+      max-width: 720px;
       display: flex;
       flex-direction: column;
       align-items: flex-start;
-      background: var(--color-bg-surface);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-md);
-      overflow: hidden;
-      box-shadow: var(--shadow-sm);
+      gap: 22px;
     }
 
-    .pkg-tabs {
-      display: flex;
-      background: rgba(0,0,0,0.1);
-      width: 100%;
-      border-bottom: 1px solid var(--color-border);
+    .brand-mark {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: clamp(2.4rem, 6vw, 4.2rem);
+      font-weight: 800;
+      letter-spacing: -0.05em;
+      line-height: 0.95;
+      background: var(--color-accent-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
 
-    .pkg-tabs span {
-      padding: 4px 12px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: var(--color-text-muted);
-      cursor: pointer;
-      font-family: var(--font-mono);
-      transition: color 0.2s;
-    }
-
-    .pkg-tabs span.active {
-      color: var(--color-primary);
-      border-bottom: 2px solid var(--color-primary);
-    }
-
-    .install-cmd {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 8px 16px;
-      font-family: var(--font-mono);
-      font-size: 0.88rem;
+    .hero-title {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: clamp(1.85rem, 4.2vw, 3rem);
+      font-weight: 700;
+      letter-spacing: -0.035em;
+      line-height: 1.12;
       color: var(--color-text-primary);
-      cursor: pointer;
     }
 
-    .copy-btn {
-      background: var(--color-bg-surface-hover);
-      border: 1px solid var(--color-border);
+    .hero-subtitle {
+      margin: 0;
+      max-width: 34rem;
+      font-size: 1.15rem;
       color: var(--color-text-secondary);
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-size: 0.75rem;
-      cursor: pointer;
-      transition: all 0.2s;
+      line-height: 1.65;
     }
 
-    .copy-btn.copied {
-      background: var(--color-success);
-      color: #ffffff;
-      border-color: var(--color-success);
-    }
-
-    /* Hero Visual Window */
-    .hero-visual {
-      width: 100%;
-      max-width: 1180px;
-      margin-top: 24px;
-    }
-
-    .editor-window {
-      height: 620px;
-      border-radius: var(--radius-lg);
+    .hero-cta {
       display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      box-shadow: var(--shadow-xl);
+      flex-wrap: wrap;
+      gap: 12px;
     }
 
-    .editor-bar {
-      height: 48px;
-      background: var(--color-bg-surface);
-      border-bottom: 1px solid var(--color-border);
+    .stage-section {
+      padding: 0 0 96px;
+      margin-top: -48px;
+      position: relative;
+      z-index: 3;
+    }
+
+    .stage-chrome {
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+      box-shadow: var(--shadow-xl), var(--shadow-glow);
+      transform: translateZ(0);
+    }
+
+    .stage-bar {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 16px;
+      gap: 12px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--color-border);
+      background: var(--color-bg-elevated);
+      flex-wrap: wrap;
     }
 
-    .traffic-lights {
-      display: flex;
-      gap: 8px;
-    }
+    .preset-selector { display: flex; flex-wrap: wrap; gap: 6px; }
 
-    .light {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-    }
-    .red { background: #ef4444; }
-    .yellow { background: #f59e0b; }
-    .green { background: #10b981; }
-
-    .preset-selector {
-      display: flex;
-      gap: 6px;
-    }
-
-    .preset-btn {
+    .preset-btn, .tool-btn {
       background: transparent;
       border: 1px solid transparent;
       color: var(--color-text-secondary);
-      padding: 4px 12px;
+      padding: 6px 12px;
       font-size: 0.8rem;
-      font-weight: 500;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .preset-btn:hover {
-      color: var(--color-text-primary);
-    }
-
-    .preset-btn.active {
-      background: var(--color-bg-surface-hover);
-      border-color: var(--color-border);
-      color: var(--color-primary);
       font-weight: 600;
-    }
-
-    .editor-actions {
-      display: flex;
-      gap: 8px;
-    }
-
-    .editor-tool-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      background: var(--color-bg-base);
-      border: 1px solid var(--color-border);
-      color: var(--color-text-secondary);
-      padding: 4px 10px;
-      border-radius: 6px;
-      font-size: 0.78rem;
+      border-radius: 8px;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: color var(--motion-fast) var(--ease-out),
+        background var(--motion-fast) var(--ease-out),
+        border-color var(--motion-fast) var(--ease-out),
+        transform var(--motion-fast) var(--ease-out);
     }
 
-    .editor-tool-btn:hover, .editor-tool-btn.active {
-      border-color: var(--color-primary);
+    .preset-btn:hover, .tool-btn:hover {
+      color: var(--color-text-primary);
+      background: var(--color-bg-surface-hover);
+    }
+
+    .preset-btn.active, .tool-btn.active {
       color: var(--color-primary);
+      border-color: var(--color-border-strong);
+      background: var(--color-primary-soft);
     }
 
-    .editor-content {
-      flex: 1;
-      position: relative;
+    .stage-actions { display: flex; gap: 8px; }
+
+    .stage-canvas {
+      height: min(58vh, 560px);
+      min-height: 360px;
       background: var(--color-bg-base);
     }
 
-    /* Code Preview Section */
-    .code-preview-section {
-      padding: 100px 0;
-    }
+    .proof-section, .features-section, .compare-section { padding: 88px 0; }
+    .cta-section { padding: 40px 0 96px; }
 
     .section-header {
-      margin-bottom: 48px;
+      text-align: center;
+      margin-bottom: 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
     }
 
     .section-header h2 {
-      font-size: 2.2rem;
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: clamp(1.8rem, 3vw, 2.4rem);
       font-weight: 800;
-      margin: 12px 0 8px;
       letter-spacing: -0.03em;
     }
 
-    .code-preview-grid {
+    .section-header p { margin: 0; max-width: 36rem; }
+
+    .proof-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
       border-radius: var(--radius-lg);
@@ -637,292 +392,166 @@ interface DiagramPreset {
     }
 
     .code-side {
-      background: #0b0f19;
+      background: var(--color-bg-elevated);
       border-right: 1px solid var(--color-border);
-      display: flex;
-      flex-direction: column;
     }
 
-    .code-header, .preview-header {
+    .pane-header {
       height: 44px;
-      background: rgba(0,0,0,0.3);
-      border-bottom: 1px solid var(--color-border);
       display: flex;
       align-items: center;
       padding: 0 16px;
-    }
-
-    .file-tab {
+      border-bottom: 1px solid var(--color-border);
       font-family: var(--font-mono);
-      font-size: 0.8rem;
-      color: var(--color-primary);
-      font-weight: 600;
+      font-size: 0.78rem;
+      color: var(--color-text-muted);
     }
 
     .code-side pre {
       margin: 0;
       padding: 20px;
+      overflow: auto;
       font-family: var(--font-mono);
-      font-size: 0.85rem;
-      line-height: 1.6;
-      color: #e2e8f0;
-      overflow-x: auto;
-    }
-
-    .token-keyword { color: #f472b6; font-weight: 600; }
-    .token-string { color: #34d399; }
-    .token-decorator { color: #60a5fa; }
-    .token-boolean { color: #fbbf24; }
-
-    .preview-side {
-      display: flex;
-      flex-direction: column;
-      background: var(--color-bg-surface);
-    }
-
-    .preview-title {
-      font-size: 0.85rem;
-      font-weight: 600;
+      font-size: 0.82rem;
+      line-height: 1.65;
       color: var(--color-text-secondary);
     }
 
-    .preview-canvas {
-      flex: 1;
-      height: 440px;
-      position: relative;
-    }
+    .tok-kw { color: #7dd3fc; }
+    .tok-str { color: #5eead4; }
+    .tok-bool { color: #fbbf24; }
+    .tok-dec { color: #a5b4fc; }
 
-    /* Bento Grid */
-    .features-section {
-      padding: 80px 0;
-    }
+    .preview-side { display: flex; flex-direction: column; min-height: 360px; }
+    .preview-canvas { flex: 1; min-height: 320px; }
 
-    .bento-grid {
+    .feature-list {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 24px;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
     }
 
-    .col-span-2 {
-      grid-column: span 2;
-    }
-
-    .col-span-3 {
-      grid-column: span 3;
-    }
-
-    .bento-card {
-      padding: 32px;
-      border-radius: var(--radius-lg);
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      gap: 24px;
-    }
-
-    .icon-wrapper {
-      width: 48px;
-      height: 48px;
-      border-radius: 12px;
-      background: var(--color-bg-surface-hover);
-      border: 1px solid var(--color-border);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.5rem;
-      margin-bottom: 16px;
-    }
-
-    .bento-card h3 {
-      font-size: 1.4rem;
-      font-weight: 700;
-      margin: 0 0 10px;
-      letter-spacing: -0.02em;
-    }
-
-    .bento-card p {
-      color: var(--color-text-secondary);
-      font-size: 0.98rem;
-      line-height: 1.6;
-      margin: 0;
-    }
-
-    .card-metric {
-      display: flex;
-      gap: 32px;
-      padding-top: 16px;
+    .feature-row {
+      padding: 28px 28px 24px;
       border-top: 1px solid var(--color-border);
+      background: linear-gradient(180deg, var(--color-bg-surface) 0%, transparent 100%);
+      border-radius: 0 0 var(--radius-md) var(--radius-md);
+      transition: transform var(--motion-base) var(--ease-out),
+        border-color var(--motion-base) var(--ease-out);
     }
 
-    .metric-val {
-      font-size: 1.5rem;
-      font-weight: 800;
-      color: var(--color-primary);
-      display: block;
+    .feature-row:hover {
+      transform: translate3d(0, -3px, 0);
+      border-top-color: var(--color-primary);
     }
 
-    .metric-label {
-      font-size: 0.8rem;
-      color: var(--color-text-muted);
+    .feature-row h3 {
+      margin: 0 0 8px;
+      font-family: var(--font-display);
+      font-size: 1.2rem;
+      font-weight: 700;
     }
 
-    .card-tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .tag {
-      font-size: 0.78rem;
-      padding: 4px 10px;
-      border-radius: 6px;
-      background: var(--color-bg-surface-hover);
-      border: 1px solid var(--color-border);
+    .feature-row p {
+      margin: 0;
       color: var(--color-text-secondary);
+      line-height: 1.65;
     }
 
-    /* Comparison Section */
-    .comparison-section {
-      padding: 80px 0;
-    }
-
-    .matrix-table-wrapper {
+    .matrix-wrap {
       border-radius: var(--radius-lg);
       overflow: hidden;
-      margin-top: 32px;
     }
 
-    .matrix-table {
+    .matrix {
       width: 100%;
       border-collapse: collapse;
-      text-align: left;
+      font-size: 0.95rem;
     }
 
-    .matrix-table th, .matrix-table td {
-      padding: 18px 24px;
+    .matrix th, .matrix td {
+      padding: 16px 20px;
+      text-align: left;
       border-bottom: 1px solid var(--color-border);
     }
 
-    .matrix-table th {
-      font-size: 0.9rem;
-      font-weight: 700;
+    .matrix th {
+      font-size: 0.75rem;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.06em;
       color: var(--color-text-muted);
+      background: var(--color-bg-elevated);
     }
 
-    .highlight-col {
-      background: rgba(59, 130, 246, 0.06);
-      font-weight: 600;
-    }
-
-    .feat-name {
-      font-weight: 600;
+    .matrix .hi {
+      background: var(--color-primary-soft);
       color: var(--color-text-primary);
-    }
-
-    .text-success { color: var(--color-success); }
-
-    /* Quickstart Steps */
-    .quickstart-section {
-      padding: 80px 0;
-    }
-
-    .steps-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 20px;
-      margin-top: 32px;
-    }
-
-    .step-card {
-      padding: 24px;
-      border-radius: var(--radius-md);
-      position: relative;
-    }
-
-    .step-num {
-      font-size: 2.2rem;
-      font-weight: 800;
-      color: var(--color-primary);
-      opacity: 0.4;
-      margin-bottom: 8px;
-    }
-
-    .step-card h4 {
-      font-size: 1.1rem;
-      font-weight: 700;
-      margin: 0 0 12px;
-    }
-
-    .step-card pre {
-      background: #0b0f19;
-      padding: 10px 14px;
-      border-radius: 6px;
-      font-family: var(--font-mono);
-      font-size: 0.8rem;
-      margin: 0;
-      color: #38bdf8;
-      overflow-x: auto;
-    }
-
-    /* CTA Banner */
-    .cta-section {
-      padding: 80px 0 40px;
+      font-weight: 600;
     }
 
     .cta-box {
       padding: 64px 32px;
       border-radius: var(--radius-xl);
-      background: var(--color-bg-surface);
-      border: 1px solid var(--color-border);
-      box-shadow: var(--shadow-xl);
-      position: relative;
-      overflow: hidden;
+      text-align: center;
     }
 
     .cta-box h2 {
-      font-size: 2.4rem;
-      font-weight: 800;
       margin: 0 0 12px;
+      font-family: var(--font-display);
+      font-size: clamp(1.8rem, 3vw, 2.4rem);
       letter-spacing: -0.03em;
-      color: var(--color-text-primary);
     }
 
-    .cta-box p {
-      font-size: 1.1rem;
-      margin: 0 0 32px;
-      color: var(--color-text-secondary);
-    }
+    .cta-box p { margin: 0 0 28px; }
 
     .cta-actions {
       display: flex;
-      gap: 16px;
       justify-content: center;
+      flex-wrap: wrap;
+      gap: 12px;
     }
 
-    /* Responsive */
-    @media (max-width: 1024px) {
-      .bento-grid { grid-template-columns: 1fr; }
-      .col-span-2, .col-span-3 { grid-column: span 1; }
-      .code-preview-grid { grid-template-columns: 1fr; }
-      .steps-grid { grid-template-columns: 1fr 1fr; }
+    @media (max-width: 960px) {
+      .proof-grid { grid-template-columns: 1fr; }
+      .code-side { border-right: none; border-bottom: 1px solid var(--color-border); }
+      .feature-list { grid-template-columns: 1fr; }
     }
 
-    @media (max-width: 768px) {
-      .hero-title { font-size: 2.5rem; }
-      .steps-grid { grid-template-columns: 1fr; }
+    @media (max-width: 640px) {
+      .hero-inner { padding-top: 96px; }
+      .stage-section { margin-top: -24px; }
     }
-  `]
+  `],
 })
-export class HomeComponent {
-  pkgManager = signal<'npm' | 'pnpm' | 'yarn'>('npm');
-  copied = signal(false);
+export class HomeComponent implements OnInit {
+  private readonly seo = inject(SeoService);
+  private readonly destroyRef = inject(DestroyRef);
+
+  diagramReady = signal(false);
+  previewReady = signal(false);
 
   animatedEdges = signal(true);
   bgVariant = signal<'dots' | 'lines' | 'cross'>('dots');
 
-  // Presets for Hero Flowchart
+  features = [
+    {
+      title: 'Signals-native performance',
+      body: 'OnPush rendering and signal sync keep pan, zoom, and drag smooth at scale — without Zone.js digest churn.',
+    },
+    {
+      title: 'ELK auto-layout',
+      body: 'Hierarchical, force, and circular helpers ship with the library so complex graphs settle in one call.',
+    },
+    {
+      title: 'Template projection',
+      body: 'Bring Angular components into nodes and edges. No canvas bridge, no foreign rendering model.',
+    },
+    {
+      title: 'Studio chrome included',
+      body: 'Minimap, undo/redo, search, properties sidebar, context menu, and export — composable out of the box.',
+    },
+  ];
+
   presets: DiagramPreset[] = [
     {
       id: 'cicd',
@@ -932,15 +561,15 @@ export class HomeComponent {
         { id: 'build', position: { x: 280, y: 50 }, label: 'Build & Test', type: 'default', ports: 3 },
         { id: 'lint', position: { x: 280, y: 230 }, label: 'Lint Security', type: 'default', ports: 3 },
         { id: 'deploy', position: { x: 560, y: 140 }, label: 'Deploy Staging', type: 'default', ports: 3 },
-        { id: 'prod', position: { x: 840, y: 140 }, label: 'Production', type: 'default', ports: 2 }
+        { id: 'prod', position: { x: 840, y: 140 }, label: 'Production', type: 'default', ports: 2 },
       ],
       edges: [
         { id: 'e1', source: 'git', target: 'build', sourceHandle: 'right', targetHandle: 'left' },
         { id: 'e2', source: 'git', target: 'lint', sourceHandle: 'right', targetHandle: 'left' },
         { id: 'e3', source: 'build', target: 'deploy', sourceHandle: 'right', targetHandle: 'left' },
         { id: 'e4', source: 'lint', target: 'deploy', sourceHandle: 'right', targetHandle: 'left' },
-        { id: 'e5', source: 'deploy', target: 'prod', sourceHandle: 'right', targetHandle: 'left' }
-      ]
+        { id: 'e5', source: 'deploy', target: 'prod', sourceHandle: 'right', targetHandle: 'left' },
+      ],
     },
     {
       id: 'ai-agent',
@@ -950,15 +579,15 @@ export class HomeComponent {
         { id: 'router', position: { x: 320, y: 140 }, label: 'Intent Classifier', type: 'default', ports: 4 },
         { id: 'tool', position: { x: 620, y: 50 }, label: 'Tool Invocation', type: 'default', ports: 2 },
         { id: 'rag', position: { x: 620, y: 230 }, label: 'RAG Retrieval', type: 'default', ports: 2 },
-        { id: 'response', position: { x: 880, y: 140 }, label: 'Synthesized Answer', type: 'default', ports: 1 }
+        { id: 'response', position: { x: 880, y: 140 }, label: 'Synthesized Answer', type: 'default', ports: 1 },
       ],
       edges: [
         { id: 'ae1', source: 'user', target: 'router', sourceHandle: 'right', targetHandle: 'left' },
         { id: 'ae2', source: 'router', target: 'tool', sourceHandle: 'right', targetHandle: 'left' },
         { id: 'ae3', source: 'router', target: 'rag', sourceHandle: 'right', targetHandle: 'left' },
         { id: 'ae4', source: 'tool', target: 'response', sourceHandle: 'right', targetHandle: 'left' },
-        { id: 'ae5', source: 'rag', target: 'response', sourceHandle: 'right', targetHandle: 'left' }
-      ]
+        { id: 'ae5', source: 'rag', target: 'response', sourceHandle: 'right', targetHandle: 'left' },
+      ],
     },
     {
       id: 'data-eng',
@@ -966,79 +595,79 @@ export class HomeComponent {
       nodes: [
         { id: 'kafka', position: { x: 80, y: 140 }, label: 'Kafka Event Stream', type: 'default', ports: 2 },
         { id: 'spark', position: { x: 360, y: 140 }, label: 'Spark Streaming', type: 'default', ports: 3 },
-        { id: 'warehouse', position: { x: 680, y: 140 }, label: 'Snowflake Warehouse', type: 'default', ports: 2 }
+        { id: 'warehouse', position: { x: 680, y: 140 }, label: 'Snowflake Warehouse', type: 'default', ports: 2 },
       ],
       edges: [
         { id: 'de1', source: 'kafka', target: 'spark', sourceHandle: 'right', targetHandle: 'left' },
-        { id: 'de2', source: 'spark', target: 'warehouse', sourceHandle: 'right', targetHandle: 'left' }
-      ]
-    }
+        { id: 'de2', source: 'spark', target: 'warehouse', sourceHandle: 'right', targetHandle: 'left' },
+      ],
+    },
   ];
 
   activePreset = signal<DiagramPreset>(this.presets[0]);
-
-  /** Live hero graph state (cloned from preset so drag/connect can update) */
   heroNodes = signal<Node[]>(this.cloneNodes(this.presets[0].nodes));
   private heroBaseEdges = signal<Edge[]>(this.cloneEdges(this.presets[0].edges));
   heroEdges = computed(() => {
     const animated = this.animatedEdges();
-    return this.heroBaseEdges().map(e => ({ ...e, animated }));
+    return this.heroBaseEdges().map((e) => ({ ...e, animated }));
   });
 
-  // Code preview sample data (own diagram instance — must not share hero state)
   sampleCodeNodes = signal<Node[]>([
     { id: '1', label: 'Input Trigger', position: { x: 40, y: 120 }, ports: 2 },
     { id: '2', label: 'Data Processing', position: { x: 260, y: 120 }, ports: 4 },
-    { id: '3', label: 'Database Storage', position: { x: 500, y: 120 }, ports: 2 }
+    { id: '3', label: 'Database Storage', position: { x: 500, y: 120 }, ports: 2 },
   ]);
 
   sampleCodeEdges = signal<Edge[]>([
     { id: 'e1-2', source: '1', target: '2', sourceHandle: 'right', targetHandle: 'left', animated: true },
-    { id: 'e2-3', source: '2', target: '3', sourceHandle: 'right', targetHandle: 'left' }
+    { id: 'e2-3', source: '2', target: '3', sourceHandle: 'right', targetHandle: 'left' },
   ]);
 
+  constructor() {
+    afterNextRender(() => {
+      // Defer diagram mount past first paint for better LCP
+      const heroTimer = setTimeout(() => this.diagramReady.set(true), 60);
+      const previewTimer = setTimeout(() => this.previewReady.set(true), 480);
+
+      this.destroyRef.onDestroy(() => {
+        clearTimeout(heroTimer);
+        clearTimeout(previewTimer);
+      });
+    });
+  }
+
+  ngOnInit(): void {
+    this.seo.apply({
+      title: 'ngx-workflow — Angular Signals flowchart engine',
+      description:
+        'High-performance Angular node-based editor with Signals, ELK layout, smart edges, and studio chrome.',
+      path: '/',
+    });
+  }
+
   private cloneNodes(nodes: Node[]): Node[] {
-    return nodes.map(n => ({ ...n, position: { ...n.position } }));
+    return nodes.map((n) => ({ ...n, position: { ...n.position } }));
   }
 
   private cloneEdges(edges: Edge[]): Edge[] {
-    return edges.map(e => ({ ...e }));
+    return edges.map((e) => ({ ...e }));
   }
 
-  setPkg(mgr: 'npm' | 'pnpm' | 'yarn') {
-    this.pkgManager.set(mgr);
-  }
-
-  getInstallCommand(): string {
-    switch (this.pkgManager()) {
-      case 'pnpm': return 'pnpm add ngx-workflow';
-      case 'yarn': return 'yarn add ngx-workflow';
-      default: return 'npm install ngx-workflow';
-    }
-  }
-
-  copyInstallCommand() {
-    navigator.clipboard.writeText(this.getInstallCommand());
-    this.copied.set(true);
-    setTimeout(() => this.copied.set(false), 2000);
-  }
-
-  selectPreset(preset: DiagramPreset) {
+  selectPreset(preset: DiagramPreset): void {
     this.activePreset.set(preset);
     this.heroNodes.set(this.cloneNodes(preset.nodes));
     this.heroBaseEdges.set(this.cloneEdges(preset.edges));
   }
 
-  onHeroEdgesChange(edges: Edge[]) {
-    // Persist structure without the ephemeral animated flag from the computed view
+  onHeroEdgesChange(edges: Edge[]): void {
     this.heroBaseEdges.set(edges.map(({ animated, ...rest }) => rest));
   }
 
-  toggleAnimated() {
-    this.animatedEdges.update(v => !v);
+  toggleAnimated(): void {
+    this.animatedEdges.update((v) => !v);
   }
 
-  cycleBg() {
+  cycleBg(): void {
     const current = this.bgVariant();
     if (current === 'dots') this.bgVariant.set('lines');
     else if (current === 'lines') this.bgVariant.set('cross');

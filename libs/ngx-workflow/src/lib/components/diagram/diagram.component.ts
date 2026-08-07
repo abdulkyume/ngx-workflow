@@ -1169,6 +1169,14 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
       clearTimeout(this.importNotificationTimer);
       this.importNotificationTimer = null;
     }
+    if (this.autoPanInterval !== null) {
+      window.cancelAnimationFrame(this.autoPanInterval);
+      this.autoPanInterval = null;
+    }
+    if (this.dragAnimationFrameId !== null) {
+      window.cancelAnimationFrame(this.dragAnimationFrameId);
+      this.dragAnimationFrameId = null;
+    }
     if (this.resizeObserver) {
       this.resizeObserver.disconnect();
     }
