@@ -201,7 +201,8 @@ const CONTROLLABLE_INPUTS = new Set<keyof SandboxInputState>([
                               class="field"
                               type="number"
                               [disabled]="numberValue(item.name) === undefined"
-                              [ngModel]="numberValue(item.name) ?? 1"
+                              [ngModel]="numberValue(item.name) ?? null"
+                              [placeholder]="numberValue(item.name) === undefined ? 'unlimited' : ''"
                               (ngModelChange)="setOptionalNumber(item.name, $event)"
                             />
                             <button
@@ -792,18 +793,27 @@ export class SandboxComponent {
     this.patchInput(name, value);
   }
 
-  setNumber(name: string, value: number | string): void {
-    const n = typeof value === 'number' ? value : Number(value);
-    if (Number.isFinite(n)) this.patchInput(name, n);
+  setNumber(name: string, value: number | string | null | undefined): void {
+    const n = this.parseFiniteNumber(value);
+    if (n !== undefined) {
+      this.patchInput(name, n);
+      return;
+    }
+    // Empty/partial edit: keep prior value and refresh the binding so the field does not stick at 0/blank.
+    this.refreshInputs();
   }
 
   setString(name: string, value: string): void {
     this.patchInput(name, value);
   }
 
-  setOptionalNumber(name: string, value: number | string): void {
-    const n = typeof value === 'number' ? value : Number(value);
-    if (Number.isFinite(n)) this.patchInput(name, n);
+  setOptionalNumber(name: string, value: number | string | null | undefined): void {
+    const n = this.parseFiniteNumber(value);
+    if (n !== undefined) {
+      this.patchInput(name, n);
+      return;
+    }
+    this.refreshInputs();
   }
 
   toggleOptionalNumber(name: string): void {
@@ -811,9 +821,21 @@ export class SandboxComponent {
     this.patchInput(name, current === undefined ? 1 : undefined);
   }
 
+  /** Ignore empty/partial edits so clearing a number field does not apply `0`. */
+  private parseFiniteNumber(value: number | string | null | undefined): number | undefined {
+    if (value === null || value === undefined || value === '') return undefined;
+    if (typeof value === 'string' && value.trim() === '') return undefined;
+    const n = typeof value === 'number' ? value : Number(value);
+    return Number.isFinite(n) ? n : undefined;
+  }
+
   private patchInput(name: string, value: unknown): void {
     if (!this.isControllable(name)) return;
     this.inputs.update((state) => ({ ...state, [name]: value }));
+  }
+
+  private refreshInputs(): void {
+    this.inputs.update((state) => ({ ...state }));
   }
 
   isOutputEnabled(name: string): boolean {
