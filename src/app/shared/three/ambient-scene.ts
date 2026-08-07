@@ -37,7 +37,7 @@ export function createAmbientScene(options: AmbientSceneOptions): AmbientSceneHa
   if (!host) return null;
 
   const reducedMotion = options.reducedMotion ?? false;
-  const count = options.particleCount ?? (reducedMotion ? 80 : 220);
+  const count = options.particleCount ?? (reducedMotion ? 120 : 320);
 
   const scene = new Scene();
   const camera = new PerspectiveCamera(48, 1, 0.1, 100);
@@ -48,8 +48,8 @@ export function createAmbientScene(options: AmbientSceneOptions): AmbientSceneHa
     renderer = new WebGLRenderer({
       antialias: false,
       alpha: true,
-      powerPreference: 'low-power',
-      failIfMajorPerformanceCaveat: true,
+      powerPreference: 'high-performance',
+      failIfMajorPerformanceCaveat: false,
     });
   } catch {
     return null;
@@ -83,10 +83,10 @@ export function createAmbientScene(options: AmbientSceneOptions): AmbientSceneHa
   geometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
 
   const material = new PointsMaterial({
-    size: reducedMotion ? 0.035 : 0.045,
+    size: reducedMotion ? 0.06 : 0.09,
     color: new Color(options.accent ?? '#2dd4bf'),
     transparent: true,
-    opacity: 0.55,
+    opacity: 0.85,
     depthWrite: false,
     blending: AdditiveBlending,
     sizeAttenuation: true,

@@ -245,8 +245,8 @@ interface DiagramPreset {
       inset: 0;
       z-index: 1;
       background:
-        linear-gradient(180deg, transparent 40%, var(--color-bg-base) 95%),
-        radial-gradient(60% 50% at 50% 30%, transparent, var(--color-bg-base) 90%);
+        linear-gradient(180deg, transparent 55%, var(--color-bg-base) 96%),
+        radial-gradient(70% 55% at 50% 35%, transparent 20%, color-mix(in srgb, var(--color-bg-base) 55%, transparent) 100%);
       pointer-events: none;
     }
 
