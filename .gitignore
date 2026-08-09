@@ -6,6 +6,10 @@
 /out-tsc
 /bazel-out
 
+# Generated Compodoc site (built via npm run docs:compodoc)
+/public/compodoc/**
+!/public/compodoc/.gitkeep
+
 # Node
 /node_modules
 npm-debug.log

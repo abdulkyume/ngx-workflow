@@ -29,6 +29,9 @@ import { ExecutionSimulatorService } from './services/execution-simulator.servic
 
 // Injection Tokens
 import { NGX_WORKFLOW_NODE_TYPES } from './injection-tokens/node-types.token';
+import { DragHandleDirective } from './directives/drag-handle.directive';
+import { NgxWorkflowChangesControllerDirective } from './directives/changes-controller.directive';
+import { NgxWorkflowConnectionControllerDirective } from './directives/connection-controller.directive';
 
 @NgModule({
   imports: [
@@ -51,6 +54,9 @@ import { NGX_WORKFLOW_NODE_TYPES } from './injection-tokens/node-types.token';
     PaletteComponent,
     ExecutionControlsComponent,
     RoundedRectNodeComponent,
+    DragHandleDirective,
+    NgxWorkflowChangesControllerDirective,
+    NgxWorkflowConnectionControllerDirective,
   ],
   declarations: [
     // Standalone components are imported, not declared.
@@ -86,6 +92,9 @@ import { NGX_WORKFLOW_NODE_TYPES } from './injection-tokens/node-types.token';
     PaletteComponent,
     ExecutionControlsComponent,
     RoundedRectNodeComponent,
+    DragHandleDirective,
+    NgxWorkflowChangesControllerDirective,
+    NgxWorkflowConnectionControllerDirective,
   ],
 })
 export class NgxWorkflowModule { }

@@ -31,6 +31,9 @@ interface TocItem {
             <option value="/docs/concepts">Signals & State Model</option>
             <option value="/docs/api">API Reference</option>
             <option value="/docs/customization">Custom Nodes & Edges</option>
+            <option value="/docs/cookbook">Cookbook</option>
+            <option value="/docs/testing">Testing</option>
+            <option value="/compodoc/">Compodoc API</option>
             <option value="/docs/inputs">Input Properties</option>
             <option value="/docs/outputs">Outputs & Events</option>
           </select>
@@ -59,7 +62,7 @@ interface TocItem {
             </div>
           }
 
-          @if (shouldShow('concepts') || shouldShow('api') || shouldShow('customization')) {
+          @if (shouldShow('concepts') || shouldShow('api') || shouldShow('customization') || shouldShow('cookbook') || shouldShow('testing')) {
             <div class="nav-group">
               <h4 class="group-title">Core Architecture</h4>
               @if (shouldShow('concepts')) {
@@ -70,6 +73,15 @@ interface TocItem {
               }
               @if (shouldShow('customization')) {
                 <a routerLink="/docs/customization" routerLinkActive="active" class="nav-item">Custom Nodes & Edges</a>
+              }
+              @if (shouldShow('cookbook')) {
+                <a routerLink="/docs/cookbook" routerLinkActive="active" class="nav-item">Cookbook</a>
+              }
+              @if (shouldShow('testing')) {
+                <a routerLink="/docs/testing" routerLinkActive="active" class="nav-item">Testing</a>
+              }
+              @if (shouldShow('compodoc') || shouldShow('api')) {
+                <a href="/compodoc/" target="_blank" rel="noopener" class="nav-item">Compodoc API ↗</a>
               }
             </div>
           }
@@ -371,6 +383,10 @@ export class DocsComponent implements OnInit, OnDestroy, AfterViewInit {
 
   onMobileNav(event: Event): void {
     const value = (event.target as HTMLSelectElement).value;
+    if (value.startsWith('/compodoc')) {
+      window.open(value, '_blank', 'noopener');
+      return;
+    }
     void this.router.navigateByUrl(value);
   }
 

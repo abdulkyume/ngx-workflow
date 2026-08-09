@@ -10,12 +10,14 @@ export interface Viewport {
 
 export interface ZoomOptions {
   step?: number;
-  duration?: number; // For future animation support
+  /** Animation duration in ms (0 = instant). */
+  duration?: number;
 }
 
 export interface ZoomToOptions {
   center?: XYPosition;
-  duration?: number; // For future animation support
+  /** Animation duration in ms (0 = instant). */
+  duration?: number;
 }
 
 export interface FitViewOptions {
@@ -23,20 +25,23 @@ export interface FitViewOptions {
   includeHiddenNodes?: boolean;
   minZoom?: number;
   maxZoom?: number;
-  duration?: number; // For future animation support
+  /** Animation duration in ms (0 = instant). */
+  duration?: number;
   nodes?: string[]; // Specific node IDs to fit
 }
 
 export interface SetCenterOptions {
   zoom?: number;
-  duration?: number; // For future animation support
+  /** Animation duration in ms (0 = instant). */
+  duration?: number;
 }
 
 export interface FitBoundsOptions {
   padding?: number;
   minZoom?: number;
   maxZoom?: number;
-  duration?: number; // For future animation support
+  /** Animation duration in ms (0 = instant). */
+  duration?: number;
 }
 
 export interface Bounds {

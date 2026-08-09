@@ -83,85 +83,96 @@
           role="img" [attr.aria-label]="getEdgeAriaLabel(edge)"
           (click)="onEdgeClick($event, edge)" (dblclick)="onEdgeDoubleClick($event, edge)"
           (mouseenter)="onEdgeMouseEnter($event, edge)" (mouseleave)="onEdgeMouseLeave($event, edge)">
-          <!-- Edge path with markers — custom stroke/width as inline styles so CSS cannot override -->
-          <path [attr.id]="'edge-path-' + edge.id" [attr.d]="getEdgePath(edge)" class="ngx-workflow__edge-path"
-            [class.dashed-type]="edge.type === 'dashed'"
-            [attr.marker-start]="getMarkerUrlForEdge(edge, 'start')"
-            [attr.marker-end]="getMarkerUrlForEdge(edge, 'end')"
-            [attr.stroke]="getEdgeStrokeColor(edge)"
-            [style.stroke]="getEdgeStrokeColor(edge)"
-            [style.stroke-width.px]="getEdgeStrokeWidth(edge)"
-            [style.stroke-dasharray]="getEdgeStrokeDasharray(edge)"
-            [style.animation-duration]="isEdgeFlowAnimated(edge) ? (edge.animationDuration || '1s') : null">
-          </path>
-          <!-- SVG Motion Animation (Dot) -->
-          @if (isEdgeDotAnimated(edge)) {
-            <circle r="4"
-              [style.fill]="getEdgeAnimationFill(edge)">
-              <animateMotion [attr.dur]="edge.animationDuration || '2s'" repeatCount="indefinite">
-                <mpath [attr.href]="'#edge-path-' + edge.id"></mpath>
-              </animateMotion>
-            </circle>
+          @if (isCustomEdge(edge)) {
+            @if (getCustomEdgeComponent(edge.type); as edgeCmp) {
+              <ng-container *ngComponentOutlet="edgeCmp; inputs: { edge: edge, path: getEdgePath(edge) }"></ng-container>
+            } @else if (edgeTemplate()) {
+              <ng-container *ngTemplateOutlet="edgeTemplate()!; context: getEdgeTemplateContext(edge)"></ng-container>
+            }
+          } @else {
+            <!-- Edge path with markers — custom stroke/width as inline styles so CSS cannot override -->
+            <path [attr.id]="'edge-path-' + edge.id" [attr.d]="getEdgePath(edge)" class="ngx-workflow__edge-path"
+              [class.dashed-type]="edge.type === 'dashed'"
+              [attr.marker-start]="getMarkerUrlForEdge(edge, 'start')"
+              [attr.marker-end]="getMarkerUrlForEdge(edge, 'end')"
+              [attr.stroke]="getEdgeStrokeColor(edge)"
+              [style.stroke]="getEdgeStrokeColor(edge)"
+              [style.stroke-width.px]="getEdgeStrokeWidth(edge)"
+              [style.stroke-dasharray]="getEdgeStrokeDasharray(edge)"
+              [style.animation-duration]="isEdgeFlowAnimated(edge) ? (edge.animationDuration || '1s') : null">
+            </path>
+            <!-- SVG Motion Animation (Dot) -->
+            @if (isEdgeDotAnimated(edge)) {
+              <circle r="4"
+                [style.fill]="getEdgeAnimationFill(edge)">
+                <animateMotion [attr.dur]="edge.animationDuration || '2s'" repeatCount="indefinite">
+                  <mpath [attr.href]="'#edge-path-' + edge.id"></mpath>
+                </animateMotion>
+              </circle>
+            }
+            <!-- Invisible hitbox for easier clicking -->
+            <path [attr.d]="getEdgePath(edge)" class="ngx-workflow__edge-hitbox"></path>
           }
-          <!-- Invisible hitbox for easier clicking -->
-          <path [attr.d]="getEdgePath(edge)" class="ngx-workflow__edge-hitbox"></path>
-          <!-- Edge label -->
-          @if (edge.label || edge.data?.labelContent || editingEdgeId === edge.id) {
-            <g class="ngx-workflow__edge-label">
-              <!-- Editing mode (input field) -->
-              @if (editingEdgeId === edge.id) {
-                <foreignObject [attr.x]="getEdgeLabelPosition(edge).x - 50"
-                  [attr.y]="getEdgeLabelPosition(edge).y - 15" width="100" height="30">
-                  <input #edgeLabelInput type="text" [value]="edge.label || ''" (blur)="onEdgeLabelBlur(edge)"
-                    (keydown.enter)="onEdgeLabelBlur(edge)" (input)="onEdgeLabelInput($event)"
-                    class="ngx-workflow__edge-label-input" autofocus>
+          <!-- Edge labels (start / center / end) -->
+          @for (labelPos of ['start', 'center', 'end']; track labelPos) {
+            @if (hasEdgeLabel(edge, $any(labelPos)) || (labelPos === 'center' && (edge.data?.labelContent || editingEdgeId === edge.id))) {
+              <g class="ngx-workflow__edge-label" [attr.data-label-pos]="labelPos">
+                @if (labelPos === 'center' && editingEdgeId === edge.id) {
+                  <foreignObject [attr.x]="getEdgeLabelPosition(edge, 'center').x - 50"
+                    [attr.y]="getEdgeLabelPosition(edge, 'center').y - 15" width="100" height="30">
+                    <input #edgeLabelInput type="text" [value]="edge.label || ''" (blur)="onEdgeLabelBlur(edge)"
+                      (keydown.enter)="onEdgeLabelBlur(edge)" (input)="onEdgeLabelInput($event)"
+                      class="ngx-workflow__edge-label-input" autofocus>
                   </foreignObject>
                 }
-                <!-- Custom template mode (Angular component) -->
-                @if (editingEdgeId !== edge.id && edgeLabelTemplate) {
+                @if (!(labelPos === 'center' && editingEdgeId === edge.id) && edgeLabelTemplate) {
                   <foreignObject
-                    [attr.x]="getEdgeLabelPosition(edge).x - 75" [attr.y]="getEdgeLabelPosition(edge).y - 20" width="150"
+                    [attr.x]="getEdgeLabelPosition(edge, $any(labelPos)).x - 75"
+                    [attr.y]="getEdgeLabelPosition(edge, $any(labelPos)).y - 20" width="150"
                     height="40" style="pointer-events: none;">
                     <div xmlns="http://www.w3.org/1999/xhtml" class="edge-label-content">
-                      <ng-container *ngTemplateOutlet="edgeLabelTemplate; context: { $implicit: edge, edge: edge }">
+                      <ng-container *ngTemplateOutlet="edgeLabelTemplate; context: {
+                        $implicit: edge,
+                        edge: edge,
+                        position: labelPos,
+                        label: resolveEdgeLabel(edge, $any(labelPos))
+                      }">
                       </ng-container>
                     </div>
                   </foreignObject>
                 }
-                <!-- Fallback to text mode -->
-                @if (editingEdgeId !== edge.id && !edgeLabelTemplate && edge.label) {
+                @if (!(labelPos === 'center' && editingEdgeId === edge.id) && !edgeLabelTemplate && edgeLabelText(resolveEdgeLabel(edge, $any(labelPos)))) {
                   <text
-                    [attr.x]="getEdgeLabelPosition(edge).x" [attr.y]="getEdgeLabelPosition(edge).y" text-anchor="middle"
+                    [attr.x]="getEdgeLabelPosition(edge, $any(labelPos)).x"
+                    [attr.y]="getEdgeLabelPosition(edge, $any(labelPos)).y" text-anchor="middle"
                     dominant-baseline="middle" class="ngx-workflow__edge-label-text"
                     [style.fill]="edge.labelStyle?.['fill'] || edge.labelStyle?.['color'] || null"
                     [style.font-size]="edge.labelStyle?.['fontSize'] || null"
                     [style.font-weight]="edge.labelStyle?.['fontWeight'] || null">
-                    <!-- Label background -->
                     @if (edge.labelBgStyle) {
                       <tspan class="ngx-workflow__edge-label-bg" [style]="edge.labelBgStyle"></tspan>
                     }
-                    {{ edge.label }}
+                    {{ edgeLabelText(resolveEdgeLabel(edge, $any(labelPos))) }}
                   </text>
                 }
               </g>
             }
-            <!-- Edge Update Handles -->
-            @if (edge.selected && edgeReconnectable()) {
-              <g>
-                <!-- Source Handle -->
-                <circle class="ngx-workflow__edge-reconnect-handle" [attr.cx]="getEdgeHandlePosition(edge, 'source').x"
-                  [attr.cy]="getEdgeHandlePosition(edge, 'source').y" r="8" fill="#3b82f6" stroke="white" stroke-width="2"
-                  style="cursor: grab; pointer-events: all;" (pointerdown)="startUpdatingEdge($event, edge, 'source')">
-                </circle>
-                <!-- Target Handle -->
-                <circle class="ngx-workflow__edge-reconnect-handle" [attr.cx]="getEdgeHandlePosition(edge, 'target').x"
-                  [attr.cy]="getEdgeHandlePosition(edge, 'target').y" r="8" fill="#3b82f6" stroke="white" stroke-width="2"
-                  style="cursor: grab; pointer-events: all;" (pointerdown)="startUpdatingEdge($event, edge, 'target')">
-                </circle>
-              </g>
-            }
-          </g>
-        }
+          }
+          <!-- Edge Update Handles -->
+          @if (edge.selected && edgeReconnectable()) {
+            <g>
+              <circle class="ngx-workflow__edge-reconnect-handle" [attr.cx]="getEdgeHandlePosition(edge, 'source').x"
+                [attr.cy]="getEdgeHandlePosition(edge, 'source').y" r="8" fill="#3b82f6" stroke="white" stroke-width="2"
+                style="cursor: grab; pointer-events: all;" (pointerdown)="startUpdatingEdge($event, edge, 'source')">
+              </circle>
+              <circle class="ngx-workflow__edge-reconnect-handle" [attr.cx]="getEdgeHandlePosition(edge, 'target').x"
+                [attr.cy]="getEdgeHandlePosition(edge, 'target').y" r="8" fill="#3b82f6" stroke="white" stroke-width="2"
+                style="cursor: grab; pointer-events: all;" (pointerdown)="startUpdatingEdge($event, edge, 'target')">
+              </circle>
+            </g>
+          }
+        </g>
+      }
 
         <!-- Render temporary edges (previews) -->
         @for (tempEdge of tempEdges(); track tempEdge.id) {
@@ -193,8 +204,22 @@
             (mousemove)="onNodeMouseMove($event, node)"
             (focus)="onNodeFocus(node)" (blur)="onNodeBlur(node)"
             (keydown)="onNodeKeyDown($event, node)">
-            <!-- Custom Node Template -->
-            @if (isCustomNode(node)) {
+            <!-- SVG template node -->
+            @if (isSvgTemplateNode(node)) {
+              <ng-container *ngTemplateOutlet="nodeSvgTemplate!; context: getNodeTemplateContext(node)"></ng-container>
+            }
+            <!-- HTML template node -->
+            @if (isHtmlTemplateNode(node)) {
+              <foreignObject [attr.width]="node.width || defaultNodeWidth"
+                [attr.height]="node.height || defaultNodeHeight" style="overflow: visible;">
+                <div xmlns="http://www.w3.org/1999/xhtml" class="ngx-workflow__custom-node-host"
+                  [style.width.%]="100" [style.height.%]="100" [style.box-sizing]="'border-box'">
+                  <ng-container *ngTemplateOutlet="nodeHtmlTemplate!; context: getNodeTemplateContext(node)"></ng-container>
+                </div>
+              </foreignObject>
+            }
+            <!-- Custom Node Component -->
+            @if (isCustomNode(node) && !isHtmlTemplateNode(node) && !isSvgTemplateNode(node)) {
               <foreignObject [attr.width]="node.width || defaultNodeWidth"
                 [attr.height]="node.height || defaultNodeHeight" style="overflow: visible;">
                 <div xmlns="http://www.w3.org/1999/xhtml" class="ngx-workflow__custom-node-host"
@@ -207,17 +232,9 @@
                   [style.width.%]="100"
                   [style.height.%]="100"
                   [style.box-sizing]="'border-box'">
-            <ng-container *ngComponentOutlet="getCustomNodeComponent(node.type); inputs: { 
-              id: node.id, 
-              data: node.data, 
-              selected: node.selected,
-              type: node.type,
-              pos: node.position,
-              easyConnect: node.easyConnect,
-              style: node.style,
-              ports: node.ports,
-              label: node.label
-            }"></ng-container>
+                  @if (getCustomNodeComponent(node.type); as nodeCmp) {
+                    <ng-container *ngComponentOutlet="nodeCmp; inputs: getCustomNodeInputs(node)"></ng-container>
+                  }
                 </div>
               </foreignObject>
             }
@@ -271,10 +288,15 @@
                     <!-- Hit area -->
                     <circle [attr.cx]="(node.width || defaultNodeWidth) / 2" cy="-10" r="20" fill="transparent"
                     pointer-events="all"></circle>
-                    <!-- Visual -->
-                    <circle [attr.cx]="(node.width || defaultNodeWidth) / 2" [attr.cy]="0" r="6"
-                      class="ngx-workflow__handle-circle">
-                    </circle>
+                    @if (handleTemplate) {
+                      <g [attr.transform]="'translate(' + ((node.width || defaultNodeWidth) / 2) + ', 0)'">
+                        <ng-container *ngTemplateOutlet="handleTemplate; context: getHandleTemplateContext(node, 'top')"></ng-container>
+                      </g>
+                    } @else {
+                      <circle [attr.cx]="(node.width || defaultNodeWidth) / 2" [attr.cy]="0" r="6"
+                        class="ngx-workflow__handle-circle">
+                      </circle>
+                    }
                   </g>
                 }
                 <!-- Right Handle -->
@@ -284,13 +306,17 @@
                     [attr.data-nodeid]="node.id" data-handleid="right" [attr.data-type]="'source'" [nodeId]="node.id"
                     handleId="right" type="source" [isConnectable]="node.handleConfig?.['right']?.isConnectable"
                     (pointerdown)="onHandlePointerDown($event, node, 'right')">
-                    <!-- Hit area -->
                     <circle [attr.cx]="(node.width || defaultNodeWidth) + 10" [attr.cy]="(node.height || defaultNodeHeight) / 2"
                       r="20" fill="transparent" pointer-events="all">
                     </circle>
-                    <!-- Visual -->
-                    <circle [attr.cx]="(node.width || defaultNodeWidth)" [attr.cy]="(node.height || defaultNodeHeight) / 2"
-                    r="6" class="ngx-workflow__handle-circle"></circle>
+                    @if (handleTemplate) {
+                      <g [attr.transform]="'translate(' + (node.width || defaultNodeWidth) + ', ' + ((node.height || defaultNodeHeight) / 2) + ')'">
+                        <ng-container *ngTemplateOutlet="handleTemplate; context: getHandleTemplateContext(node, 'right')"></ng-container>
+                      </g>
+                    } @else {
+                      <circle [attr.cx]="(node.width || defaultNodeWidth)" [attr.cy]="(node.height || defaultNodeHeight) / 2"
+                      r="6" class="ngx-workflow__handle-circle"></circle>
+                    }
                   </g>
                 }
                 <!-- Bottom Handle -->
@@ -300,13 +326,17 @@
                     [attr.data-nodeid]="node.id" data-handleid="bottom" [attr.data-type]="'source'" [nodeId]="node.id"
                     handleId="bottom" type="source" [isConnectable]="node.handleConfig?.['bottom']?.isConnectable"
                     (pointerdown)="onHandlePointerDown($event, node, 'bottom')">
-                    <!-- Hit area -->
                     <circle [attr.cx]="(node.width || defaultNodeWidth) / 2" [attr.cy]="(node.height || defaultNodeHeight) + 10"
                       r="20" fill="transparent" pointer-events="all">
                     </circle>
-                    <!-- Visual -->
-                    <circle [attr.cx]="(node.width || defaultNodeWidth) / 2" [attr.cy]="(node.height || defaultNodeHeight)"
-                    r="6" class="ngx-workflow__handle-circle"></circle>
+                    @if (handleTemplate) {
+                      <g [attr.transform]="'translate(' + ((node.width || defaultNodeWidth) / 2) + ', ' + (node.height || defaultNodeHeight) + ')'">
+                        <ng-container *ngTemplateOutlet="handleTemplate; context: getHandleTemplateContext(node, 'bottom')"></ng-container>
+                      </g>
+                    } @else {
+                      <circle [attr.cx]="(node.width || defaultNodeWidth) / 2" [attr.cy]="(node.height || defaultNodeHeight)"
+                      r="6" class="ngx-workflow__handle-circle"></circle>
+                    }
                   </g>
                 }
                 <!-- Left Handle -->
@@ -316,38 +346,50 @@
                     [attr.data-nodeid]="node.id" data-handleid="left" [attr.data-type]="'source'" [nodeId]="node.id"
                     handleId="left" type="source" [isConnectable]="node.handleConfig?.['left']?.isConnectable"
                     (pointerdown)="onHandlePointerDown($event, node, 'left')">
-                    <!-- Hit area -->
                     <circle cx="-10" [attr.cy]="(node.height || defaultNodeHeight) / 2" r="20" fill="transparent"
                     pointer-events="all"></circle>
-                    <!-- Visual -->
-                    <circle cx="0" [attr.cy]="(node.height || defaultNodeHeight) / 2" r="6" class="ngx-workflow__handle-circle">
-                    </circle>
+                    @if (handleTemplate) {
+                      <g [attr.transform]="'translate(0, ' + ((node.height || defaultNodeHeight) / 2) + ')'">
+                        <ng-container *ngTemplateOutlet="handleTemplate; context: getHandleTemplateContext(node, 'left')"></ng-container>
+                      </g>
+                    } @else {
+                      <circle cx="0" [attr.cy]="(node.height || defaultNodeHeight) / 2" r="6" class="ngx-workflow__handle-circle">
+                      </circle>
+                    }
                   </g>
                 }
               </ng-container>
             }
-            <!-- Resize Handles (HTML implementation to ensure they are on top of custom nodes) -->
+            <!-- Resize Handles (corners + mid-edge) -->
             @if (node.selected && (node.resizable !== false) && nodesResizable()) {
               <foreignObject
                 [attr.width]="node.width || defaultNodeWidth" [attr.height]="node.height || defaultNodeHeight"
                 style="overflow: visible; pointer-events: none;">
                 <div style="position: relative; width: 100%; height: 100%; pointer-events: none;">
-                  <!-- NW Handle -->
                   <div class="ngx-workflow__resize-handle" data-handle="nw"
                     style="position: absolute; top: -5px; left: -5px; width: 10px; height: 10px; cursor: nw-resize; pointer-events: auto;"
-                  (pointerdown)="startResizing($event, node, 'nw')"></div>
-                  <!-- NE Handle -->
+                    (pointerdown)="startResizing($event, node, 'nw')"></div>
+                  <div class="ngx-workflow__resize-handle" data-handle="n"
+                    style="position: absolute; top: -5px; left: calc(50% - 5px); width: 10px; height: 10px; cursor: n-resize; pointer-events: auto;"
+                    (pointerdown)="startResizing($event, node, 'n')"></div>
                   <div class="ngx-workflow__resize-handle" data-handle="ne"
                     style="position: absolute; top: -5px; right: -5px; width: 10px; height: 10px; cursor: ne-resize; pointer-events: auto;"
-                  (pointerdown)="startResizing($event, node, 'ne')"></div>
-                  <!-- SW Handle -->
-                  <div class="ngx-workflow__resize-handle" data-handle="sw"
-                    style="position: absolute; bottom: -5px; left: -5px; width: 10px; height: 10px; cursor: sw-resize; pointer-events: auto;"
-                  (pointerdown)="startResizing($event, node, 'sw')"></div>
-                  <!-- SE Handle -->
+                    (pointerdown)="startResizing($event, node, 'ne')"></div>
+                  <div class="ngx-workflow__resize-handle" data-handle="e"
+                    style="position: absolute; top: calc(50% - 5px); right: -5px; width: 10px; height: 10px; cursor: e-resize; pointer-events: auto;"
+                    (pointerdown)="startResizing($event, node, 'e')"></div>
                   <div class="ngx-workflow__resize-handle" data-handle="se"
                     style="position: absolute; bottom: -5px; right: -5px; width: 10px; height: 10px; cursor: se-resize; pointer-events: auto;"
-                  (pointerdown)="startResizing($event, node, 'se')"></div>
+                    (pointerdown)="startResizing($event, node, 'se')"></div>
+                  <div class="ngx-workflow__resize-handle" data-handle="s"
+                    style="position: absolute; bottom: -5px; left: calc(50% - 5px); width: 10px; height: 10px; cursor: s-resize; pointer-events: auto;"
+                    (pointerdown)="startResizing($event, node, 's')"></div>
+                  <div class="ngx-workflow__resize-handle" data-handle="sw"
+                    style="position: absolute; bottom: -5px; left: -5px; width: 10px; height: 10px; cursor: sw-resize; pointer-events: auto;"
+                    (pointerdown)="startResizing($event, node, 'sw')"></div>
+                  <div class="ngx-workflow__resize-handle" data-handle="w"
+                    style="position: absolute; top: calc(50% - 5px); left: -5px; width: 10px; height: 10px; cursor: w-resize; pointer-events: auto;"
+                    (pointerdown)="startResizing($event, node, 'w')"></div>
                 </div>
               </foreignObject>
             }

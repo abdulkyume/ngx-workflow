@@ -20,6 +20,10 @@ export interface Node<T = any> {
   selected?: boolean;
   dragging?: boolean;
   draggable?: boolean;
+  /** When false, the node cannot be selected. Defaults to true. */
+  selectable?: boolean;
+  /** When false, handles on this node reject new connections. Defaults to true. */
+  connectable?: boolean;
   resizable?: boolean;
   minWidth?: number;
   minHeight?: number;

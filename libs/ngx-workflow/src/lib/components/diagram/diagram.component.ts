@@ -1,14 +1,14 @@
 import { Component, ChangeDetectionStrategy, ElementRef, OnInit, Renderer2, NgZone, OnDestroy, HostListener, WritableSignal, Inject, Optional, computed, ViewChild, ContentChild, Signal, ChangeDetectorRef, TemplateRef, Type, signal, forwardRef, inject, input, output, effect } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { toObservable } from '@angular/core/rxjs-interop';
-import { CommonModule, NgComponentOutlet } from '@angular/common';
+import { CommonModule, NgComponentOutlet, NgTemplateOutlet } from '@angular/common';
 import { DiagramStateService } from '../../services/diagram-state.service';
-import { Viewport, XYPosition, Node as WorkflowNode, Edge, TempEdge, DiagramState, AlignmentGuide } from '../../models';
+import { Viewport, XYPosition, Node as WorkflowNode, Edge, TempEdge, DiagramState, AlignmentGuide, EdgeLabelPosition, EdgeLabel, NodeChange, EdgeChange, ConnectionMode, SelectionMode, KeyboardShortcuts, FlowOptimization, ComponentNodeEvent } from '../../models';
 import { Subscription, Observable, combineLatest } from 'rxjs';
 import { debounceTime, skip } from 'rxjs/operators';
-import { NGX_WORKFLOW_NODE_TYPES } from '../../injection-tokens';
-import { NodeComponentType as WorkflowNodeComponentType } from '../../types';
-import { getBezierPath, getStraightPath, getStepPath, getSmoothStepPath, getSelfLoopPath, getSmartEdgePath, getWaypointPath, PathFinder, getPolylineMidpoint } from '../../utils';
+import { NGX_WORKFLOW_NODE_TYPES, NGX_WORKFLOW_EDGE_TYPES } from '../../injection-tokens';
+import { NodeComponentType as WorkflowNodeComponentType, EdgeComponentType as WorkflowEdgeComponentType } from '../../types';
+import { getBezierPath, getStraightPath, getStepPath, getSmoothStepPath, getSelfLoopPath, getSmartEdgePath, getWaypointPath, PathFinder, getPolylineMidpoint, normalizeHandle, inferHandlePosition, HandlePosition } from '../../utils';
 import { v4 as uuidv4 } from 'uuid';
 import { ZoomControlsComponent } from '../zoom-controls/zoom-controls.component';
 import { MinimapComponent } from '../minimap/minimap.component';
@@ -28,12 +28,19 @@ import { TouchGestureService } from '../../services/touch-gesture.service';
 import { CanvasPanZoomService } from '../../services/canvas-pan-zoom.service';
 import { NodeDragService } from '../../services/node-drag.service';
 import { SelectionBoxService } from '../../services/selection-box.service';
+import { ComponentNodeEventService } from '../../services/component-node-event.service';
+import { NgxWorkflowChangesControllerDirective } from '../../directives/changes-controller.directive';
 
 export interface EdgeDropEvent {
   sourceNodeId: string;
   sourceHandleId: string;
   position: { x: number, y: number };
 }
+
+/** Component class or lazy import factory for custom nodes. */
+export type NodeTypeEntry =
+  | Type<any>
+  | (() => Promise<Type<any> | { default: Type<any> }>);
 
 // Helper function to get a node from the array
 function getNode(id: string, nodes: WorkflowNode[]): WorkflowNode | undefined {
@@ -80,6 +87,8 @@ import { SearchService } from '../../services/search.service';
   standalone: true,
   imports: [
     CommonModule,
+    NgComponentOutlet,
+    NgTemplateOutlet,
     ZoomControlsComponent,
     MinimapComponent,
     BackgroundComponent,
@@ -90,9 +99,17 @@ import { SearchService } from '../../services/search.service';
     ExportControlsComponent,
     LayoutAlignmentControlsComponent,
     UndoRedoControlsComponent,
-    HandleComponent
+    HandleComponent,
+  ],
+  hostDirectives: [
+    {
+      directive: NgxWorkflowChangesControllerDirective,
+      inputs: ['filterNodeTypes', 'filterEdgeTypes'],
+      outputs: ['filteredNodeChanges', 'filteredEdgeChanges'],
+    },
   ],
   providers: [
+    ComponentNodeEventService,
     {
       provide: NG_VALUE_ACCESSOR,
       useExisting: forwardRef(() => DiagramComponent),
@@ -222,8 +239,16 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
   readonly nodeClick = output<WorkflowNode>();
   readonly edgeClick = output<Edge>();
   readonly connect = output<{ source: string; sourceHandle?: string; target: string; targetHandle?: string }>();
+  /** Full node array after mutations (controlled-mode sync). */
   readonly nodesChange = output<WorkflowNode[]>();
+  /** Full edge array after mutations (controlled-mode sync). */
   readonly edgesChange = output<Edge[]>();
+  /** Typed granular node changes (add/remove/position/select/dimensions/data). */
+  readonly nodeChanges = output<NodeChange[]>();
+  /** Typed granular edge changes (add/remove/select/reconnect/data). */
+  readonly edgeChanges = output<EdgeChange[]>();
+  /** Events bubbled from custom node components via ComponentNodeEventService. */
+  readonly componentNodeEvent = output<ComponentNodeEvent>();
   readonly nodeDoubleClick = output<WorkflowNode>();
   readonly contextMenu = output<{ type: 'node' | 'edge' | 'canvas'; item?: WorkflowNode | Edge; event: MouseEvent }>();
 
@@ -256,17 +281,44 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
     targetHandle?: string;
   }) => boolean) | undefined>(undefined);
 
-  // Custom edge template
+  // Custom edge template (applied when edge.type is not a built-in path type and no edge component is registered)
   readonly edgeTemplate = input<TemplateRef<any> | undefined>(undefined);
+
+  // Custom edge component registry (merged with NGX_WORKFLOW_EDGE_TYPES)
+  readonly edgeTypes = input<Record<string, Type<any>>>({});
 
   // Custom definitions template (for markers, patterns, etc.)
   readonly defsTemplate = input<TemplateRef<any> | undefined>(undefined);
 
+  // Interaction modes
+  /** @default 'loose' — set to 'strict' to require source and target handles. */
+  readonly connectionMode = input<ConnectionMode>('loose');
+  readonly selectionMode = input<SelectionMode>('partial');
+  readonly keyboardShortcuts = input<KeyboardShortcuts>({});
+  readonly optimization = input<FlowOptimization>({
+    detachedGroupsLayer: true,
+    lazyLoadTrigger: 'immediate',
+    virtualization: true,
+    adaptiveBuffer: true,
+    keepSelectedVisible: true,
+    edgeVirtualization: 'any-endpoint',
+  });
+
   // Custom edge label template
   @ContentChild('edgeLabelTemplate', { read: TemplateRef }) edgeLabelTemplate?: TemplateRef<any>;
+  /** Projected HTML node template: `<ng-template #nodeHtmlTemplate let-ctx>`. */
+  @ContentChild('nodeHtmlTemplate', { read: TemplateRef }) nodeHtmlTemplate?: TemplateRef<any>;
+  /** Projected SVG node template: `<ng-template #nodeSvgTemplate let-ctx>`. */
+  @ContentChild('nodeSvgTemplate', { read: TemplateRef }) nodeSvgTemplate?: TemplateRef<any>;
+  /** Projected handle template: `<ng-template #handleTemplate let-ctx>`. */
+  @ContentChild('handleTemplate', { read: TemplateRef }) handleTemplate?: TemplateRef<any>;
 
   // Edge reconnection feature
   readonly edgeReconnectable = input<boolean>(false);
+
+  /** Resolved lazy-loaded node components keyed by type. */
+  private readonly resolvedLazyNodeTypes = signal<Record<string, Type<any>>>({});
+  private readonly lazyLoadInFlight = new Set<string>();
 
   // Sidebar State
   selectedNodeForEditing: WorkflowNode | null = null;
@@ -439,6 +491,9 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
     const target = event.target as HTMLElement;
     const handleEl = target.closest('.ngx-workflow__handle') as HTMLElement | null;
     if (handleEl) {
+      if (node.connectable === false) {
+        return;
+      }
       // Fallback if the handle host listener did not run (SVG component edge cases)
       const handleId =
         handleEl.getAttribute('data-handleid') ||
@@ -458,10 +513,20 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
     // Stop propagation so global handler doesn't trigger
     event.stopPropagation();
 
+    if (node.selectable === false && node.draggable === false) {
+      return;
+    }
+
     // Easy Connect Logic
     if (node.easyConnect) {
-      const isDragHandle = target.closest('.drag-handle');
+      const isDragHandle =
+        target.closest('.drag-handle') ||
+        target.closest('[data-drag-handle]') ||
+        target.closest('.ngx-workflow__drag-handle');
       if (!isDragHandle) {
+        if (node.connectable === false) {
+          return;
+        }
         // Body click -> Attempt Connection
         const nodeGroup = event.currentTarget as HTMLElement;
         // Find a source handle within this node to connect from
@@ -475,6 +540,13 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
       // If it IS a drag handle, proceed to selection and dragging logic below
     }
 
+    if (node.selectable === false) {
+      if (node.draggable !== false) {
+        this.startDraggingNode(event, node);
+      }
+      return;
+    }
+
     // Select the node (toggle if ctrl/cmd is pressed)
     const isMultiSelect = event.ctrlKey || event.metaKey;
     if (!isMultiSelect) {
@@ -483,16 +555,20 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
         this.diagramStateService.nodes.update(nodes =>
           nodes.map(n => ({ ...n, selected: n.id === node.id }))
         );
+        this.emitNodeChanges([{ type: 'select', id: node.id, selected: true }]);
       }
       // Always start dragging on normal node click
-      this.startDraggingNode(event, { ...node, selected: true });
+      if (node.draggable !== false) {
+        this.startDraggingNode(event, { ...node, selected: true });
+      }
     } else {
       // Toggle this node's selection
       const isSelectedNow = !node.selected;
       this.diagramStateService.nodes.update(nodes =>
         nodes.map(n => n.id === node.id ? { ...n, selected: isSelectedNow } : n)
       );
-      if (isSelectedNow) {
+      this.emitNodeChanges([{ type: 'select', id: node.id, selected: isSelectedNow }]);
+      if (isSelectedNow && node.draggable !== false) {
         this.startDraggingNode(event, { ...node, selected: true });
       }
     }
@@ -729,7 +805,11 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
     }
   }
 
-  /** Include style in track key so color edits always rebind SVG fill/stroke. */
+  /**
+   * Include style in track key so color edits always rebind SVG fill/stroke.
+   * Do NOT include `selected` — recreating the <g> on select makes CSS
+   * `transition: transform` animate from translate(0,0) → real position (jump flash).
+   */
   trackNodeStyle(node: WorkflowNode): string {
     const s = node.style || {};
     return [
@@ -739,7 +819,6 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
       s['borderColor'] || '',
       node.borderColor || '',
       node.borderWidth ?? '',
-      node.selected ? '1' : '0',
     ].join('|');
   }
 
@@ -801,7 +880,7 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
       edge.animationDuration || '',
       edge.markerStart || '',
       edge.markerEnd || '',
-      edge.selected ? '1' : '0',
+      // omit selected — same DOM-recycle / transform-jump issue as nodes
     ].join('|');
   }
 
@@ -927,8 +1006,9 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
     sourceHandleId?: string,
     targetHandleId?: string
   ): boolean {
-    // Use live service edges — [edges] input can lag behind deletes until the parent syncs
+    // Use live service state — parent [nodes]/[edges] inputs can lag until sync
     const liveEdges = this.diagramStateService.edges();
+    const liveNodes = this.diagramStateService.nodes();
 
     // Prevent duplicate edges between same source and target (exact match including handles)
     const existing = liveEdges.find(e =>
@@ -942,6 +1022,17 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
       return false;
     }
 
+
+    // Strict mode requires explicit handles on both ends
+    if (this.connectionMode() === 'strict' && (!sourceHandleId || !targetHandleId)) {
+      return false;
+    }
+
+    const sourceNode = getNode(sourceId, liveNodes);
+    const targetNode = getNode(targetId, liveNodes);
+    if (sourceNode?.connectable === false || targetNode?.connectable === false) {
+      return false;
+    }
 
     // Check max connections limit
     if (!this.checkConnectionLimits(sourceId, sourceHandleId, 'source')) {
@@ -1132,11 +1223,20 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
     public canvasPanZoomService: CanvasPanZoomService,
     public nodeDragService: NodeDragService,
     public selectionBoxService: SelectionBoxService,
-    @Optional() @Inject(NGX_WORKFLOW_NODE_TYPES) private injectedNodeTypes: Record<string, WorkflowNodeComponentType> | null
+    private componentNodeEventService: ComponentNodeEventService,
+    private changesController: NgxWorkflowChangesControllerDirective,
+    @Optional() @Inject(NGX_WORKFLOW_NODE_TYPES) private injectedNodeTypes: Record<string, WorkflowNodeComponentType> | null,
+    @Optional() @Inject(NGX_WORKFLOW_EDGE_TYPES) private injectedEdgeTypes: Record<string, WorkflowEdgeComponentType> | null
   ) {
     this.nodes$ = toObservable(this.diagramStateService.nodes);
     this.edges$ = toObservable(this.diagramStateService.edges);
     this.viewport$ = toObservable(this.diagramStateService.viewport);
+
+    this.subscriptions.add(
+      this.componentNodeEventService.onEvent.subscribe((event) => {
+        this.componentNodeEvent.emit(event);
+      })
+    );
 
     // Sync input signals to the diagram state service
     // This ensures that when a parent component updates [nodes] or [edges],
@@ -1177,14 +1277,65 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
       this.themeService.registerHost(host);
       this.themeService.setColorMode(mode);
     });
+
+    effect(() => {
+      this.diagramStateService.selectionMode = this.selectionMode();
+    });
+
+    effect(() => {
+      const opt = this.optimization();
+      const enabled = opt.virtualization ?? opt.onlyRenderVisibleElements ?? true;
+      this.diagramStateService.virtualizationEnabled.set(enabled);
+      if (opt.virtualizationBuffer != null) {
+        this.diagramStateService.virtualizationBuffer.set(opt.virtualizationBuffer);
+      }
+      if (opt.adaptiveBuffer != null) {
+        this.diagramStateService.virtualizationAdaptiveBuffer.set(opt.adaptiveBuffer);
+      }
+      if (opt.keepSelectedVisible != null) {
+        this.diagramStateService.virtualizationKeepSelected.set(opt.keepSelectedVisible);
+      }
+      if (opt.maxRenderedNodes !== undefined) {
+        this.diagramStateService.virtualizationMaxNodes.set(opt.maxRenderedNodes);
+      }
+      if (opt.edgeVirtualization) {
+        this.diagramStateService.edgeVirtualizationMode.set(opt.edgeVirtualization);
+      }
+    });
+
+    // Eagerly resolve lazy node factories when optimization.lazyLoadTrigger is immediate
+    effect(() => {
+      if (this.optimization().lazyLoadTrigger !== 'immediate') return;
+      for (const node of this.diagramStateService.nodes()) {
+        if (node.type) {
+          this.getCustomNodeComponent(node.type);
+        }
+      }
+    });
   }
 
-  readonly nodeTypes = input<Record<string, Type<any>>>({});
+  readonly nodeTypes = input<Record<string, NodeTypeEntry>>({});
 
-  get allNodeTypes(): Record<string, Type<any>> {
+  private static readonly BUILT_IN_EDGE_TYPES = new Set<string>([
+    'bezier',
+    'straight',
+    'step',
+    'smoothstep',
+    'smart',
+    'dashed',
+  ]);
+
+  get allNodeTypes(): Record<string, NodeTypeEntry> {
     return {
       ...(this.injectedNodeTypes || {}),
-      ...(this.nodeTypes() || {})
+      ...(this.nodeTypes() || {}),
+    };
+  }
+
+  get allEdgeTypes(): Record<string, Type<any>> {
+    return {
+      ...(this.injectedEdgeTypes || {}),
+      ...(this.edgeTypes() || {}),
     };
   }
 
@@ -1193,14 +1344,136 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
   }
 
   isCustomNode(node: WorkflowNode): boolean {
+    if (!node.type) return false;
+    if (node.type === 'html-template' || node.type === 'svg-template') return true;
     const types = this.allNodeTypes;
-    return !!(node.type && types && types[node.type]);
+    return !!(types && types[node.type]);
   }
 
-  getCustomNodeComponent(type: string | undefined): any {
-    const types = this.allNodeTypes;
-    if (!type || !types) return undefined;
-    return types[type];
+  isHtmlTemplateNode(node: WorkflowNode): boolean {
+    return node.type === 'html-template' && !!this.nodeHtmlTemplate;
+  }
+
+  isSvgTemplateNode(node: WorkflowNode): boolean {
+    return node.type === 'svg-template' && !!this.nodeSvgTemplate;
+  }
+
+  getCustomNodeComponent(type: string | undefined): Type<any> | undefined {
+    if (!type) return undefined;
+    const resolved = this.resolvedLazyNodeTypes()[type];
+    if (resolved) return resolved;
+
+    const entry = this.allNodeTypes[type];
+    if (!entry) return undefined;
+
+    // Angular component classes carry ɵcmp; lazy factories do not.
+    if (typeof entry === 'function' && (entry as any).ɵcmp) {
+      return entry as Type<any>;
+    }
+
+    if (typeof entry === 'function') {
+      this.ensureLazyNodeType(type, entry as () => Promise<any>);
+      return this.resolvedLazyNodeTypes()[type];
+    }
+
+    return entry as Type<any>;
+  }
+
+  private ensureLazyNodeType(type: string, factory: () => Promise<any>): void {
+    if (this.resolvedLazyNodeTypes()[type] || this.lazyLoadInFlight.has(type)) return;
+    this.lazyLoadInFlight.add(type);
+    Promise.resolve()
+      .then(() => factory())
+      .then((mod) => {
+        const cmp = mod?.default ?? mod;
+        this.resolvedLazyNodeTypes.update((m) => ({ ...m, [type]: cmp }));
+        this.cdRef.markForCheck();
+      })
+      .finally(() => this.lazyLoadInFlight.delete(type));
+  }
+
+  isCustomEdge(edge: Edge): boolean {
+    if (!edge.type) return false;
+    if (DiagramComponent.BUILT_IN_EDGE_TYPES.has(edge.type)) return false;
+    return !!this.allEdgeTypes[edge.type] || !!this.edgeTemplate();
+  }
+
+  getCustomEdgeComponent(type: string | undefined): Type<any> | undefined {
+    if (!type) return undefined;
+    return this.allEdgeTypes[type];
+  }
+
+  getCustomNodeInputs(node: WorkflowNode): Record<string, unknown> {
+    return {
+      node,
+      id: node.id,
+      data: node.data,
+      selected: !!node.selected,
+      type: node.type,
+      pos: node.position,
+      easyConnect: node.easyConnect,
+      style: node.style,
+      ports: node.ports,
+      label: node.label,
+    };
+  }
+
+  getNodeTemplateContext(node: WorkflowNode): Record<string, unknown> {
+    return {
+      $implicit: {
+        id: node.id,
+        data: node.data,
+        selected: !!node.selected,
+        width: node.width || this.defaultNodeWidth,
+        height: node.height || this.defaultNodeHeight,
+        node,
+      },
+      node,
+    };
+  }
+
+  getHandleTemplateContext(
+    node: WorkflowNode,
+    handleId: string,
+    type: 'source' | 'target' = 'source'
+  ): Record<string, unknown> {
+    return {
+      $implicit: { node, handleId, type, selected: !!node.selected },
+      node,
+      handleId,
+      type,
+    };
+  }
+
+  getEdgeTemplateContext(edge: Edge): Record<string, unknown> {
+    const path = this.getEdgePath(edge);
+    return {
+      $implicit: {
+        edge,
+        path: () => path,
+        markerEnd: () => this.getMarkerUrlForEdge(edge, 'end'),
+        markerStart: () => this.getMarkerUrlForEdge(edge, 'start'),
+      },
+      edge,
+      path,
+    };
+  }
+
+  emitNodeChanges(changes: NodeChange[]): void {
+    if (!changes.length) return;
+    this.nodeChanges.emit(changes);
+    this.changesController.handleNodeChanges(changes);
+  }
+
+  emitEdgeChanges(changes: EdgeChange[]): void {
+    if (!changes.length) return;
+    this.edgeChanges.emit(changes);
+    this.changesController.handleEdgeChanges(changes);
+  }
+
+  isShortcutEnabled(action: keyof KeyboardShortcuts): boolean {
+    const map = this.keyboardShortcuts();
+    return map[action] !== false;
   }
 
   ngOnInit(): void {
@@ -1211,6 +1484,7 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
     this.filteredEdges = this.diagramStateService.visibleEdges; // Use visibleEdges for rendering
     this.tempEdges = this.diagramStateService.tempEdges;
     this.alignmentGuides = this.diagramStateService.alignmentGuides;
+    this.diagramStateService.selectionMode = this.selectionMode();
 
     // Initialize sortedNodes computed signal for z-index handling
     this.sortedNodes = computed(() => {
@@ -1444,12 +1718,14 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
 
   @HostListener('window:keydown.delete', ['$event'])
   onDeleteKeyPress(event: any): void {
+    if (!this.isShortcutEnabled('delete')) return;
     this.deleteSelectedElements();
   }
 
   @HostListener('window:keydown.control.z', ['$event'])
   @HostListener('window:keydown.meta.z', ['$event']) // For macOS
   onUndoKeyPress(event: any): void {
+    if (!this.isShortcutEnabled('undo')) return;
     event.preventDefault(); // Prevent browser undo
     this.diagramStateService.undo();
   }
@@ -1457,6 +1733,7 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
   @HostListener('window:keydown.control.shift.z', ['$event'])
   @HostListener('window:keydown.meta.shift.z', ['$event']) // For macOS
   onRedoKeyPress(event: any): void {
+    if (!this.isShortcutEnabled('redo')) return;
     event.preventDefault(); // Prevent browser redo
     this.diagramStateService.redo();
   }
@@ -1511,6 +1788,7 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
   @HostListener('window:keydown.meta.a', ['$event'])
   onSelectAllKeyPress(event: any): void {
     if (this.isInputActive(event)) return;
+    if (!this.isShortcutEnabled('selectAll')) return;
     event.preventDefault();
     this.diagramStateService.selectAll();
   }
@@ -1519,6 +1797,7 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
   @HostListener('window:keydown.meta.g', ['$event'])
   onGroupKeyPress(event: any): void {
     if (this.isInputActive(event)) return;
+    if (!this.isShortcutEnabled('group')) return;
     event.preventDefault();
     const selectedIds = this.diagramStateService.selectedNodeIds();
     this.diagramStateService.groupNodes(selectedIds);
@@ -1528,6 +1807,7 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
   @HostListener('window:keydown.meta.shift.g', ['$event'])
   onUngroupKeyPress(event: any): void {
     if (this.isInputActive(event)) return;
+    if (!this.isShortcutEnabled('ungroup')) return;
     event.preventDefault();
     const selectedIds = this.diagramStateService.selectedNodeIds();
     this.diagramStateService.ungroupNodes(selectedIds);
@@ -1902,16 +2182,21 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
         }
       }
 
-      // Second pass: if no handle found, check if cursor is over a node body and pick closest handle
+      // Second pass: cursor over a node body — pick the handle facing the source
       if (!closestHandle) {
+        const sourceNode = nodes.find((n) => n.id === this.connectingSourceNodeId);
+        const sourceAnchor = sourceNode
+          ? this.getHandleAbsolutePosition(sourceNode, this.connectingSourceHandleId)
+          : { x: currentPointerX, y: currentPointerY };
+
         for (const node of nodes) {
-          // Skip source node to avoid self-loop unless explicitly desired
           if (node.id === this.connectingSourceNodeId) continue;
 
-          const absPos = this.diagramStateService.getAbsolutePosition(node, nodes);
+          const absPos = node._renderPosition
+            ?? this.diagramStateService.getAbsolutePosition(node, nodes);
           const nodeW = node.width || this.defaultNodeWidth;
           const nodeH = node.height || this.defaultNodeHeight;
-          const padding = 10; // Small padding around node body
+          const padding = 10;
 
           if (
             currentPointerX >= absPos.x - padding &&
@@ -1919,19 +2204,13 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
             currentPointerY >= absPos.y - padding &&
             currentPointerY <= absPos.y + nodeH + padding
           ) {
-            // Cursor is over this node — pick the nearest handle
-            let bestHandleId = 'top';
-            let bestDist = Infinity;
-            const handles = ['top', 'right', 'bottom', 'left'];
-            for (const hId of handles) {
-              const hPos = this.getHandleAbsolutePosition(node, hId);
-              const d = Math.hypot(hPos.x - currentPointerX, hPos.y - currentPointerY);
-              if (d < bestDist) {
-                bestDist = d;
-                bestHandleId = hId;
-              }
-            }
-            closestHandle = { nodeId: node.id, handleId: bestHandleId };
+            const nodeCenter = {
+              x: absPos.x + nodeW / 2,
+              y: absPos.y + nodeH / 2,
+            };
+            // Prefer the side that faces the source (readable bottom→top / right→left flows)
+            const facing = inferHandlePosition(sourceAnchor, nodeCenter, 'target');
+            closestHandle = { nodeId: node.id, handleId: facing };
             break;
           }
         }
@@ -1993,7 +2272,7 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
           sourceHandle: this.connectingSourceHandleId,
           target: targetId,
           targetHandle: targetHandleId,
-          // type: 'bezier', // Removed to use default smart routing
+          type: 'bezier',
         };
         this.diagramStateService.addEdge(newEdge);
 
@@ -2046,7 +2325,13 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
   // --- Dragging Logic ---
 
   private startDraggingNode(event: PointerEvent, node: WorkflowNode): void {
-    this.nodeDragService.startDraggingNode(event, node, this.nodes());
+    // Use live service nodes (not the possibly-stale [nodes] input) so
+    // multi-select drag sees current selection/positions after local updates.
+    this.nodeDragService.startDraggingNode(
+      event,
+      node,
+      this.diagramStateService.nodes()
+    );
   }
 
   private dragNode(event: PointerEvent): void {
@@ -2730,14 +3015,27 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
       }
     }
 
+    const sourcePosition: HandlePosition =
+      normalizeHandle('sourceHandle' in edge ? edge.sourceHandle : undefined) ??
+      inferHandlePosition(sourcePos, targetPos, 'source');
+    const targetPosition: HandlePosition =
+      normalizeHandle('targetHandle' in edge ? edge.targetHandle : undefined) ??
+      inferHandlePosition(sourcePos, targetPos, 'target');
+
+    const bezierOpts = {
+      offset: curvatureOffset,
+      sourcePosition,
+      targetPosition,
+    };
+
     // Use smart routing if type is 'smart' or not specified (default).
     // Only edges attached to the dragged node(s) use a bezier fallback — other edges keep their path.
     if ((edge.type === 'smart' || !edge.type) && !isTemporary) {
       if (this.isEdgeAttachedToDrag(edge)) {
-        return getBezierPath(sourcePos, targetPos, curvatureOffset);
+        return getBezierPath(sourcePos, targetPos, bezierOpts);
       }
 
-      const cacheKey = `${edge.id}-${sourcePos.x},${sourcePos.y}-${targetPos.x},${targetPos.y}`;
+      const cacheKey = `${edge.id}-${sourcePos.x},${sourcePos.y}-${targetPos.x},${targetPos.y}-${sourcePosition}-${targetPosition}`;
 
       if (this.pathCache.has(cacheKey)) {
         return this.pathCache.get(cacheKey)!;
@@ -2752,18 +3050,25 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
         this.pathCache.set(cacheKey, d);
         return d;
       } catch (e) {
-        console.warn('Pathfinding failed, falling back to straight path', e);
-        return getStraightPath(sourcePos, targetPos);
+        console.warn('Pathfinding failed, falling back to bezier path', e);
+        return getBezierPath(sourcePos, targetPos, bezierOpts);
       }
     }
 
     switch (edge.type) {
-      case 'bezier': return getBezierPath(sourcePos, targetPos, curvatureOffset);
-      case 'step': return getStepPath(sourcePos, targetPos);
-      case 'smoothstep': return getSmoothStepPath(sourcePos, targetPos);
-      case 'straight': return getStraightPath(sourcePos, targetPos);
-      case 'dashed': return getStraightPath(sourcePos, targetPos);
-      default: return getStraightPath(sourcePos, targetPos);
+      case 'bezier':
+        return getBezierPath(sourcePos, targetPos, bezierOpts);
+      case 'step':
+        return getStepPath(sourcePos, targetPos, { sourcePosition, targetPosition });
+      case 'smoothstep':
+        return getSmoothStepPath(sourcePos, targetPos, { sourcePosition, targetPosition });
+      case 'straight':
+        return getStraightPath(sourcePos, targetPos);
+      case 'dashed':
+        return getStraightPath(sourcePos, targetPos);
+      // Custom edge component/template types still need a geometry path for labels/hit-testing
+      default:
+        return getBezierPath(sourcePos, targetPos, bezierOpts);
     }
   }
 
@@ -2796,7 +3101,7 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
     return `url(#${id})`;
   }
 
-  getEdgeLabelPosition(edge: Edge): XYPosition {
+  getEdgeLabelPosition(edge: Edge, position: EdgeLabelPosition = 'center'): XYPosition {
     const nodes = this.getLiveNodes();
     const sourceNode = getNode(edge.source, nodes);
     const targetNode = getNode(edge.target, nodes);
@@ -2807,6 +3112,14 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
 
     const sourcePos = this.getHandleAbsolutePosition(sourceNode, edge.sourceHandle);
     const targetPos = this.getHandleAbsolutePosition(targetNode, edge.targetHandle);
+
+    const lerp = (t: number): XYPosition => ({
+      x: sourcePos.x + (targetPos.x - sourcePos.x) * t,
+      y: sourcePos.y + (targetPos.y - sourcePos.y) * t,
+    });
+
+    if (position === 'start') return lerp(0.15);
+    if (position === 'end') return lerp(0.85);
 
     if ((edge.type === 'smart' || !edge.type) && !this.isEdgeAttachedToDrag(edge)) {
       try {
@@ -2829,11 +3142,26 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
       }
     }
 
-    // Return midpoint of the edge
-    return {
-      x: (sourcePos.x + targetPos.x) / 2,
-      y: (sourcePos.y + targetPos.y) / 2
-    };
+    return lerp(0.5);
+  }
+
+  resolveEdgeLabel(edge: Edge, position: EdgeLabelPosition): EdgeLabel | string | undefined {
+    const fromMap = edge.edgeLabels?.[position];
+    if (fromMap !== undefined) return fromMap;
+    if (position === 'center') return edge.label;
+    return undefined;
+  }
+
+  edgeLabelText(label: EdgeLabel | string | undefined): string {
+    if (label == null) return '';
+    return typeof label === 'string' ? label : (label.text ?? '');
+  }
+
+  hasEdgeLabel(edge: Edge, position: EdgeLabelPosition): boolean {
+    const label = this.resolveEdgeLabel(edge, position);
+    if (label == null) return false;
+    if (typeof label === 'string') return label.length > 0;
+    return !!(label.text || label.type === 'html-template' || label.data);
   }
 
   onEdgeClick(event: MouseEvent, edge: Edge): void {
@@ -2945,6 +3273,9 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
   }
 
   private scheduleInitialFitView(): void {
+    if (typeof requestAnimationFrame === 'undefined') {
+      return;
+    }
     let attempts = 0;
     const tryFit = () => {
       attempts += 1;

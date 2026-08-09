@@ -1,0 +1,14 @@
+{
+  "name": "ngx-workflow API",
+  "tsconfig": "tsconfig.compodoc.json",
+  "output": "../../public/compodoc",
+  "theme": "material",
+  "disableCoverage": true,
+  "disablePrivate": true,
+  "disableInternal": true,
+  "disableLifeCycleHooks": false,
+  "hideGenerator": true,
+  "silent": true,
+  "port": 8081,
+  "exclude": ["**/testing/**", "**/*.spec.ts", "**/node_modules/**"]
+}

@@ -49,7 +49,7 @@ interface DiagramPreset {
           </h1>
           <p class="hero-subtitle">
             A cinematic, high-performance workflow canvas with ELK layout,
-            smart edges, and zero Zone.js overhead.
+            direction-aware bezier edges, and zero Zone.js overhead.
           </p>
           <div class="hero-cta">
             <a routerLink="/docs" class="btn btn-primary btn-lg" appMagnetic>Get started</a>
@@ -231,6 +231,35 @@ interface DiagramPreset {
             </tbody>
           </table>
         </div>
+      </div>
+    </section>
+
+    <section class="faq-section" id="faq" aria-labelledby="faq-heading">
+      <div class="container">
+        <div class="section-header" appReveal>
+          <span class="badge badge-accent">FAQ</span>
+          <h2 id="faq-heading">What is ngx-workflow?</h2>
+          <p class="text-muted">
+            ngx-workflow (sometimes searched as “ngx workflow”) is an open-source Angular library
+            for building flowchart and node-based workflow editors.
+          </p>
+        </div>
+        <div class="faq-list" appReveal>
+          @for (item of faqs; track item.q) {
+            <details class="faq-item glass-panel">
+              <summary>{{ item.q }}</summary>
+              <p>{{ item.a }}</p>
+            </details>
+          }
+        </div>
+        <p class="faq-links text-muted" appReveal>
+          Official site:
+          <a href="https://ngx-workflow.vercel.app">ngx-workflow.vercel.app</a>
+          · npm:
+          <a href="https://www.npmjs.com/package/ngx-workflow">npmjs.com/package/ngx-workflow</a>
+          · GitHub:
+          <a href="https://github.com/abdulkyume/ngx-workflow">github.com/abdulkyume/ngx-workflow</a>
+        </p>
       </div>
     </section>
 
@@ -562,6 +591,46 @@ interface DiagramPreset {
       font-weight: 600;
     }
 
+    .faq-section { padding: 96px 0 48px; }
+
+    .faq-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-width: 760px;
+      margin: 0 auto;
+    }
+
+    .faq-item {
+      border-radius: var(--radius-md);
+      padding: 0 20px;
+    }
+
+    .faq-item summary {
+      cursor: pointer;
+      list-style: none;
+      padding: 18px 0;
+      font-weight: 600;
+      font-size: 1.05rem;
+    }
+
+    .faq-item summary::-webkit-details-marker { display: none; }
+
+    .faq-item p {
+      margin: 0 0 18px;
+      color: var(--color-text-muted);
+      line-height: 1.65;
+    }
+
+    .faq-links {
+      margin: 28px auto 0;
+      max-width: 760px;
+      text-align: center;
+      font-size: 0.95rem;
+    }
+
+    .faq-links a { color: var(--color-primary); }
+
     .cta-box {
       padding: 64px 32px;
       border-radius: var(--radius-xl);
@@ -588,7 +657,7 @@ interface DiagramPreset {
       .proof-grid { grid-template-columns: 1fr; }
       .code-side { border-right: none; border-bottom: 1px solid var(--color-border); }
       .feature-list { grid-template-columns: 1fr; }
-      .proof-section, .features-section, .compare-section { padding: 64px 0; }
+      .proof-section, .features-section, .compare-section, .faq-section { padding: 64px 0; }
     }
 
     @media (max-width: 768px) {
@@ -750,6 +819,25 @@ export class HomeComponent implements OnInit {
     {
       title: 'Studio chrome included',
       body: 'Minimap, undo/redo, search, properties sidebar, context menu, and export — composable out of the box.',
+    },
+  ];
+
+  faqs = [
+    {
+      q: 'What is ngx-workflow?',
+      a: 'ngx-workflow is an Angular Signals library for interactive flowchart and node-based workflow editors, with ELK layout, smart edges, minimap, and studio chrome.',
+    },
+    {
+      q: 'How do I install ngx-workflow?',
+      a: 'Run npm install ngx-workflow, then import NgxWorkflowModule or the standalone ngx-workflow-diagram component.',
+    },
+    {
+      q: 'Which Angular versions does ngx-workflow support?',
+      a: 'ngx-workflow supports Angular 17.1 through Angular 22.',
+    },
+    {
+      q: 'Is ngx-workflow a React Flow alternative for Angular?',
+      a: 'Yes. It is an Angular-native Signals alternative to React Flow / xyflow for flowchart and node-editor UIs.',
     },
   ];
 

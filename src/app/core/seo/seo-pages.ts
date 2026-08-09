@@ -2,6 +2,7 @@ import { SeoConfig, SITE_NAME, SITE_URL } from '../services/seo.service';
 
 export const DEFAULT_KEYWORDS = [
   'ngx-workflow',
+  'ngx workflow',
   'Angular flowchart',
   'Angular node editor',
   'Angular Signals diagram',
@@ -12,6 +13,7 @@ export const DEFAULT_KEYWORDS = [
   'xyflow Angular',
   'SVG workflow diagram',
   'Angular 22 flowchart',
+  'npm ngx-workflow',
 ].join(', ');
 
 const ORG = {
@@ -39,7 +41,7 @@ export function softwareApplicationJsonLd(): Record<string, unknown> {
     applicationCategory: 'DeveloperApplication',
     applicationSubCategory: 'Diagram / flowchart library',
     operatingSystem: 'Web',
-    softwareVersion: '0.5.2',
+    softwareVersion: '0.6.0',
     description:
       'High-performance Angular Signals flowchart and node-based workflow editor with ELK layout, smart edges, RGBA styling, and studio chrome for Angular 17.1–22.',
     url: SITE_URL,

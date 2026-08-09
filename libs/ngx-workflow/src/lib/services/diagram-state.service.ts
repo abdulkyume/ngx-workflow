@@ -14,6 +14,11 @@ import { v4 as uuidv4 } from 'uuid';
 import { UndoRedoService } from './undo-redo.service';
 import { AutoLayoutService } from './auto-layout.service';
 import { LayoutService } from './layout.service';
+import { EdgeVirtualizationMode } from '../models/changes.model';
+import {
+  SpatialIndex,
+  computeVirtualizationBuffer,
+} from '../utils/spatial-index';
 
 export interface Connection {
   source: string;
@@ -55,6 +60,12 @@ export class DiagramStateService {
   // Virtualization
   readonly virtualizationEnabled = signal<boolean>(true);
   readonly virtualizationBuffer = signal<number>(500);
+  readonly virtualizationAdaptiveBuffer = signal<boolean>(true);
+  readonly virtualizationKeepSelected = signal<boolean>(true);
+  readonly virtualizationMaxNodes = signal<number | null>(null);
+  readonly edgeVirtualizationMode = signal<EdgeVirtualizationMode>('any-endpoint');
+  /** Extra leave padding (0–1) so nodes near the fringe don’t flicker while panning. */
+  readonly virtualizationHysteresis = signal<number>(0.25);
 
   // Computed signals
   readonly selectedNodes = computed(() => this.nodes().filter((n) => n.selected));
@@ -101,35 +112,104 @@ export class DiagramStateService {
     });
   });
 
-  readonly visibleNodes = computed(() => {
+  /**
+   * Cached spatial hash rebuilt only when `viewNodes` changes — pans/zooms
+   * reuse the index and run an O(cells) query instead of scanning every node.
+   */
+  private readonly nodeSpatialIndex = computed(() => {
     const nodes = this.viewNodes();
+    const index = new SpatialIndex(256);
+    index.rebuild(nodes);
+    return { index, nodes };
+  });
+
+  readonly visibleNodes = computed(() => {
+    const { index, nodes } = this.nodeSpatialIndex();
     const viewport = this.viewport();
     const dimensions = this.containerDimensions();
     const enabled = this.virtualizationEnabled();
-    const buffer = this.virtualizationBuffer();
 
     if (!enabled || dimensions.width === 0 || dimensions.height === 0) {
-      return nodes; // Render all if disabled or dimensions not set
+      return nodes;
     }
 
-    const minX = -viewport.x / viewport.zoom - buffer;
-    const maxX = (-viewport.x + dimensions.width) / viewport.zoom + buffer;
-    const minY = -viewport.y / viewport.zoom - buffer;
-    const maxY = (-viewport.y + dimensions.height) / viewport.zoom + buffer;
+    const buffer = computeVirtualizationBuffer(
+      this.virtualizationBuffer(),
+      viewport.zoom,
+      this.virtualizationAdaptiveBuffer()
+    );
+    const hysteresis = Math.max(0, this.virtualizationHysteresis());
+    const leaveBuffer = buffer * (1 + hysteresis);
 
-    return nodes.filter(node => {
-      const nodeX = node._renderPosition?.x ?? node.position.x;
-      const nodeY = node._renderPosition?.y ?? node.position.y;
-      const nodeWidth = node.width || 150; // Default width
-      const nodeHeight = node.height || 60; // Default height
+    const enterBounds = {
+      minX: -viewport.x / viewport.zoom - buffer,
+      maxX: (-viewport.x + dimensions.width) / viewport.zoom + buffer,
+      minY: -viewport.y / viewport.zoom - buffer,
+      maxY: (-viewport.y + dimensions.height) / viewport.zoom + buffer,
+    };
 
-      return (
-        nodeX + nodeWidth >= minX &&
-        nodeX <= maxX &&
-        nodeY + nodeHeight >= minY &&
-        nodeY <= maxY
-      );
+    const hitIds = index.query(enterBounds);
+
+    // Hysteresis: keep previously visible nodes while they remain in a slightly larger rect
+    const prev = this._lastVisibleNodeIds;
+    if (prev.size && hysteresis > 0) {
+      const leaveBounds = {
+        minX: -viewport.x / viewport.zoom - leaveBuffer,
+        maxX: (-viewport.x + dimensions.width) / viewport.zoom + leaveBuffer,
+        minY: -viewport.y / viewport.zoom - leaveBuffer,
+        maxY: (-viewport.y + dimensions.height) / viewport.zoom + leaveBuffer,
+      };
+      const sticky = index.query(leaveBounds);
+      for (const id of prev) {
+        if (sticky.has(id)) hitIds.add(id);
+      }
+    }
+
+    if (this.virtualizationKeepSelected()) {
+      for (const n of nodes) {
+        if (n.selected) hitIds.add(n.id);
+      }
+    }
+
+    let result = nodes.filter((n) => hitIds.has(n.id));
+
+    const maxNodes = this.virtualizationMaxNodes();
+    if (maxNodes != null && maxNodes > 0 && result.length > maxNodes) {
+      const cx = (enterBounds.minX + enterBounds.maxX) / 2;
+      const cy = (enterBounds.minY + enterBounds.maxY) / 2;
+      const selected = result.filter((n) => n.selected);
+      const rest = result
+        .filter((n) => !n.selected)
+        .sort((a, b) => {
+          const ax = (a._renderPosition?.x ?? a.position.x) + (a.width || 150) / 2;
+          const ay = (a._renderPosition?.y ?? a.position.y) + (a.height || 60) / 2;
+          const bx = (b._renderPosition?.x ?? b.position.x) + (b.width || 150) / 2;
+          const by = (b._renderPosition?.y ?? b.position.y) + (b.height || 60) / 2;
+          const da = (ax - cx) ** 2 + (ay - cy) ** 2;
+          const db = (bx - cx) ** 2 + (by - cy) ** 2;
+          return da - db;
+        });
+      const budget = Math.max(0, maxNodes - selected.length);
+      result = [...selected, ...rest.slice(0, budget)];
+    }
+
+    // Update sticky set outside reactive graph via microtask to avoid write-in-computed
+    const nextIds = new Set(result.map((n) => n.id));
+    queueMicrotask(() => {
+      this._lastVisibleNodeIds = nextIds;
     });
+
+    return result;
+  });
+
+  /** Node ids kept from the previous cull pass (hysteresis). */
+  private _lastVisibleNodeIds = new Set<string>();
+
+  /** How many view-nodes are currently culled (for diagnostics / chrome). */
+  readonly culledNodeCount = computed(() => {
+    const total = this.viewNodes().length;
+    if (!this.virtualizationEnabled()) return 0;
+    return Math.max(0, total - this.visibleNodes().length);
   });
 
   // Helper to compute absolute position of a node
@@ -143,10 +223,14 @@ export class DiagramStateService {
   readonly visibleEdges = computed(() => {
     const edges = this.edges();
     const visibleNodes = this.visibleNodes();
-    const visibleNodeIds = new Set(visibleNodes.map(n => n.id));
+    const visibleNodeIds = new Set(visibleNodes.map((n) => n.id));
+    const mode = this.edgeVirtualizationMode();
 
-    return edges.filter(edge => {
-      return visibleNodeIds.has(edge.source) || visibleNodeIds.has(edge.target);
+    return edges.filter((edge) => {
+      const src = visibleNodeIds.has(edge.source);
+      const tgt = visibleNodeIds.has(edge.target);
+      if (mode === 'both-endpoints') return src && tgt;
+      return src || tgt;
     });
   });
 
@@ -362,18 +446,52 @@ export class DiagramStateService {
 
   // --- Viewport Management ---
 
-  setViewport(viewport: Partial<Viewport>): void {
-    this.viewport.update((currentViewport) => {
-      const next = { ...currentViewport, ...viewport };
-      if (
-        next.x === currentViewport.x &&
-        next.y === currentViewport.y &&
-        next.zoom === currentViewport.zoom
-      ) {
-        return currentViewport;
+  private viewportAnimationFrame: number | null = null;
+
+  setViewport(viewport: Partial<Viewport>, options?: { duration?: number }): void {
+    const duration = options?.duration ?? 0;
+    const currentViewport = this.viewport();
+    const next = { ...currentViewport, ...viewport };
+    if (
+      next.x === currentViewport.x &&
+      next.y === currentViewport.y &&
+      next.zoom === currentViewport.zoom
+    ) {
+      return;
+    }
+
+    if (!duration || duration <= 0 || typeof requestAnimationFrame === 'undefined') {
+      if (this.viewportAnimationFrame != null) {
+        cancelAnimationFrame(this.viewportAnimationFrame);
+        this.viewportAnimationFrame = null;
       }
-      return next;
-    });
+      this.viewport.set(next);
+      return;
+    }
+
+    if (this.viewportAnimationFrame != null) {
+      cancelAnimationFrame(this.viewportAnimationFrame);
+    }
+
+    const from = { ...currentViewport };
+    const start = performance.now();
+    const ease = (t: number) => 1 - Math.pow(1 - t, 3);
+
+    const step = (now: number) => {
+      const t = Math.min(1, (now - start) / duration);
+      const e = ease(t);
+      this.viewport.set({
+        x: from.x + (next.x - from.x) * e,
+        y: from.y + (next.y - from.y) * e,
+        zoom: from.zoom + (next.zoom - from.zoom) * e,
+      });
+      if (t < 1) {
+        this.viewportAnimationFrame = requestAnimationFrame(step);
+      } else {
+        this.viewportAnimationFrame = null;
+      }
+    };
+    this.viewportAnimationFrame = requestAnimationFrame(step);
   }
 
   setContainerDimensions(dimensions: { width: number; height: number }): void {
@@ -427,7 +545,7 @@ export class DiagramStateService {
     const step = options?.step ?? 0.1;
     const currentZoom = this.viewport().zoom;
     const newZoom = Math.min(10, currentZoom + step);
-    this.setViewport({ zoom: newZoom });
+    this.setViewport({ zoom: newZoom }, { duration: options?.duration });
   }
 
   /**
@@ -438,7 +556,7 @@ export class DiagramStateService {
     const step = options?.step ?? 0.1;
     const currentZoom = this.viewport().zoom;
     const newZoom = Math.max(0.1, currentZoom - step);
-    this.setViewport({ zoom: newZoom });
+    this.setViewport({ zoom: newZoom }, { duration: options?.duration });
   }
 
   /**
@@ -461,9 +579,9 @@ export class DiagramStateService {
       const newX = container.width / 2 - pointX * clampedZoom;
       const newY = container.height / 2 - pointY * clampedZoom;
 
-      this.setViewport({ x: newX, y: newY, zoom: clampedZoom });
+      this.setViewport({ x: newX, y: newY, zoom: clampedZoom }, { duration: options?.duration });
     } else {
-      this.setViewport({ zoom: clampedZoom });
+      this.setViewport({ zoom: clampedZoom }, { duration: options?.duration });
     }
   }
 
@@ -514,7 +632,7 @@ export class DiagramStateService {
     const bounds = this.getNodesBounds(nodesToFit);
 
     // Fit to bounds
-    this.fitBounds(bounds, { padding, minZoom, maxZoom });
+    this.fitBounds(bounds, { padding, minZoom, maxZoom, duration: options?.duration });
   }
 
   /**
@@ -530,7 +648,7 @@ export class DiagramStateService {
     const newX = container.width / 2 - x * zoom;
     const newY = container.height / 2 - y * zoom;
 
-    this.setViewport({ x: newX, y: newY, zoom });
+    this.setViewport({ x: newX, y: newY, zoom }, { duration: options?.duration });
   }
 
   /**
@@ -571,7 +689,7 @@ export class DiagramStateService {
     const x = container.width / 2 - centerX * zoom;
     const y = container.height / 2 - centerY * zoom;
 
-    this.setViewport({ x, y, zoom });
+    this.setViewport({ x, y, zoom }, { duration: options?.duration });
   }
 
   /**
@@ -1649,6 +1767,11 @@ export class DiagramStateService {
     });
   }
 
+  /** 'partial' = any overlap; 'full' = node fully inside the box. */
+  selectionMode: 'partial' | 'full' = 'partial';
+  /** When true, edges whose endpoints are both selected (or that intersect) are selected too. */
+  selectEdgesInBox = true;
+
   endBoxSelection(): void {
     const box = this.selectionBox();
     this.boxSelectionOrigin = null;
@@ -1657,12 +1780,13 @@ export class DiagramStateService {
       return;
     }
 
-    // Select all nodes that intersect with the selection box
+    // Select all nodes that match the selection mode
     const currentNodes = this.nodes();
     const selectedNodeIds = new Set<string>();
 
     currentNodes.forEach((node) => {
-      if (this.isNodeInSelectionBox(node, box)) {
+      if (node.selectable === false) return;
+      if (this.isNodeInSelectionBox(node, box, this.selectionMode)) {
         selectedNodeIds.add(node.id);
       }
     });
@@ -1675,6 +1799,16 @@ export class DiagramStateService {
       }))
     );
 
+    if (this.selectEdgesInBox) {
+      this.edges.update((edges) =>
+        edges.map((edge) => ({
+          ...edge,
+          selected:
+            selectedNodeIds.has(edge.source) && selectedNodeIds.has(edge.target),
+        }))
+      );
+    }
+
     // Clear selection box
     this.selectionBox.set(null);
   }
@@ -1684,16 +1818,31 @@ export class DiagramStateService {
     this.selectionBox.set(null);
   }
 
-  private isNodeInSelectionBox(node: Node, box: SelectionBox): boolean {
+  private isNodeInSelectionBox(
+    node: Node,
+    box: SelectionBox,
+    mode: 'partial' | 'full' = 'partial'
+  ): boolean {
     const nodeWidth = node.width || 150;
     const nodeHeight = node.height || 60;
+    const x = node._renderPosition?.x ?? node.position.x;
+    const y = node._renderPosition?.y ?? node.position.y;
 
-    // Check if node intersects with selection box
+    if (mode === 'full') {
+      return (
+        x >= box.x &&
+        y >= box.y &&
+        x + nodeWidth <= box.x + box.width &&
+        y + nodeHeight <= box.y + box.height
+      );
+    }
+
+    // Partial: any intersection with selection box
     return !(
-      node.position.x > box.x + box.width ||
-      node.position.x + nodeWidth < box.x ||
-      node.position.y > box.y + box.height ||
-      node.position.y + nodeHeight < box.y
+      x > box.x + box.width ||
+      x + nodeWidth < box.x ||
+      y > box.y + box.height ||
+      y + nodeHeight < box.y
     );
   }
 

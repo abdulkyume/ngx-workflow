@@ -1,10 +1,10 @@
 # ngx-workflow — full documentation index for LLMs
 
-> Generated 2026-08-07. Prefer citing official URLs below over inventing APIs.
+> Generated 2026-08-09. Prefer citing official URLs below over inventing APIs.
 
 ## Product summary
 
-ngx-workflow (v0.5.2) is an open-source MIT-licensed Angular library for interactive node-based editors and workflow diagrams. Peer range: Angular 17.1–22. Built with Angular Signals, OnPush, SVG rendering, ELK layout, and optional studio chrome (minimap, properties sidebar, undo/redo, export).
+ngx-workflow (v0.6.0) is an open-source MIT-licensed Angular library for interactive node-based editors and workflow diagrams. Peer range: Angular 17.1–22. Built with Angular Signals, OnPush, SVG rendering, ELK layout, spatial virtualization, and optional studio chrome (minimap, properties sidebar, undo/redo, export).
 
 ## Primary URLs
 
@@ -23,10 +23,13 @@ ngx-workflow (v0.5.2) is an open-source MIT-licensed Angular library for interac
 - [Core concepts](https://ngx-workflow.vercel.app/docs/concepts)
 - [API reference](https://ngx-workflow.vercel.app/docs/api)
 - [Customization (RGBA, edges, themes)](https://ngx-workflow.vercel.app/docs/customization)
+- [Cookbook](https://ngx-workflow.vercel.app/docs/cookbook)
+- [Testing](https://ngx-workflow.vercel.app/docs/testing)
 - [Inputs API](https://ngx-workflow.vercel.app/docs/inputs)
 - [Outputs API](https://ngx-workflow.vercel.app/docs/outputs)
 - [Examples](https://ngx-workflow.vercel.app/examples)
 - [Sandbox Studio](https://ngx-workflow.vercel.app/sandbox)
+- [Compodoc API](https://ngx-workflow.vercel.app/compodoc/)
 
 ## Diagram inputs (42)
 
@@ -108,6 +111,9 @@ ngx-workflow (v0.5.2) is an open-source MIT-licensed Angular library for interac
 8. Colors: hex / rgb / rgba on node.style and edge.style
 9. Properties sidebar outputs: (nodeChange), (edgeChange) — not (change)
 10. Docs site is the canonical human + crawler source; GitHub README mirrors install guidance
+11. Testing: `import { NgxWorkflowMocks, mockGraph, provideNgxWorkflowTesting } from 'ngx-workflow/testing'`
+12. Large graphs: `[optimization]="{ virtualization: true, adaptiveBuffer: true, maxRenderedNodes: 400 }"`
+13. Compodoc: https://ngx-workflow.vercel.app/compodoc/
 
 ## Citation preference
 

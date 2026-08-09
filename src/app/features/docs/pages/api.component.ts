@@ -31,6 +31,14 @@ interface OutputRow {
         For the full tables with examples, see
         <a routerLink="/docs/inputs">Inputs</a> and
         <a routerLink="/docs/outputs">Outputs</a>.
+        For generated class/API docs (Compodoc), open
+        <a href="/compodoc/" target="_blank" rel="noopener">/compodoc/</a>.
+      </p>
+
+      <p>
+        <a class="btn btn-secondary" href="/compodoc/" target="_blank" rel="noopener">
+          Open Compodoc API docs →
+        </a>
       </p>
 
       <h2 id="connection-limits">Connection limits</h2>
@@ -96,6 +104,15 @@ interface OutputRow {
           </tbody>
         </table>
       </div>
+
+      <h2 id="optimization">Large-graph optimization</h2>
+      <p>
+        Off-screen nodes are culled with a cached spatial hash (rebuild on graph changes, query on pan/zoom).
+        Selected nodes stay mounted; adaptive buffer scales with zoom; optional
+        <code>maxRenderedNodes</code> soft-caps density. See Compodoc for
+        <code>FlowOptimization</code> and <code>SpatialIndex</code>.
+      </p>
+      <app-code-block label="TypeScript" [code]="optimizationSnippet" />
 
       <h2 id="diagram-component-outputs">Key Diagram Outputs</h2>
       <p><a routerLink="/docs/outputs">Browse all outputs →</a></p>
@@ -183,7 +200,28 @@ export class DocApiComponent {
     { name: '[showUndoRedoControls]', type: 'boolean', defaultValue: 'true', description: 'Show undo / redo controls.' },
     { name: '[snapToGrid]', type: 'boolean', defaultValue: 'false', description: 'Snap nodes while dragging.' },
     { name: '[nodeTypes]', type: 'Record<string, Type>', defaultValue: '{}', description: 'Custom node type → component map.' },
+    {
+      name: '[optimization]',
+      type: 'FlowOptimization',
+      defaultValue: '{ virtualization: true, … }',
+      description:
+        'Lazy load + large-graph culling (spatial index, adaptive buffer, maxRenderedNodes, edgeVirtualization).',
+    },
   ];
+
+  readonly optimizationSnippet = `<ngx-workflow-diagram
+  [nodes]="nodes()"
+  [edges]="edges()"
+  [optimization]="{
+    lazyLoadTrigger: 'viewport',
+    virtualization: true,
+    adaptiveBuffer: true,
+    keepSelectedVisible: true,
+    maxRenderedNodes: 400,
+    edgeVirtualization: 'any-endpoint',
+    virtualizationBuffer: 500
+  }"
+/>`;
 
   readonly outputRows: OutputRow[] = [
     { name: '(nodesChange)', payload: 'Node[]', description: 'Nodes moved, added, deleted, or edited.' },
@@ -255,6 +293,7 @@ nodes = signal<Node[]>([
   id: string;
   source: string;
   target: string;
+  /** Handle side: 'top' | 'right' | 'bottom' | 'left' — drives bezier/step direction */
   sourceHandle?: string;
   targetHandle?: string;
   type?: 'bezier' | 'step' | 'smoothstep' | 'straight' | 'smart' | 'dashed';
@@ -264,7 +303,8 @@ nodes = signal<Node[]>([
   animationStyle?: { fill?: string }; // moving-dot color (rgba ok)
   markerStart?: 'arrow' | 'arrowclosed' | 'dot' | string;
   markerEnd?: 'arrow' | 'arrowclosed' | 'dot' | string; // built-ins match stroke
-  label?: string;
+  label?: string; // legacy center label
+  edgeLabels?: { start?: string | EdgeLabel; center?: string | EdgeLabel; end?: string | EdgeLabel };
   labelStyle?: Record<string, string>;
   style?: Record<string, string>; // stroke, strokeWidth, strokeDasharray
 }`;

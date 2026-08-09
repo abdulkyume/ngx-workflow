@@ -40,6 +40,16 @@ export const routes: Routes = [
               ),
           },
           {
+            path: 'cookbook',
+            loadComponent: () =>
+              import('./features/docs/pages/cookbook.component').then((m) => m.DocCookbookComponent),
+          },
+          {
+            path: 'testing',
+            loadComponent: () =>
+              import('./features/docs/pages/testing.component').then((m) => m.DocTestingComponent),
+          },
+          {
             path: 'inputs',
             loadComponent: () =>
               import('./features/docs/pages/doc-inputs.component').then((m) => m.DocInputsComponent),

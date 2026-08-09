@@ -88,7 +88,9 @@
 /* --- Nodes --- */
 .ngx-workflow__node {
   cursor: grab;
-  transition: transform 0.1s ease, opacity 0.2s ease;
+  /* Never transition `transform` on the node <g> — position is an SVG
+     translate() attribute; animating it causes a flash from (0,0) on recreate. */
+  transition: opacity 0.2s ease;
   outline: none;
 
   &:focus,

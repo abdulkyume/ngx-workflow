@@ -31,7 +31,16 @@ import { CodeBlockComponent } from '../../../shared/ui/code-block.component';
 
       <app-code-block label="TypeScript" [code]="connectionLimitsSnippet" />
 
-      <h2 id="custom-edge-styles">3. Custom Edge Styling & Animations</h2>
+      <h2 id="edge-routing">3. Direction-aware edge routing</h2>
+      <p>
+        Bezier, step, and smoothstep paths respect <code>sourceHandle</code> / <code>targetHandle</code>
+        (<code>top</code> · <code>right</code> · <code>bottom</code> · <code>left</code>).
+        A vertical <code>bottom → top</code> link curves out of the bottom port and into the top port —
+        not a flat left-to-right diagonal.
+      </p>
+      <app-code-block label="TypeScript" [code]="edgeRoutingSnippet" />
+
+      <h2 id="custom-edge-styles">4. Custom Edge Styling & Animations</h2>
       <p>
         Stroke, labels, and animation dots accept hex / <code>rgb()</code> / <code>rgba()</code>.
         Built-in markers (<code>arrow</code>, <code>arrowclosed</code>, <code>dot</code>) match the edge stroke color.
@@ -40,7 +49,7 @@ import { CodeBlockComponent } from '../../../shared/ui/code-block.component';
 
       <app-code-block label="TypeScript" [code]="edgeStylesSnippet" />
 
-      <h2 id="node-colors">4. Node Colors (RGBA)</h2>
+      <h2 id="node-colors">5. Node Colors (RGBA)</h2>
       <p>
         Set fill, text, and border via <code>style</code> / <code>borderColor</code>, or edit them in the
         properties sidebar RGBA pickers (swatch + opacity + <code>rgba()</code> text).
@@ -48,7 +57,7 @@ import { CodeBlockComponent } from '../../../shared/ui/code-block.component';
 
       <app-code-block label="TypeScript" [code]="nodeColorsSnippet" />
 
-      <h2 id="css-variables">5. CSS Theme Customization Tokens</h2>
+      <h2 id="css-variables">6. CSS Theme Customization Tokens</h2>
       <p>
         Override default CSS variables in your application stylesheet to match your corporate design system:
       </p>
@@ -108,6 +117,27 @@ export class CustomCardNodeComponent {
 
 // Or globally for every port in the diagram:
 // <ngx-workflow-diagram [maxConnectionsPerHandle]="1" />`;
+
+  readonly edgeRoutingSnippet = `edges = signal<Edge[]>([
+  // Horizontal flow — curve exits right, enters left
+  {
+    id: 'e-h',
+    source: 'a',
+    target: 'b',
+    type: 'bezier',
+    sourceHandle: 'right',
+    targetHandle: 'left',
+  },
+  // Vertical flow — curve exits bottom, enters top (not a flat diagonal)
+  {
+    id: 'e-v',
+    source: 'start',
+    target: 'end',
+    type: 'bezier',
+    sourceHandle: 'bottom',
+    targetHandle: 'top',
+  },
+]);`;
 
   readonly edgeStylesSnippet = `edges = signal<Edge[]>([
   {

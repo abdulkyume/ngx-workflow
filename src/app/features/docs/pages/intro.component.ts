@@ -45,7 +45,7 @@ import { CodeBlockComponent } from '../../../shared/ui/code-block.component';
         <li><strong>Pure Signals Reactivity:</strong> All viewport transformations, selection states, and node coordinate changes run inside reactive Signal pipelines.</li>
         <li><strong>Automatic ELK Layout:</strong> Built-in integration with <code>ELK.js</code> for instant hierarchical graph layout calculation.</li>
         <li><strong>Rich Overlays:</strong> Minimap navigation, Zoom toolbar, Undo/Redo stack manager, Node search panel, Properties sidebar (RGBA colors, edge animation &amp; markers), and Context menus.</li>
-        <li><strong>Connection Routing:</strong> Smooth Bezier curves, Orthogonal Step routing, Straight lines, plus flow/dot edge animation.</li>
+        <li><strong>Connection Routing:</strong> Direction-aware Bezier curves (respect handle sides), orthogonal step / smoothstep, straight lines, smart A* routing, plus flow/dot edge animation.</li>
         <li><strong>100% Type Safe:</strong> Strict TypeScript interfaces for <code>Node</code>, <code>Edge</code>, <code>Connection</code>, and <code>Viewport</code>.</li>
       </ul>
 

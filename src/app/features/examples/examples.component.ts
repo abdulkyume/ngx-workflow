@@ -371,22 +371,38 @@ export class AutoLayoutDemoComponent {
     {
       id: 'routing',
       title: 'Path Routing Variants',
-      description: 'Bezier smooth curves, Orthogonal steps, and Straight connection paths.',
+      description:
+        'Direction-aware Bezier curves (handle-aware), orthogonal steps, and straight paths — including vertical bottom→top flows.',
       nodes: [
-        { id: 'r1', label: 'Origin Source', position: { x: 80, y: 150 }, ports: 4 },
-        { id: 'r2', label: 'Bezier Target', position: { x: 420, y: 50 }, ports: 2 },
-        { id: 'r3', label: 'Step Target', position: { x: 420, y: 180 }, ports: 2 },
-        { id: 'r4', label: 'Straight Target', position: { x: 420, y: 310 }, ports: 2 }
+        { id: 'r1', label: 'Origin Source', position: { x: 80, y: 160 }, ports: 4 },
+        { id: 'r2', label: 'Bezier →', position: { x: 420, y: 40 }, ports: 4 },
+        { id: 'r3', label: 'Step →', position: { x: 420, y: 160 }, ports: 4 },
+        { id: 'r4', label: 'Straight →', position: { x: 420, y: 280 }, ports: 4 },
+        { id: 'r5', label: 'Start', position: { x: 700, y: 40 }, ports: 4 },
+        { id: 'r6', label: 'End (vertical)', position: { x: 700, y: 260 }, ports: 4 },
       ],
       edges: [
         { id: 're1', source: 'r1', target: 'r2', type: 'bezier', sourceHandle: 'right', targetHandle: 'left', animated: true },
         { id: 're2', source: 'r1', target: 'r3', type: 'step', sourceHandle: 'right', targetHandle: 'left', animated: true },
-        { id: 're3', source: 'r1', target: 'r4', type: 'straight', sourceHandle: 'right', targetHandle: 'left', animated: true }
+        { id: 're3', source: 'r1', target: 'r4', type: 'straight', sourceHandle: 'right', targetHandle: 'left', animated: true },
+        {
+          id: 're4',
+          source: 'r5',
+          target: 'r6',
+          type: 'bezier',
+          sourceHandle: 'bottom',
+          targetHandle: 'top',
+          animated: true,
+          edgeLabels: { center: 'bezier ↓' },
+        },
       ],
       codeSnippet: `edges = signal<Edge[]>([
-  { id: 're1', source: 'r1', target: 'r2', type: 'bezier' },
-  { id: 're2', source: 'r1', target: 'r3', type: 'step' },
-  { id: 're3', source: 'r1', target: 'r4', type: 'straight' }
+  // Horizontal: curves leave the right handle and enter the left
+  { id: 're1', source: 'r1', target: 'r2', type: 'bezier', sourceHandle: 'right', targetHandle: 'left' },
+  // Vertical: curves leave the bottom handle and enter the top
+  { id: 're4', source: 'r5', target: 'r6', type: 'bezier', sourceHandle: 'bottom', targetHandle: 'top' },
+  { id: 're2', source: 'r1', target: 'r3', type: 'step', sourceHandle: 'right', targetHandle: 'left' },
+  { id: 're3', source: 'r1', target: 'r4', type: 'straight', sourceHandle: 'right', targetHandle: 'left' },
 ]);`
     },
     {

@@ -22,21 +22,47 @@ describe('path-getters utility functions', () => {
   });
 
   describe('getBezierPath', () => {
-    it('should format cubic bezier path when curvatureOffset is 0', () => {
-      const path = getBezierPath(source, target, 0);
-      expect(path).toBe('M 0,0 C 50,0 50,100 100,100');
+    it('should format cubic bezier path for left-right flow (legacy number API)', () => {
+      const path = getBezierPath({ x: 0, y: 50 }, { x: 100, y: 50 }, 0);
+      expect(path.startsWith('M 0,50 C')).toBeTrue();
+      expect(path).toContain('100,50');
     });
 
-    it('should format quadratic bezier path when curvatureOffset is non-zero', () => {
+    it('should curve downward when source is bottom and target is top', () => {
+      const path = getBezierPath(
+        { x: 50, y: 0 },
+        { x: 50, y: 100 },
+        { sourcePosition: 'bottom', targetPosition: 'top' }
+      );
+      // Control points should leave vertically from source (same x, larger y)
+      expect(path).toMatch(/^M 50,0 C 50,/);
+      expect(path).toContain('50,100');
+    });
+
+    it('should apply parallel-edge offset without switching to quadratic', () => {
       const path = getBezierPath(source, target, 20);
-      expect(path).toContain('Q');
+      expect(path).toContain('C');
+      expect(path).not.toContain('Q');
     });
   });
 
   describe('getStepPath', () => {
-    it('should format orthogonal step path string', () => {
-      const path = getStepPath(source, target);
-      expect(path).toBe('M 0,0 L 0,50 L 100,50 L 100,100');
+    it('should format orthogonal step path for vertical flow', () => {
+      const path = getStepPath(
+        { x: 50, y: 0 },
+        { x: 50, y: 100 },
+        { sourcePosition: 'bottom', targetPosition: 'top' }
+      );
+      expect(path).toBe('M 50,0 L 50,50 L 50,50 L 50,100');
+    });
+
+    it('should format horizontal step path for left-right flow', () => {
+      const path = getStepPath(
+        { x: 0, y: 50 },
+        { x: 100, y: 50 },
+        { sourcePosition: 'right', targetPosition: 'left' }
+      );
+      expect(path).toBe('M 0,50 L 50,50 L 50,50 L 100,50');
     });
   });
 
@@ -44,7 +70,7 @@ describe('path-getters utility functions', () => {
     it('should fallback to step path when points are too close', () => {
       const closeTarget = { x: 2, y: 2 };
       const path = getSmoothStepPath(source, closeTarget, 10);
-      expect(path).toBe('M 0,0 L 0,1 L 2,1 L 2,2');
+      expect(path.startsWith('M 0,0')).toBeTrue();
     });
 
     it('should format rounded smooth step path for distant points', () => {

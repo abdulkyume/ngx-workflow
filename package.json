@@ -10,14 +10,16 @@
     "build": "ng build",
     "build:lib": "ng build ngx-workflow --configuration production",
     "seo:generate": "node scripts/generate-seo-assets.mjs",
-    "build:web": "npm run seo:generate && ng build ngx-workflow-web --configuration production && node scripts/prepare-static-deploy.mjs",
+    "build:web": "npm run seo:generate && npm run docs:compodoc && ng build ngx-workflow-web --configuration production && node scripts/prepare-static-deploy.mjs",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "test:lib": "ng test ngx-workflow --no-watch --browsers=ChromeHeadless",
     "lint": "npx tsc -p libs/ngx-workflow/tsconfig.lib.json --noEmit --inlineSources false",
     "format": "npx prettier --write \"libs/ngx-workflow/src/**/*.{ts,html,scss}\" \"src/**/*.{ts,html,scss}\"",
     "pack:lib": "npm run build:lib && npm pack ./dist/ngx-workflow",
-    "publish:lib": "npm run build:lib && npm publish ./dist/ngx-workflow --access public"
+    "publish:lib": "npm run build:lib && npm publish ./dist/ngx-workflow --access public",
+    "docs:compodoc": "node -e \"require('fs').rmSync('public/compodoc',{recursive:true,force:true}); require('fs').mkdirSync('public/compodoc',{recursive:true});\" && compodoc -c libs/ngx-workflow/.compodocrc.json -p libs/ngx-workflow/tsconfig.compodoc.json -d public/compodoc",
+    "docs:compodoc:serve": "npm run docs:compodoc && compodoc -s -d public/compodoc -r 8081"
   },
   "prettier": {
     "printWidth": 100,
@@ -54,6 +56,7 @@
     "@angular/build": "^22.1.3",
     "@angular/cli": "^22.1.3",
     "@angular/compiler-cli": "^22.1.0",
+    "@compodoc/compodoc": "^2.0.0",
     "@types/jasmine": "~5.1.0",
     "@types/marked": "^5.0.2",
     "@types/three": "^0.185.4",

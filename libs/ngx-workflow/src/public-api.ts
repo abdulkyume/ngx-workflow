@@ -40,6 +40,7 @@ export * from './lib/services/auto-save.service';
 export * from './lib/services/search.service';
 export * from './lib/services/context-menu.service';
 export * from './lib/services/handle-registry.service';
+export * from './lib/services/component-node-event.service';
 
 // Models
 export * from './lib/models/node.model';
@@ -47,6 +48,7 @@ export * from './lib/models/edge.model';
 export * from './lib/models/viewport.model';
 export * from './lib/models/diagram.model';
 export * from './lib/models/version.model';
+export * from './lib/models/changes.model';
 
 // Adapters
 export * from './lib/adapters/mermaid-adapter';
@@ -62,6 +64,13 @@ export * from './lib/injection-tokens/edge-types.token';
 // Utils
 export * from './lib/utils/path-getters';
 export * from './lib/utils/path-finder';
+export * from './lib/utils/factories';
+export * from './lib/utils/spatial-index';
+
+// Directives
+export * from './lib/directives/drag-handle.directive';
+export * from './lib/directives/changes-controller.directive';
+export * from './lib/directives/connection-controller.directive';
 
 // Validators
 export * from './lib/validators/workflow-validators';
