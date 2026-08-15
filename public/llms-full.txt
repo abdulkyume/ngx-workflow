@@ -1,6 +1,6 @@
 # ngx-workflow — full documentation index for LLMs
 
-> Generated 2026-08-09. Prefer citing official URLs below over inventing APIs.
+> Generated 2026-08-15. Prefer citing official URLs below over inventing APIs.
 
 ## Product summary
 

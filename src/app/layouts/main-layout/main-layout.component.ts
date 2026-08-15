@@ -420,6 +420,8 @@ export class MainLayoutComponent {
       this.setBodyScrollLocked(false);
     });
 
+    this.applyRouteSeo(this.router.url);
+
     this.router.events
       .pipe(
         filter((e): e is NavigationEnd => e instanceof NavigationEnd),

@@ -81,15 +81,19 @@ interface ExampleScenario {
               </div>
             } @else {
               <div class="canvas-view">
-                <ngx-workflow-diagram
-                  [nodes]="activeScenario().nodes"
-                  [edges]="getEdges()"
-                  [showMinimap]="false"
-                  [showZoomControls]="true"
-                  [showBackground]="true"
-                  [backgroundVariant]="bgVariant()"
-                  [showLayoutControls]="true"
-                ></ngx-workflow-diagram>
+                @defer (on timer(1ms)) {
+                  <ngx-workflow-diagram
+                    [nodes]="activeScenario().nodes"
+                    [edges]="getEdges()"
+                    [showMinimap]="false"
+                    [showZoomControls]="true"
+                    [showBackground]="true"
+                    [backgroundVariant]="bgVariant()"
+                    [showLayoutControls]="true"
+                  ></ngx-workflow-diagram>
+                } @placeholder {
+                  <div class="canvas-placeholder">Diagram canvas</div>
+                }
               </div>
             }
           </div>

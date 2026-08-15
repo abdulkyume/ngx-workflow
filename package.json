@@ -18,8 +18,8 @@
     "format": "npx prettier --write \"libs/ngx-workflow/src/**/*.{ts,html,scss}\" \"src/**/*.{ts,html,scss}\"",
     "pack:lib": "npm run build:lib && npm pack ./dist/ngx-workflow",
     "publish:lib": "npm run build:lib && npm publish ./dist/ngx-workflow --access public",
-    "docs:compodoc": "node -e \"require('fs').rmSync('public/compodoc',{recursive:true,force:true}); require('fs').mkdirSync('public/compodoc',{recursive:true});\" && compodoc -c libs/ngx-workflow/.compodocrc.json -p libs/ngx-workflow/tsconfig.compodoc.json -d public/compodoc",
-    "docs:compodoc:serve": "npm run docs:compodoc && compodoc -s -d public/compodoc -r 8081"
+    "docs:compodoc": "node -e \"require('fs').rmSync('public/compodoc',{recursive:true,force:true}); require('fs').mkdirSync('public/compodoc',{recursive:true});\" && npx compodoc -c libs/ngx-workflow/.compodocrc.json -p libs/ngx-workflow/tsconfig.compodoc.json -d public/compodoc",
+    "docs:compodoc:serve": "npm run docs:compodoc && npx compodoc -s -d public/compodoc -r 8081"
   },
   "prettier": {
     "printWidth": 100,

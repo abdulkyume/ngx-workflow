@@ -103,18 +103,15 @@ export class SeoService {
     const head = this.document.head;
     if (!head) return;
 
-    let link =
-      (this.document.getElementById(CANONICAL_ID) as HTMLLinkElement | null) ??
-      (head.querySelector('link[rel="canonical"]') as HTMLLinkElement | null);
-
+    let link = head.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
     if (!link) {
       link = this.document.createElement('link');
       link.setAttribute('rel', 'canonical');
+      link.setAttribute('href', url);
       head.appendChild(link);
+    } else {
+      link.setAttribute('href', url);
     }
-
-    link.id = CANONICAL_ID;
-    link.setAttribute('href', url);
   }
 
   private setJsonLd(data?: Record<string, unknown> | Record<string, unknown>[]): void {

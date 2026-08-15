@@ -14,11 +14,9 @@
     "importHelpers": true,
     "target": "ES2022",
     "module": "preserve",
-    "ignoreDeprecations": "6.0",
-    "baseUrl": "./",
     "paths": {
-      "ngx-workflow": ["libs/ngx-workflow/src/public-api.ts"],
-      "ngx-workflow/testing": ["libs/ngx-workflow/testing/src/public-api.ts"]
+      "ngx-workflow": ["./libs/ngx-workflow/src/public-api.ts"],
+      "ngx-workflow/testing": ["./libs/ngx-workflow/testing/src/public-api.ts"]
     }
 
   },

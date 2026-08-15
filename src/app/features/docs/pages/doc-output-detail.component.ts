@@ -52,30 +52,34 @@ import {
           <section>
             <h2>Interactive example</h2>
             <div class="preview-frame">
-              <ngx-workflow-diagram
-                [nodes]="nodes"
-                [edges]="edges"
-                [showBackground]="true"
-                (nodeClick)="logEvent('nodeClick', $event)"
-                (nodeDoubleClick)="logEvent('nodeDoubleClick', $event)"
-                (edgeClick)="logEvent('edgeClick', $event)"
-                (connect)="logEvent('connect', $event)"
-                (connectStart)="logEvent('connectStart', $event)"
-                (connectEnd)="logEvent('connectEnd', $event)"
-                (edgeDrop)="logEvent('edgeDrop', $event)"
-                (nodesChange)="logEvent('nodesChange', $event)"
-                (edgesChange)="logEvent('edgesChange', $event)"
-                (paneClick)="logEvent('paneClick', $event)"
-                (paneScroll)="logEvent('paneScroll', $event)"
-                (contextMenu)="logEvent('contextMenu', $event)"
-                (nodeMouseEnter)="logEvent('nodeMouseEnter', $event)"
-                (nodeMouseLeave)="logEvent('nodeMouseLeave', $event)"
-                (nodeMouseMove)="logEvent('nodeMouseMove', $event)"
-                (edgeMouseEnter)="logEvent('edgeMouseEnter', $event)"
-                (edgeMouseLeave)="logEvent('edgeMouseLeave', $event)"
-                (beforeDelete)="logEvent('beforeDelete', $event)"
-                (importError)="logEvent('importError', $event)"
-              />
+              @defer (on timer(1ms)) {
+                <ngx-workflow-diagram
+                  [nodes]="nodes"
+                  [edges]="edges"
+                  [showBackground]="true"
+                  (nodeClick)="logEvent('nodeClick', $event)"
+                  (nodeDoubleClick)="logEvent('nodeDoubleClick', $event)"
+                  (edgeClick)="logEvent('edgeClick', $event)"
+                  (connect)="logEvent('connect', $event)"
+                  (connectStart)="logEvent('connectStart', $event)"
+                  (connectEnd)="logEvent('connectEnd', $event)"
+                  (edgeDrop)="logEvent('edgeDrop', $event)"
+                  (nodesChange)="logEvent('nodesChange', $event)"
+                  (edgesChange)="logEvent('edgesChange', $event)"
+                  (paneClick)="logEvent('paneClick', $event)"
+                  (paneScroll)="logEvent('paneScroll', $event)"
+                  (contextMenu)="logEvent('contextMenu', $event)"
+                  (nodeMouseEnter)="logEvent('nodeMouseEnter', $event)"
+                  (nodeMouseLeave)="logEvent('nodeMouseLeave', $event)"
+                  (nodeMouseMove)="logEvent('nodeMouseMove', $event)"
+                  (edgeMouseEnter)="logEvent('edgeMouseEnter', $event)"
+                  (edgeMouseLeave)="logEvent('edgeMouseLeave', $event)"
+                  (beforeDelete)="logEvent('beforeDelete', $event)"
+                  (importError)="logEvent('importError', $event)"
+                />
+              } @placeholder {
+                <div class="preview-placeholder">Diagram canvas</div>
+              }
             </div>
             <p class="hint">Interact with nodes and edges. Drag port-to-port to fire connect events.</p>
           </section>

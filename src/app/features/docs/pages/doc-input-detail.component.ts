@@ -58,12 +58,16 @@ import {
           <h2>Interactive preview</h2>
           <p class="lead">Try the diagram (drag ports to connect):</p>
           <div class="preview-frame">
-            <ngx-workflow-diagram
-              [nodes]="nodes"
-              [edges]="edges"
-              [showBackground]="true"
-              [maxConnectionsPerHandle]="2"
-            />
+            @defer (on timer(1ms)) {
+              <ngx-workflow-diagram
+                [nodes]="nodes"
+                [edges]="edges"
+                [showBackground]="true"
+                [maxConnectionsPerHandle]="2"
+              />
+            } @placeholder {
+              <div class="preview-placeholder">Diagram canvas</div>
+            }
             <div class="preview-badge">ngx-workflow-diagram</div>
           </div>
         </section>

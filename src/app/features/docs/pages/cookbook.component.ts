@@ -52,17 +52,21 @@ import { CodeBlockComponent } from '../../../shared/ui/code-block.component';
 
       <h2 id="live-demo">Live mini demo</h2>
       <div class="demo-frame">
-        <ngx-workflow-diagram
-          [nodes]="nodes()"
-          [edges]="edges()"
-          [showMinimap]="false"
-          [showSearchControls]="false"
-          [fitViewOnInit]="true"
-          connectionMode="loose"
-          selectionMode="partial"
-          [optimization]="{ lazyLoadTrigger: 'immediate', detachedGroupsLayer: true }"
-          (nodeChanges)="lastChanges.set($event.length + ' node change(s)')"
-        />
+        @defer (on timer(1ms)) {
+          <ngx-workflow-diagram
+            [nodes]="nodes()"
+            [edges]="edges()"
+            [showMinimap]="false"
+            [showSearchControls]="false"
+            [fitViewOnInit]="true"
+            connectionMode="loose"
+            selectionMode="partial"
+            [optimization]="{ lazyLoadTrigger: 'immediate', detachedGroupsLayer: true }"
+            (nodeChanges)="lastChanges.set($event.length + ' node change(s)')"
+          />
+        } @placeholder {
+          <div class="demo-placeholder">Diagram canvas</div>
+        }
       </div>
       <p class="text-muted">{{ lastChanges() }}</p>
 
