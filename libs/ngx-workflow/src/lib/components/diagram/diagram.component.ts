@@ -217,6 +217,9 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
   // Layout controls configuration
   readonly showLayoutControls = input<boolean>(false);
 
+  // Properties sidebar configuration (disabled by default so custom inspectors can be used without conflict)
+  readonly showPropertiesSidebar = input<boolean>(false);
+
   // Auto-save configuration
   readonly autoSave = input<boolean>(false);
   readonly autoSaveInterval = input<number>(1000); // milliseconds
@@ -550,6 +553,9 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
     // Select the node (toggle if ctrl/cmd is pressed)
     const isMultiSelect = event.ctrlKey || event.metaKey;
     if (!isMultiSelect) {
+      if (this.selectedNodeForEditing && this.selectedNodeForEditing.id !== node.id) {
+        this.selectedNodeForEditing = null;
+      }
       if (!node.selected) {
         // Clear other selections and select this node
         this.diagramStateService.nodes.update(nodes =>
@@ -576,7 +582,9 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
 
   onNodeDoubleClick(event: MouseEvent, node: WorkflowNode): void {
     event.stopPropagation();
-    this.selectedNodeForEditing = node;
+    if (this.showPropertiesSidebar()) {
+      this.selectedNodeForEditing = node;
+    }
     this.nodeDoubleClick.emit(node);
     this.cdRef.detectChanges();
   }
@@ -1991,6 +1999,7 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
     // If Ctrl key is NOT pressed, clear selection
     if (!event.ctrlKey && !event.metaKey) {
       this.diagramStateService.clearSelection();
+      this.selectedNodeForEditing = null;
     }
 
     // Start box selection
@@ -3192,7 +3201,9 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
     event.stopPropagation();
     event.preventDefault();
 
-    this.selectedEdgeForEditing = edge;
+    if (this.showPropertiesSidebar()) {
+      this.selectedEdgeForEditing = edge;
+    }
     this.selectedNodeForEditing = null; // Close node sidebar if open
     this.cdRef.detectChanges();
   }

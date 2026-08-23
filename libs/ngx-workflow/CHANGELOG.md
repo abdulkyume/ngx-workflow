@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.1] - 2026-08-23
+
+### Added
+- **Dynamic Overlay Panels (`<ngx-workflow-panel>`)**: Anchor arbitrary overlay components into the canvas with 9 viewport position presets (`top-left`, `top-center`, `top-right`, `center-left`, `center`, `center-right`, `bottom-left`, `bottom-center`, `bottom-right`) and dynamic inline styles/classes.
+- **Configurable Properties Sidebar (`[showPropertiesSidebar]`)**: Configurable input (defaults to `false`) allowing developers to handle `(nodeDoubleClick)` and `(edgeDoubleClick)` with custom dialogs, drawers, or REST API inspectors without unwanted default sidebar popups.
+- **Interactive Workflow Legend & API Inspector Example**: Scenario in Examples gallery demonstrating live node status legends, active configuration inspector, and dynamic API syncing.
+- **Node Defocus & Pane Click Auto-Dismiss**: Canvas deselection and node clicking automatically clear active inspector states and node focus.
+
+### Changed
+- Built-in properties editing sidebar (`[showPropertiesSidebar]`) defaults to `false` for cleaner headless integration.
+- Expanded Examples gallery and Canvas Studio to edge-to-edge desktop layouts for higher diagram visibility.
+
 ## [0.5.2] - 2026-08-07
 
 ### Fixed

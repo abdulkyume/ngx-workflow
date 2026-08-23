@@ -103,7 +103,7 @@ const CONTROLLABLE_INPUTS = new Set<keyof SandboxInputState>([
   imports: [NgxWorkflowModule, FormsModule, JsonPipe],
   template: `
     <div
-      class="sandbox-page container"
+      class="sandbox-page"
       [class.props-collapsed]="!showProps()"
       [class.actions-collapsed]="!showActions()"
     >
@@ -452,12 +452,14 @@ const CONTROLLABLE_INPUTS = new Set<keyof SandboxInputState>([
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     .sandbox-page {
-      padding-top: 40px;
-      padding-bottom: 80px;
+      padding: 24px 32px 80px;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
     }
 
     .sandbox-header {
-      margin-bottom: 28px;
+      margin-bottom: 24px;
     }
 
     .sandbox-header h1 {
@@ -475,10 +477,11 @@ const CONTROLLABLE_INPUTS = new Set<keyof SandboxInputState>([
 
     .studio-layout {
       display: grid;
-      grid-template-columns: 300px minmax(0, 1fr);
+      grid-template-columns: 320px minmax(0, 1fr);
       gap: 24px;
       align-items: stretch;
-      min-height: min(72vh, 780px);
+      min-height: 750px;
+      width: 100%;
     }
 
     .sandbox-page.props-collapsed .studio-layout {
@@ -981,34 +984,6 @@ const CONTROLLABLE_INPUTS = new Set<keyof SandboxInputState>([
 
     .filter-item small {
       line-height: 1.35;
-    }
-
-    @media (max-width: 960px) {
-      .studio-layout {
-        grid-template-columns: 1fr;
-        min-height: 0;
-      }
-
-      .props-panel {
-        max-height: 300px;
-      }
-
-      .main-column {
-        min-height: 0;
-      }
-
-      .viewer-toolbar {
-        height: auto;
-        padding: 12px 14px;
-      }
-
-      .canvas-panel {
-        min-height: 420px;
-      }
-
-      .log-row {
-        grid-template-columns: 1fr;
-      }
     }
   `,
 })

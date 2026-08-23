@@ -484,9 +484,11 @@
       </div>
     }
 
-    <ngx-workflow-properties-sidebar [node]="selectedNodeForEditing" [edge]="selectedEdgeForEditing"
-      (close)="closeSidebar()" (nodeChange)="onPropertiesChange($event)"
-    (edgeChange)="onEdgePropertiesChange($event)"></ngx-workflow-properties-sidebar>
+    @if (showPropertiesSidebar()) {
+      <ngx-workflow-properties-sidebar [node]="selectedNodeForEditing" [edge]="selectedEdgeForEditing"
+        (close)="closeSidebar()" (nodeChange)="onPropertiesChange($event)"
+        (edgeChange)="onEdgePropertiesChange($event)"></ngx-workflow-properties-sidebar>
+    }
 
     <!-- Node Toolbars (projected content) -->
     <ng-content select="ngx-workflow-node-toolbar"></ng-content>

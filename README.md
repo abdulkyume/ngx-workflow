@@ -50,20 +50,35 @@ A powerful, highly customizable Angular library for building interactive node-ba
 - **Minimap**: Navigable overview of complex flows.
 
 ### Content Projection (Slots)
-- **Node Toolbars**: Show contextual buttons above selected nodes.
-- **Panels**: Add fixed overlays to the canvas (e.g., top-right controls).
+- **Node Toolbars**: Show contextual buttons above selected nodes (`<ngx-workflow-node-toolbar>`).
+- **Overlay Panels**: Add anchored overlays to the canvas with 9-point positioning and inline dynamic styling (`<ngx-workflow-panel>`).
 
 ```html
-<ngx-workflow-diagram ...>
+<ngx-workflow-diagram [nodes]="nodes()" [edges]="edges()" [showPropertiesSidebar]="false" (nodeDoubleClick)="onNodeDoubleClick($event)">
   <!-- Shows above selected node -->
   <ngx-workflow-node-toolbar [nodeId]="selectedNodeId">
     <button (click)="deleteNode()">Delete</button>
   </ngx-workflow-node-toolbar>
 
-  <!-- Fixed panel -->
-  <ngx-workflow-panel position="top-right">
-    <button>Save</button>
+  <!-- Anchored Workflow Legend Panel -->
+  <ngx-workflow-panel position="top-right" [style]="{ minWidth: '280px', background: 'rgba(15, 23, 42, 0.94)', color: '#f8fafc' }">
+    <div class="legend-card">
+      <h4>Workflow Legend</h4>
+      <div class="legend-item"><span class="dot bg-blue"></span> Active / Ingestion</div>
+      <div class="legend-item"><span class="dot bg-emerald"></span> Database Sink</div>
+    </div>
   </ngx-workflow-panel>
+
+  <!-- Custom Node Double-Click API Inspector -->
+  @if (inspectorOpen()) {
+    <ngx-workflow-panel position="center-right" [style]="{ zIndex: 30 }">
+      <div class="inspector-card glass-panel">
+        <h4>{{ activeNode()?.label }} API Config</h4>
+        <input [(ngModel)]="activeEndpoint" placeholder="API endpoint" />
+        <button (click)="syncApi()">Save & Sync API</button>
+      </div>
+    </ngx-workflow-panel>
+  }
 </ngx-workflow-diagram>
 ```
 
@@ -150,6 +165,8 @@ The main component for rendering the workflow.
 | `showExportControls` | `boolean` | `false` | Show export controls UI (PNG, SVG, Clipboard). |
 | `showUndoRedoControls` | `boolean` | `true` | Show history controls UI. |
 | `showLayoutControls` | `boolean` | `false` | Show auto-layout controls. |
+| `showSearchControls` | `boolean` | `true` | Show floating Ctrl+F search controls. |
+| `showPropertiesSidebar` | `boolean` | `false` | Enable/disable built-in node/edge properties sidebar on double-click. |
 | `colorMode` | `'light' \| 'dark'` | `'light'` | Color theme mode. |
 | `zIndexMode` | `'default' \| 'layered'` | `'default'` | Strategy for node z-indexing. |
 | `preventNodeOverlap` | `boolean` | `false` | Enable collision detection to prevent partial overlaps. |
@@ -214,6 +231,7 @@ You can access these methods via `@ViewChild(DiagramComponent)`:
 | `nodeClick` | `output<Node>` | Emitted when a node is clicked. |
 | `nodeDoubleClick` | `output<Node>` | Emitted when a node is double-clicked. |
 | `edgeClick` | `output<Edge>` | Emitted when an edge is clicked. |
+| `edgeDoubleClick` | `output<Edge>` | Emitted when an edge is double-clicked. |
 | `connect` | `output<{source, target, sourceHandle?, targetHandle?}>` | New port-to-port connection created. |
 | `connectStart` / `connectEnd` | `output<{nodeId, handleId?}>` | Connection drag lifecycle. |
 | `edgeDrop` | `output<{sourceNodeId, sourceHandleId, position}>` | Connection dropped on empty canvas. |
@@ -228,6 +246,30 @@ You can access these methods via `@ViewChild(DiagramComponent)`:
 | `nodeMouseEnter` / `nodeMouseLeave` | `output<Node>` | Pointer enter/leave node. |
 | `nodeMouseMove` | `output<{node, event}>` | Pointer move over a node. |
 | `edgeMouseEnter` / `edgeMouseLeave` | `output<Edge>` | Pointer enter/leave edge. |
+
+### `<ngx-workflow-panel>`
+
+An anchored overlay container projected inside `<ngx-workflow-diagram>` for building floating legends, control panels, stats HUDs, or inspection cards.
+
+#### Inputs
+
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `position` | `PanelPosition` | `'top-left'` | 9 anchor presets: `'top-left' \| 'top-center' \| 'top-right' \| 'center-left' \| 'center' \| 'center-right' \| 'bottom-left' \| 'bottom-center' \| 'bottom-right'`. |
+| `className` | `string` | `undefined` | Custom CSS class applied to the panel container. |
+| `style` | `string \| Record<string, string \| number>` | `undefined` | Dynamic inline styles (e.g. `minWidth`, `background`, `boxShadow`, `zIndex`). |
+
+### `<ngx-workflow-node-toolbar>`
+
+A floating contextual action toolbar that anchors directly above/below an active node.
+
+#### Inputs
+
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `nodeId` | `string` | `required` | ID of the node to attach this floating toolbar to. |
+| `position` | `'top' \| 'bottom' \| 'left' \| 'right'` | `'top'` | Side of the node where the toolbar floats. |
+| `offset` | `number` | `10` | Offset distance in pixels from the node boundary. |
 
 ### Interfaces
 

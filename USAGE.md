@@ -118,16 +118,70 @@ export class WorkflowComponent {
 }
 ```
 
+## Overlay Panels & Custom Inspectors
+
+```typescript
+import { Component, signal } from '@angular/core';
+import { NgxWorkflowModule, Node, Edge } from 'ngx-workflow';
+
+@Component({
+  selector: 'app-panel-usage',
+  standalone: true,
+  imports: [NgxWorkflowModule],
+  template: `
+    <div style="width: 100%; height: 600px;">
+      <ngx-workflow-diagram
+        [nodes]="nodes()"
+        [edges]="edges()"
+        [showPropertiesSidebar]="false"
+        (nodeDoubleClick)="onNodeDoubleClick($event)"
+        (paneClick)="closeInspector()"
+      >
+        <!-- Overlay Panel -->
+        <ngx-workflow-panel position="top-right" [style]="{ minWidth: '240px' }">
+          <div class="legend-card">
+            <h4>Workflow Legend</h4>
+            <p>Custom anchored overlay panel</p>
+          </div>
+        </ngx-workflow-panel>
+      </ngx-workflow-diagram>
+    </div>
+  `
+})
+export class PanelUsageComponent {
+  nodes = signal<Node[]>([ ... ]);
+  edges = signal<Edge[]>([ ... ]);
+
+  onNodeDoubleClick(node: Node) {
+    console.log('Double clicked node:', node);
+  }
+
+  closeInspector() {
+    console.log('Clicked canvas pane');
+  }
+}
+```
+
 ## Available Inputs
 
-- `[initialNodes]` - Array of nodes to display
-- `[initialEdges]` - Array of edges to display
-- `[initialViewport]` - Initial viewport state `{ x, y, zoom }`
+- `[nodes]` / `[initialNodes]` - Array of nodes to display (Signal-based reactive binding)
+- `[edges]` / `[initialEdges]` - Array of edges to display
+- `[showPropertiesSidebar]` - Enable or disable built-in properties editing sidebar on double click (default: `false`)
+- `[showSearchControls]` - Show search control bar overlay (default: `true`)
+- `[showZoomControls]` - Show zoom in / out / fit controls (default: `true`)
+- `[showMinimap]` - Show canvas minimap navigation (default: `true`)
+- `[showBackground]` - Show canvas background grid/dots (default: `true`)
+- `[backgroundVariant]` - `'dots' | 'lines' | 'cross'` (default: `'dots'`)
+- `[showLayoutControls]` - Show automatic graph layout controls (default: `false`)
+- `[snapToGrid]` - Snap nodes to grid on drag (default: `false`)
 
 ## Available Outputs
 
 - `(nodeClick)` - Emitted when a node is clicked
+- `(nodeDoubleClick)` - Emitted when a node is double-clicked
 - `(edgeClick)` - Emitted when an edge is clicked
+- `(edgeDoubleClick)` - Emitted when an edge is double-clicked
+- `(paneClick)` - Emitted when empty canvas pane is clicked
 - `(connect)` - Emitted when a new edge is created
-- `(nodesChange)` - Emitted when nodes change
-- `(edgesChange)` - Emitted when edges change
+- `(nodesChange)` - Emitted when nodes change (move, add, delete, resize)
+- `(edgesChange)` - Emitted when edges change (create, delete, reconnect)

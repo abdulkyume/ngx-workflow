@@ -88,8 +88,14 @@ describe('DiagramComponent Complete 100% Coverage Suite', () => {
     component.onNodeMouseMove(fakeEvt, n1);
     expect(component.nodeMouseMove.emit).toHaveBeenCalledWith({ node: n1, event: fakeEvt });
 
+    // Default: showPropertiesSidebar is false so selectedNodeForEditing remains null
     component.onNodeDoubleClick(fakeEvt, n1);
     expect(component.nodeDoubleClick.emit).toHaveBeenCalledWith(n1);
+    expect(component.selectedNodeForEditing).toBeNull();
+
+    // When showPropertiesSidebar is true:
+    (component as any).showPropertiesSidebar = () => true;
+    component.onNodeDoubleClick(fakeEvt, n1);
     expect(component.selectedNodeForEditing).toEqual(n1);
   });
 

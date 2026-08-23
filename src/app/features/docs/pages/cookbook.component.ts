@@ -50,6 +50,13 @@ import { CodeBlockComponent } from '../../../shared/ui/code-block.component';
       </p>
       <app-code-block label="HTML" [code]="changesSnippet" />
 
+      <h2 id="legend-inspector">Workflow Legend & Custom API Inspector</h2>
+      <p>
+        Combine <code>&lt;ngx-workflow-panel&gt;</code> with <code>[showPropertiesSidebar]="false"</code>
+        and <code>(nodeDoubleClick)</code> to render rich status cards and fetch backend schemas on demand.
+      </p>
+      <app-code-block label="HTML & TypeScript" [code]="legendInspectorSnippet" />
+
       <h2 id="live-demo">Live mini demo</h2>
       <div class="demo-frame">
         @defer (on timer(1ms)) {
@@ -158,4 +165,32 @@ const edges = [
   (filteredNodeChanges)="onFiltered($event)"
   (nodeChanges)="onAll($event)"
 />`;
+
+  readonly legendInspectorSnippet = `<ngx-workflow-diagram
+  [nodes]="nodes()"
+  [edges]="edges()"
+  [showPropertiesSidebar]="false"
+  (nodeDoubleClick)="onNodeDoubleClick($event)"
+  (paneClick)="closeInspector()"
+>
+  <!-- Fixed Workflow Legend Panel -->
+  <ngx-workflow-panel [position]="'top-right'" [style]="{ minWidth: '280px' }">
+    <div class="legend-card">
+      <h4>Workflow Legend</h4>
+      <div class="item"><span class="dot bg-blue"></span> Active Ingestion</div>
+      <div class="item"><span class="dot bg-emerald"></span> Database Sink</div>
+    </div>
+  </ngx-workflow-panel>
+
+  <!-- Contextual API Inspector Panel on Double-Click -->
+  @if (inspectorOpen()) {
+    <ngx-workflow-panel [position]="'center-right'" [style]="{ zIndex: 30 }">
+      <div class="inspector-card glass-panel">
+        <h4>{{ activeNode()?.label }} API Schema</h4>
+        <p>Endpoint: {{ activeConfig()?.endpoint }}</p>
+        <button (click)="saveAndSync()">Save & Sync API</button>
+      </div>
+    </ngx-workflow-panel>
+  }
+</ngx-workflow-diagram>`;
 }

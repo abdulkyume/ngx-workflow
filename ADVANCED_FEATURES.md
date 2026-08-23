@@ -9,6 +9,8 @@ This guide covers the advanced features available in ngx-workflow.
 - [Export Options](#export-options)
 - [Clipboard Operations](#clipboard-operations)
 - [Connection Validation](#connection-validation)
+- [Overlay Panels & Workflow Legends](#overlay-panels--workflow-legends)
+- [Custom Double-Click & REST API Inspector](#custom-double-click--rest-api-inspector)
 
 ---
 
@@ -232,6 +234,131 @@ The library automatically prevents:
 - Preventing cycles
 - Enforcing workflow rules
 - Custom business logic
+
+---
+
+## Overlay Panels & Workflow Legends
+
+Project custom anchored overlays (`<ngx-workflow-panel>`) into the diagram viewport with 9 anchor points and dynamic style customization.
+
+### Anchor Presets (`position`)
+- `top-left`, `top-center`, `top-right`
+- `center-left`, `center`, `center-right`
+- `bottom-left`, `bottom-center`, `bottom-right`
+
+### Usage Example
+
+```typescript
+import { Component, signal } from '@angular/core';
+import { NgxWorkflowModule, Node, Edge, PanelPosition } from 'ngx-workflow';
+
+@Component({
+  selector: 'app-legend-demo',
+  standalone: true,
+  imports: [NgxWorkflowModule],
+  template: `
+    <ngx-workflow-diagram [nodes]="nodes()" [edges]="edges()">
+      <ngx-workflow-panel
+        [position]="legendPosition()"
+        [style]="legendStyle()"
+        className="custom-legend-wrap"
+      >
+        <div class="legend-card">
+          <h4>Workflow Legend</h4>
+          <div class="item"><span class="badge blue"></span> Ingestion Source</div>
+          <div class="item"><span class="badge amber"></span> Validator</div>
+          <div class="item"><span class="badge green"></span> Database Sink</div>
+        </div>
+      </ngx-workflow-panel>
+    </ngx-workflow-diagram>
+  `
+})
+export class LegendDemoComponent {
+  legendPosition = signal<PanelPosition>('top-right');
+  legendStyle = signal<Record<string, string>>({
+    minWidth: '280px',
+    background: 'rgba(15, 23, 42, 0.94)',
+    color: '#f8fafc',
+    borderRadius: '8px',
+    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)'
+  });
+
+  nodes = signal<Node[]>([ ... ]);
+  edges = signal<Edge[]>([ ... ]);
+}
+```
+
+---
+
+## Custom Double-Click & REST API Inspector
+
+Disable the default built-in properties sidebar (`[showPropertiesSidebar]="false"`) and connect node/edge double-clicks to your own REST API data fetchers, schemas, or modals.
+
+### Usage Example
+
+```typescript
+import { Component, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { NgxWorkflowModule, Node, Edge } from 'ngx-workflow';
+
+@Component({
+  selector: 'app-api-inspector-demo',
+  standalone: true,
+  imports: [NgxWorkflowModule],
+  template: `
+    <ngx-workflow-diagram
+      [nodes]="nodes()"
+      [edges]="edges()"
+      [showPropertiesSidebar]="false"
+      (nodeDoubleClick)="onNodeDoubleClick($event)"
+      (paneClick)="closeInspector()"
+    >
+      @if (inspectorOpen()) {
+        <ngx-workflow-panel position="center-right">
+          <div class="inspector-panel">
+            <h3>{{ activeNode()?.label }}</h3>
+            @if (loading()) {
+              <p>Fetching API config...</p>
+            } @else {
+              <pre>{{ apiConfig() | json }}</pre>
+            }
+            <button (click)="closeInspector()">Close</button>
+          </div>
+        </ngx-workflow-panel>
+      }
+    </ngx-workflow-diagram>
+  `
+})
+export class ApiInspectorDemoComponent {
+  inspectorOpen = signal(false);
+  loading = signal(false);
+  activeNode = signal<Node | null>(null);
+  apiConfig = signal<any>(null);
+
+  nodes = signal<Node[]>([ ... ]);
+  edges = signal<Edge[]>([ ... ]);
+
+  constructor(private http: HttpClient) {}
+
+  async onNodeDoubleClick(node: Node) {
+    this.activeNode.set(node);
+    this.inspectorOpen.set(true);
+    this.loading.set(true);
+
+    try {
+      const config = await this.http.get(\`/api/nodes/\${node.id}/schema\`).toPromise();
+      this.apiConfig.set(config);
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  closeInspector() {
+    this.inspectorOpen.set(false);
+    this.activeNode.set(null);
+  }
+}
+```
 
 ---
 

@@ -262,6 +262,120 @@ export class ShowcaseComponent {
 }
 ```
 
+### 7. Workflow Legend & Node API Inspector Example
+
+```typescript
+import { Component, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { NgxWorkflowModule, Node, Edge, PanelPosition } from 'ngx-workflow';
+
+@Component({
+  selector: 'app-workflow-legend-example',
+  standalone: true,
+  imports: [NgxWorkflowModule],
+  template: `
+    <div style="height: 700px; width: 100%;">
+      <ngx-workflow-diagram
+        [nodes]="nodes()"
+        [edges]="edges()"
+        [showPropertiesSidebar]="false"
+        (nodeDoubleClick)="onNodeDoubleClick($event)"
+        (paneClick)="closeInspector()"
+      >
+        <!-- Anchored Legend Overlay -->
+        <ngx-workflow-panel
+          [position]="'top-right'"
+          [style]="{
+            minWidth: '280px',
+            background: 'rgba(15, 23, 42, 0.95)',
+            color: '#f8fafc',
+            borderRadius: '8px',
+            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.5)'
+          }"
+        >
+          <div class="legend-card">
+            <h4>Workflow Legend</h4>
+            <div class="item"><span class="dot bg-blue"></span> Active Ingestion</div>
+            <div class="item"><span class="dot bg-amber"></span> Schema Validator</div>
+            <div class="item"><span class="dot bg-green"></span> Database Sink</div>
+          </div>
+        </ngx-workflow-panel>
+
+        <!-- Projected API Inspector Panel -->
+        @if (inspectorOpen()) {
+          <ngx-workflow-panel [position]="'center-right'">
+            <div class="inspector-card">
+              <h4>{{ selectedNode()?.label }} API Details</h4>
+              @if (loading()) {
+                <p>Fetching API schema...</p>
+              } @else {
+                <pre>{{ apiConfig() | json }}</pre>
+              }
+              <button (click)="closeInspector()">Close</button>
+            </div>
+          </ngx-workflow-panel>
+        }
+      </ngx-workflow-diagram>
+    </div>
+  `
+})
+export class WorkflowLegendExampleComponent {
+  inspectorOpen = signal(false);
+  loading = signal(false);
+  selectedNode = signal<Node | null>(null);
+  apiConfig = signal<any>(null);
+
+  nodes = signal<Node[]>([
+    {
+      id: 'leg-1',
+      label: 'HTTP Ingestion',
+      position: { x: 80, y: 140 },
+      ports: 4,
+      style: { backgroundColor: 'rgba(59, 130, 246, 0.15)', borderColor: '#3b82f6' }
+    },
+    {
+      id: 'leg-2',
+      label: 'Schema Validator',
+      position: { x: 380, y: 140 },
+      ports: 4,
+      style: { backgroundColor: 'rgba(245, 158, 11, 0.15)', borderColor: '#f59e0b' }
+    },
+    {
+      id: 'leg-3',
+      label: 'PostgreSQL Sink',
+      position: { x: 680, y: 140 },
+      ports: 4,
+      style: { backgroundColor: 'rgba(16, 185, 129, 0.15)', borderColor: '#10b981' }
+    }
+  ]);
+
+  edges = signal<Edge[]>([
+    { id: 'e1', source: 'leg-1', target: 'leg-2', animated: true },
+    { id: 'e2', source: 'leg-2', target: 'leg-3', animated: true }
+  ]);
+
+  constructor(private http: HttpClient) {}
+
+  async onNodeDoubleClick(node: Node) {
+    this.selectedNode.set(node);
+    this.inspectorOpen.set(true);
+    this.loading.set(true);
+
+    try {
+      const data = await this.http.get(\`/api/nodes/\${node.id}/config\`).toPromise();
+      this.apiConfig.set(data);
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  closeInspector() {
+    this.inspectorOpen.set(false);
+    this.selectedNode.set(null);
+  }
+}
+```
+
 ## Running Examples
 
 1. Clone the repository

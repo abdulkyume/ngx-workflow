@@ -64,8 +64,25 @@ import { CodeBlockComponent } from '../../../shared/ui/code-block.component';
 
       <app-code-block label="CSS" [code]="themeTokensSnippet" />
 
+      <h2 id="panels-and-legends">7. Overlay Panels & Workflow Legends</h2>
+      <p>
+        Use <code>&lt;ngx-workflow-panel&gt;</code> inside the diagram container to project floating legends, controls, or annotations.
+        Supports 9 viewport anchor positions (<code>top-left</code>, <code>top-center</code>, <code>top-right</code>, <code>center-left</code>, <code>center</code>, <code>center-right</code>, <code>bottom-left</code>, <code>bottom-center</code>, <code>bottom-right</code>) and inline dynamic <code>[style]</code>.
+      </p>
+
+      <app-code-block label="HTML & TypeScript" [code]="panelLegendSnippet" />
+
+      <h2 id="node-double-click-api">8. Headless Node Double-Click & REST API Inspector</h2>
+      <p>
+        Disable the default built-in properties editing sidebar (<code>[showPropertiesSidebar]="false"</code>) and handle
+        <code>(nodeDoubleClick)</code> with your custom projected API inspector panel or drawer.
+      </p>
+
+      <app-code-block label="HTML & TypeScript" [code]="apiInspectorSnippet" />
+
       <div class="next-steps flex gap-4 margin-top-8">
-        <a routerLink="/sandbox" class="btn btn-primary">Try Customization in Sandbox →</a>
+        <a routerLink="/examples" class="btn btn-primary">View Interactive Gallery & Legends →</a>
+        <a routerLink="/sandbox" class="btn btn-secondary">Try in Sandbox</a>
       </div>
     </article>
   `
@@ -89,8 +106,7 @@ import { HandleComponent } from 'ngx-workflow';
       </div>
 
       <div class="card-body">
-        <p>Custom node content and metrics...</p>
-        <span class="badge">CPU Metrics</span>
+        <p>Custom Angular signal data bindings</p>
       </div>
 
       <!-- Output Connection Port -->
@@ -98,62 +114,48 @@ import { HandleComponent } from 'ngx-workflow';
     </div>
   \`
 })
-export class CustomCardNodeComponent {
-  data = input.required<any>();
-}`;
+export class CustomCardNodeComponent {}`;
 
-  readonly connectionLimitsSnippet = `nodes = signal([
+  readonly connectionLimitsSnippet = `<ngx-workflow-diagram
+  [nodes]="nodes()"
+  [edges]="edges()"
+  [maxConnectionsPerHandle]="2"
+/>
+
+nodes = signal<Node[]>([
   {
-    id: 'card-1',
-    type: 'card',
-    position: { x: 100, y: 80 },
+    id: 'a',
+    position: { x: 80, y: 100 },
+    ports: 4,
     maxConnectionsPerPort: 1,
     handleConfig: {
-      'output-port': { maxConnections: 2, isConnectable: true },
-      'input-port': { maxConnections: 1 }
+      bottom: { maxConnections: 3 }
     }
   }
-]);
-
-// Or globally for every port in the diagram:
-// <ngx-workflow-diagram [maxConnectionsPerHandle]="1" />`;
+]);`;
 
   readonly edgeRoutingSnippet = `edges = signal<Edge[]>([
-  // Horizontal flow — curve exits right, enters left
   {
-    id: 'e-h',
-    source: 'a',
-    target: 'b',
-    type: 'bezier',
-    sourceHandle: 'right',
-    targetHandle: 'left',
-  },
-  // Vertical flow — curve exits bottom, enters top (not a flat diagonal)
-  {
-    id: 'e-v',
-    source: 'start',
-    target: 'end',
-    type: 'bezier',
+    id: 'e1',
+    source: 'top-node',
+    target: 'bottom-node',
     sourceHandle: 'bottom',
     targetHandle: 'top',
-  },
+    type: 'bezier'
+  }
 ]);`;
 
   readonly edgeStylesSnippet = `edges = signal<Edge[]>([
   {
-    id: 'e-animated',
+    id: 'e-styled',
     source: 'n1',
     target: 'n2',
     animated: true,
-    animationType: 'both',          // 'flow' | 'dot' | 'both'
-    animationDuration: '1s',
-    animationStyle: { fill: 'rgba(59, 130, 246, 1)' },
-    markerStart: 'dot',
-    markerEnd: 'arrow',             // tinted to match stroke
-    label: 'retry',
-    labelStyle: { fill: 'rgba(248, 250, 252, 0.9)' },
+    animationType: 'both',
+    animationStyle: { fill: 'rgba(56, 189, 248, 0.9)' },
+    markerEnd: 'arrowclosed',
     style: {
-      stroke: 'rgba(239, 68, 68, 1)',
+      stroke: 'rgba(56, 189, 248, 0.85)',
       strokeWidth: '3',
       strokeDasharray: '5,5'
     }
@@ -200,4 +202,50 @@ export class CustomCardNodeComponent {
   /* Selected Node Border Glow */
   --ngx-workflow-selected-glow: 0 0 0 2px #3b82f6;
 }`;
+
+  readonly panelLegendSnippet = `<ngx-workflow-diagram [nodes]="nodes" [edges]="edges">
+  <!-- Projected Legend Panel with 9-point positioning -->
+  <ngx-workflow-panel
+    [position]="'top-right'"
+    [style]="{ minWidth: '280px', background: 'rgba(15, 23, 42, 0.94)', color: '#f8fafc' }"
+  >
+    <div class="legend-card glass-panel">
+      <div class="legend-header">
+        <h4>Workflow Legend</h4>
+      </div>
+
+      <div class="legend-section">
+        <span class="legend-title">Node Status</span>
+        <div class="legend-item"><span class="dot bg-blue"></span> Active Ingestion</div>
+        <div class="legend-item"><span class="dot bg-green"></span> Database Sink</div>
+        <div class="legend-item"><span class="dot bg-red"></span> Alert Dead-Letter</div>
+      </div>
+
+      <div class="legend-section">
+        <span class="legend-title">Connections</span>
+        <div class="legend-item"><span class="line line-solid"></span> Primary Flow</div>
+        <div class="legend-item"><span class="line line-dashed"></span> Fallback Queue</div>
+      </div>
+    </div>
+  </ngx-workflow-panel>
+</ngx-workflow-diagram>`;
+
+  readonly apiInspectorSnippet = `<ngx-workflow-diagram
+  [nodes]="nodes()"
+  [edges]="edges()"
+  [showPropertiesSidebar]="false"
+  (nodeDoubleClick)="onNodeDoubleClick($event)"
+  (paneClick)="closeInspector()"
+>
+  @if (inspectorOpen()) {
+    <ngx-workflow-panel [position]="'center-right'" [style]="{ zIndex: 30 }">
+      <div class="inspector-card glass-panel">
+        <h4>{{ activeNode()?.label }} REST API Schema</h4>
+        <p><strong>Endpoint:</strong> {{ nodeConfig()?.endpoint }}</p>
+        <p><strong>Throughput:</strong> {{ nodeConfig()?.throughput }}</p>
+        <button (click)="saveAndSync()">Save & Sync API</button>
+      </div>
+    </ngx-workflow-panel>
+  }
+</ngx-workflow-diagram>`;
 }

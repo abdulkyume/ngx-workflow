@@ -1,5 +1,5 @@
 .ngx-workflow__panel {
-  position: fixed;
+  position: absolute;
   pointer-events: auto;
   z-index: var(--ngx-workflow-panel-z-index, 5);
   background: var(--ngx-workflow-panel-bg, transparent);

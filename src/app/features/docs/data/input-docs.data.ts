@@ -240,6 +240,14 @@ export const INPUT_DOCS: InputDoc[] = [
     description: 'Show auto-layout / alignment controls.',
     category: 'Controls'
   },
+  {
+    name: 'showPropertiesSidebar',
+    type: 'boolean',
+    default: 'false',
+    description: 'Enable or disable the built-in node/edge properties editing sidebar on double-click.',
+    category: 'Controls',
+    example: `<ngx-workflow-diagram [showPropertiesSidebar]="true" (nodeDoubleClick)="onCustomNodeEdit($event)" />`
+  },
 
   // --- Behavior & Interaction ---
   {

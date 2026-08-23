@@ -149,6 +149,54 @@ interface OutputRow {
         </table>
       </div>
 
+      <h2 id="overlay-components">Overlay Components</h2>
+      <p>Project custom floating toolbars and anchored panels inside <code>&lt;ngx-workflow-diagram&gt;</code>.</p>
+      
+      <div class="matrix-table-wrap">
+        <table class="matrix-table cols-4">
+          <thead>
+            <tr>
+              <th>Component</th>
+              <th>Input / Prop</th>
+              <th>Type</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code class="mono">&lt;ngx-workflow-panel&gt;</code></td>
+              <td><code class="mono">[position]</code></td>
+              <td><code class="mono">PanelPosition</code></td>
+              <td>9 anchor presets: <code>'top-left' | 'top-center' | 'top-right' | 'center-left' | 'center' | 'center-right' | 'bottom-left' | 'bottom-center' | 'bottom-right'</code> (default: <code>'top-left'</code>).</td>
+            </tr>
+            <tr>
+              <td><code class="mono">&lt;ngx-workflow-panel&gt;</code></td>
+              <td><code class="mono">[style]</code></td>
+              <td><code class="mono">string | Record</code></td>
+              <td>Inline dynamic CSS styles (dimensions, background colors, drop shadows, z-index).</td>
+            </tr>
+            <tr>
+              <td><code class="mono">&lt;ngx-workflow-panel&gt;</code></td>
+              <td><code class="mono">[className]</code></td>
+              <td><code class="mono">string</code></td>
+              <td>Custom CSS class applied to the panel container.</td>
+            </tr>
+            <tr>
+              <td><code class="mono">&lt;ngx-workflow-node-toolbar&gt;</code></td>
+              <td><code class="mono">[nodeId]</code></td>
+              <td><code class="mono">string</code></td>
+              <td>Target node ID to attach toolbar above/below.</td>
+            </tr>
+            <tr>
+              <td><code class="mono">&lt;ngx-workflow-node-toolbar&gt;</code></td>
+              <td><code class="mono">[position]</code></td>
+              <td><code class="mono">'top' | 'bottom' | 'left' | 'right'</code></td>
+              <td>Placement relative to the node boundary (default: <code>'top'</code>).</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
       <h2 id="exported-models">Core TypeScript Models</h2>
 
       <h3>Node</h3>
@@ -193,6 +241,8 @@ export class DocApiComponent {
     { name: '[connectionValidator]', type: '(s, t) => boolean', defaultValue: 'undefined', description: 'Custom global connection validator.' },
     { name: '[validateConnection]', type: '(connection) => boolean', defaultValue: 'undefined', description: 'Validator with handle ids.' },
     { name: '[edgeReconnectable]', type: 'boolean', defaultValue: 'false', description: 'Drag edge endpoints to reconnect.' },
+    { name: '[showPropertiesSidebar]', type: 'boolean', defaultValue: 'false', description: 'Enable/disable built-in properties editing sidebar on double-click.' },
+    { name: '[showSearchControls]', type: 'boolean', defaultValue: 'true', description: 'Show floating Ctrl+F search controls.' },
     { name: '[showBackground]', type: 'boolean', defaultValue: 'true', description: 'Render background pattern.' },
     { name: '[backgroundVariant]', type: "'dots' | 'lines' | 'cross'", defaultValue: "'dots'", description: 'Background pattern style.' },
     { name: '[showMinimap]', type: 'boolean', defaultValue: 'true', description: 'Show minimap overlay.' },
@@ -226,6 +276,10 @@ export class DocApiComponent {
   readonly outputRows: OutputRow[] = [
     { name: '(nodesChange)', payload: 'Node[]', description: 'Nodes moved, added, deleted, or edited.' },
     { name: '(edgesChange)', payload: 'Edge[]', description: 'Edges added, reconnected, or deleted.' },
+    { name: '(nodeClick)', payload: 'Node', description: 'Emitted when a node is clicked.' },
+    { name: '(nodeDoubleClick)', payload: 'Node', description: 'Emitted when a node is double-clicked.' },
+    { name: '(edgeClick)', payload: 'Edge', description: 'Emitted when an edge is clicked.' },
+    { name: '(edgeDoubleClick)', payload: 'Edge', description: 'Emitted when an edge is double-clicked.' },
     { name: '(connect)', payload: '{ source, target, sourceHandle?, targetHandle? }', description: 'New port-to-port connection created.' },
     { name: '(connectStart) / (connectEnd)', payload: '{ nodeId, handleId? }', description: 'Connection drag lifecycle.' },
     { name: '(edgeDrop)', payload: '{ sourceNodeId, sourceHandleId, position }', description: 'Connection dropped on empty canvas.' },
