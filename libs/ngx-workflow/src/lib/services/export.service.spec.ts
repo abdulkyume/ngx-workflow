@@ -31,11 +31,12 @@ describe('ExportService Unit Tests', () => {
   });
 
   it('should handle copyToClipboard gracefully when clipboard API is missing', async () => {
-    const originalClipboard = (navigator as any).clipboard;
-    Object.defineProperty(navigator, 'clipboard', { value: undefined, configurable: true });
+    try {
+      spyOnProperty(navigator, 'clipboard', 'get').and.returnValue(undefined as any);
+    } catch {
+      Object.defineProperty(navigator, 'clipboard', { value: undefined, configurable: true, writable: true });
+    }
 
     await expectAsync(service.copyToClipboard(dummySvg)).toBeRejectedWithError('Clipboard API not supported in this browser');
-
-    Object.defineProperty(navigator, 'clipboard', { value: originalClipboard, configurable: true });
   });
 });

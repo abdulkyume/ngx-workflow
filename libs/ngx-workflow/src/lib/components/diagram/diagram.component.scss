@@ -712,3 +712,10 @@ foreignObject {
   }
 }
 
+/* --- Control Placements & Collision Avoidance --- */
+/* When both undo-redo controls and bottom-left zoom controls are present */
+.ngx-workflow__container:has(.ngx-workflow__undo-redo-controls) .ngx-workflow__zoom-controls--bottom-left,
+:host:has(.ngx-workflow__undo-redo-controls) .ngx-workflow__zoom-controls--bottom-left {
+  left: 210px;
+}
+

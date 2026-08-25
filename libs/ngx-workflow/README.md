@@ -341,6 +341,54 @@ Built into the diagram; you can also use it standalone:
 
 Color fields emit `rgba(...)` when opacity is adjusted. Partial `style` / `animationStyle` / `labelStyle` updates are deep-merged in the store.
 
+#### `<ngx-workflow-zoom-controls>` & `[zoomControlsConfig]`
+
+Configure the floating zoom and workflow toolbar on `<ngx-workflow-diagram>` or mount standalone:
+
+```html
+<ngx-workflow-diagram
+  [nodes]="nodes()"
+  [edges]="edges()"
+  [zoomControlsConfig]="{
+    position: 'bottom-left',
+    orientation: 'horizontal',
+    items: [
+      { id: 'undo', type: 'action', action: 'undo' },
+      { id: 'redo', type: 'action', action: 'redo' },
+      { id: 'sep1', type: 'separator' },
+      { id: 'zoomIn', type: 'action', action: 'zoomIn', icon: 'plus' },
+      { id: 'zoomPercent', type: 'view', view: 'zoomPercent' },
+      { id: 'zoomOut', type: 'action', action: 'zoomOut', icon: 'minus' },
+      { id: 'sep2', type: 'separator' },
+      { id: 'fitView', type: 'action', action: 'fitView', icon: 'fit' },
+      { id: 'fullscreen', type: 'action', action: 'fullscreen', icon: 'fullscreen' },
+      { id: 'custom', type: 'action', action: 'export', label: 'Export', title: 'Export Diagram' }
+    ]
+  }"
+  (fullscreen)="toggleFullscreen()"
+/>
+```
+
+| Config Property | Type | Default | Description |
+|-----------------|------|---------|-------------|
+| `position` | `ZoomControlsPosition` | `'bottom-left'` | 8 anchor presets: `'top-left' \| 'top-center' \| 'top-right' \| 'center-left' \| 'center-right' \| 'bottom-left' \| 'bottom-center' \| 'bottom-right'`. |
+| `orientation` | `'horizontal' \| 'vertical'` | `'horizontal'` | Layout direction of the toolbar buttons and dividers. |
+| `style` | `string \| Record<string, string \| number>` | `undefined` | Custom inline CSS styles for the toolbar pill (e.g. background, border, shadow). |
+| `className` | `string` | `undefined` | Custom CSS class applied to the container. |
+| `items` | `ZoomControlItem[]` | `[...]` | Full array controlling slot order, built-in/custom actions, views, labels, custom SVGs, and separators. |
+
+| Built-in Actions / Views | Type | Description |
+|--------------------------|------|-------------|
+| `zoomIn` | `action` | Increments zoom level by 20% (icon: `'plus'`). |
+| `zoomOut` | `action` | Decrements zoom level by 20% (icon: `'minus'`). |
+| `zoomPercent` | `view` | Displays current zoom level percentage (e.g. `100%`). |
+| `fitView` | `action` | Fits all nodes into viewport (icon: `'fit'`). |
+| `resetZoom` | `action` | Resets zoom to 100% (icon: `'reset'`). |
+| `fullscreen` / `exitFullscreen` | `action` | Toggles canvas fullscreen. |
+| `undo` / `redo` | `action` | Built-in undo and redo with automated disabled state handling. |
+| `separator` | `separator` | Divider bar adjusted to horizontal/vertical orientation. |
+| Custom action | `action` | Any custom ID/action emitting `(actionClick)` with `{ id, action, event }`. |
+
 #### `<ngx-workflow-palette>` (Component)
 
 Use `<ngx-workflow-palette>` to add a drag-and-drop stencil panel alongside your diagram.

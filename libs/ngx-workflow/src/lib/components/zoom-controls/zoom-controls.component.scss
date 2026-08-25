@@ -3,35 +3,85 @@
   z-index: 10;
   box-sizing: border-box;
   display: inline-flex;
-  flex-direction: row;
   align-items: center;
   gap: 2px;
-  height: 40px;
-  padding: 4px 8px;
-  border-radius: 100px;
   background: var(--ngx-workflow-zoom-controls-bg, rgba(255, 255, 255, 1));
   border: 1px solid var(--ngx-workflow-zoom-controls-border, rgba(229, 234, 238, 1));
   box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.05);
   user-select: none;
   -webkit-user-select: none;
+  border-radius: 100px;
+
+  /* --- Orientations --- */
+  &--horizontal {
+    flex-direction: row;
+    height: 40px;
+    padding: 4px 8px;
+    border-radius: 100px;
+
+    .ngx-workflow__zoom-separator {
+      width: 1px;
+      height: 20px;
+      margin: 0 6px;
+    }
+  }
+
+  &--vertical {
+    flex-direction: column;
+    width: 40px;
+    height: auto;
+    padding: 8px 4px;
+    border-radius: 20px;
+
+    .ngx-workflow__zoom-separator {
+      width: 20px;
+      height: 1px;
+      margin: 6px 0;
+    }
+  }
+
+  /* --- Positions --- */
+  &--top-left {
+    top: 20px;
+    left: 20px;
+  }
+
+  &--top-center {
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  &--top-right {
+    top: 20px;
+    right: 20px;
+  }
+
+  &--center-left {
+    top: 50%;
+    left: 20px;
+    transform: translateY(-50%);
+  }
+
+  &--center-right {
+    top: 50%;
+    right: 20px;
+    transform: translateY(-50%);
+  }
 
   &--bottom-left {
     bottom: 20px;
     left: 20px;
   }
 
+  &--bottom-center {
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
   &--bottom-right {
     bottom: 20px;
-    right: 20px;
-  }
-
-  &--top-left {
-    top: 20px;
-    left: 20px;
-  }
-
-  &--top-right {
-    top: 20px;
     right: 20px;
   }
 }
@@ -72,7 +122,9 @@
 }
 
 .ngx-workflow__zoom-icon {
-  display: block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
   color: inherit;
 }
@@ -99,9 +151,6 @@
 
 .ngx-workflow__zoom-separator {
   flex-shrink: 0;
-  width: 1px;
-  height: 20px;
-  margin: 0 6px;
   background: var(--ngx-workflow-zoom-controls-border, rgba(229, 234, 238, 1));
 }
 

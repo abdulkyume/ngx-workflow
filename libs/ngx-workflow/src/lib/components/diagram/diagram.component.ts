@@ -3590,6 +3590,20 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
     this.diagramStateService.setViewport({ x, y, zoom });
   }
 
+  toggleFullscreen(): void {
+    const nativeEl = this.el?.nativeElement;
+    if (typeof document === 'undefined') return;
+    if (!document.fullscreenElement) {
+      if (nativeEl?.requestFullscreen) {
+        nativeEl.requestFullscreen().catch(() => {});
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+  }
+
   private scheduleInitialFitView(): void {
     if (typeof requestAnimationFrame === 'undefined') {
       return;

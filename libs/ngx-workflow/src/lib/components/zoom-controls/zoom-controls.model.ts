@@ -4,7 +4,10 @@ export type ZoomControlBuiltInAction =
   | 'zoomOut'
   | 'fitView'
   | 'resetZoom'
-  | 'fullscreen';
+  | 'fullscreen'
+  | 'exitFullscreen'
+  | 'undo'
+  | 'redo';
 
 /** Built-in icon keys rendered by the toolbar. */
 export type ZoomControlBuiltInIcon =
@@ -13,7 +16,9 @@ export type ZoomControlBuiltInIcon =
   | 'fit'
   | 'reset'
   | 'fullscreen'
-  | 'exitFullscreen';
+  | 'exitFullscreen'
+  | 'undo'
+  | 'redo';
 
 /** Built-in view keys (read-only displays in the toolbar). */
 export type ZoomControlBuiltInView = 'zoomPercent';
@@ -22,13 +27,19 @@ export type ZoomControlItemType = 'action' | 'view' | 'separator';
 
 export type ZoomControlsPosition =
   | 'bottom-left'
+  | 'bottom-center'
   | 'bottom-right'
   | 'top-left'
-  | 'top-right';
+  | 'top-center'
+  | 'top-right'
+  | 'center-left'
+  | 'center-right';
+
+export type ZoomControlsOrientation = 'horizontal' | 'vertical';
 
 /**
  * One toolbar slot. Consumers fully control order, visibility, labels, icons,
- * and which built-in / custom actions fire.
+ * custom styling, and which built-in / custom actions fire.
  */
 export interface ZoomControlItem {
   /** Stable id used for tracking and custom action callbacks. */
@@ -49,14 +60,24 @@ export interface ZoomControlItem {
   disabled?: boolean;
   /** Defaults to true when omitted. */
   visible?: boolean;
+  /** Custom inline styles for this item button/view. */
+  style?: Record<string, string | number>;
+  /** Custom CSS class for this item. */
+  className?: string;
 }
 
 export interface ZoomControlsConfig {
-  /** Toolbar corner. Default: `bottom-left`. */
+  /** Toolbar anchor position. Default: `bottom-left`. */
   position?: ZoomControlsPosition;
+  /** Layout orientation: `horizontal` (row) or `vertical` (column). Default: `horizontal`. */
+  orientation?: ZoomControlsOrientation;
+  /** Custom inline style object or string for the toolbar container. */
+  style?: string | Record<string, string | number>;
+  /** Custom CSS class for the toolbar container. */
+  className?: string;
   /**
    * Ordered items (actions, views, separators).
-   * When omitted, Figma default is used: + | % | − | divider | fit.
+   * When omitted, default Figma toolbar is used: + | % | − | divider | fit.
    */
   items?: ZoomControlItem[];
 }

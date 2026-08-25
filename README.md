@@ -349,6 +349,41 @@ interface Edge {
 
 Standalone properties sidebar: bind `(nodeChange)` / `(edgeChange)` (not `(change)` for nodes).
 
+#### `<ngx-workflow-zoom-controls>` & `[zoomControlsConfig]`
+
+Configure the floating zoom and workflow toolbar on `<ngx-workflow-diagram>` or mount standalone:
+
+```html
+<ngx-workflow-diagram
+  [nodes]="nodes()"
+  [edges]="edges()"
+  [zoomControlsConfig]="{
+    position: 'bottom-left',
+    orientation: 'horizontal',
+    items: [
+      { id: 'undo', type: 'action', action: 'undo' },
+      { id: 'redo', type: 'action', action: 'redo' },
+      { id: 'sep1', type: 'separator' },
+      { id: 'zoomIn', type: 'action', action: 'zoomIn', icon: 'plus' },
+      { id: 'zoomPercent', type: 'view', view: 'zoomPercent' },
+      { id: 'zoomOut', type: 'action', action: 'zoomOut', icon: 'minus' },
+      { id: 'sep2', type: 'separator' },
+      { id: 'fitView', type: 'action', action: 'fitView', icon: 'fit' },
+      { id: 'fullscreen', type: 'action', action: 'fullscreen', icon: 'fullscreen' }
+    ]
+  }"
+  (fullscreen)="toggleFullscreen()"
+/>
+```
+
+| Config Property | Type | Default | Description |
+|-----------------|------|---------|-------------|
+| `position` | `ZoomControlsPosition` | `'bottom-left'` | 8 anchor presets: `'top-left' \| 'top-center' \| 'top-right' \| 'center-left' \| 'center-right' \| 'bottom-left' \| 'bottom-center' \| 'bottom-right'`. |
+| `orientation` | `'horizontal' \| 'vertical'` | `'horizontal'` | Layout direction of toolbar buttons and dividers. |
+| `style` | `string \| Record<string, string \| number>` | `undefined` | Custom inline CSS styles for toolbar container. |
+| `className` | `string` | `undefined` | Custom CSS class applied to container. |
+| `items` | `ZoomControlItem[]` | `[...]` | Full array controlling slot order, built-in/custom actions, views, labels, custom SVGs, and separators. |
+
 #### `Handle` (Component)
 
 Use `<ngx-workflow-handle>` inside your custom nodes.

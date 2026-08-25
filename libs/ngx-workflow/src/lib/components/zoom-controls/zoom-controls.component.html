@@ -1,20 +1,35 @@
 <div
   class="ngx-workflow__zoom-controls"
   [class.ngx-workflow__zoom-controls--bottom-left]="resolvedPosition() === 'bottom-left'"
+  [class.ngx-workflow__zoom-controls--bottom-center]="resolvedPosition() === 'bottom-center'"
   [class.ngx-workflow__zoom-controls--bottom-right]="resolvedPosition() === 'bottom-right'"
   [class.ngx-workflow__zoom-controls--top-left]="resolvedPosition() === 'top-left'"
+  [class.ngx-workflow__zoom-controls--top-center]="resolvedPosition() === 'top-center'"
   [class.ngx-workflow__zoom-controls--top-right]="resolvedPosition() === 'top-right'"
+  [class.ngx-workflow__zoom-controls--center-left]="resolvedPosition() === 'center-left'"
+  [class.ngx-workflow__zoom-controls--center-right]="resolvedPosition() === 'center-right'"
+  [class.ngx-workflow__zoom-controls--horizontal]="resolvedOrientation() === 'horizontal'"
+  [class.ngx-workflow__zoom-controls--vertical]="resolvedOrientation() === 'vertical'"
+  [class]="resolvedClassName()"
+  [style]="resolvedStyle()"
   role="toolbar"
-  aria-label="Canvas zoom controls"
+  aria-label="Canvas zoom and workflow controls"
 >
   @for (item of visibleItems(); track item.id) {
     @switch (item.type) {
       @case ('separator') {
-        <span class="ngx-workflow__zoom-separator" aria-hidden="true"></span>
+        <span
+          class="ngx-workflow__zoom-separator"
+          [class]="item.className || ''"
+          [style]="item.style || null"
+          aria-hidden="true"
+        ></span>
       }
       @case ('view') {
         <span
           class="ngx-workflow__zoom-view"
+          [class]="item.className || ''"
+          [style]="item.style || null"
           [attr.title]="item.title || null"
           [attr.aria-label]="item.ariaLabel || item.title || null"
         >
@@ -25,123 +40,139 @@
         <button
           type="button"
           class="ngx-workflow__zoom-button"
+          [class]="item.className || ''"
+          [style]="item.style || null"
           [disabled]="isActionDisabled(item)"
           [attr.title]="item.title || null"
           [attr.aria-label]="item.ariaLabel || item.title || item.id"
-          (click)="onItemClick(item)"
+          (click)="onItemClick(item, $event)"
         >
-          @switch (iconKey(item)) {
-            @case ('plus') {
-              <svg class="ngx-workflow__zoom-icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
-                <path
-                  d="M8 3.25v9.5M3.25 8h9.5"
-                  stroke="currentColor"
-                  stroke-width="1.75"
-                  stroke-linecap="round"
-                  fill="none"
-                />
-              </svg>
-            }
-            @case ('zoomIn') {
-              <svg class="ngx-workflow__zoom-icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
-                <path
-                  d="M8 3.25v9.5M3.25 8h9.5"
-                  stroke="currentColor"
-                  stroke-width="1.75"
-                  stroke-linecap="round"
-                  fill="none"
-                />
-              </svg>
-            }
-            @case ('minus') {
-              <svg class="ngx-workflow__zoom-icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
-                <path
-                  d="M3.25 8h9.5"
-                  stroke="currentColor"
-                  stroke-width="1.75"
-                  stroke-linecap="round"
-                  fill="none"
-                />
-              </svg>
-            }
-            @case ('zoomOut') {
-              <svg class="ngx-workflow__zoom-icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
-                <path
-                  d="M3.25 8h9.5"
-                  stroke="currentColor"
-                  stroke-width="1.75"
-                  stroke-linecap="round"
-                  fill="none"
-                />
-              </svg>
-            }
-            @case ('fit') {
-              <svg class="ngx-workflow__zoom-icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
-                <path
-                  d="M9.5 3H13v3.5M6.5 13H3V9.5M13 3L3 13M3 3l10 10"
-                  stroke="currentColor"
-                  stroke-width="1.75"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  fill="none"
-                />
-              </svg>
-            }
-            @case ('fitView') {
-              <svg class="ngx-workflow__zoom-icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
-                <path
-                  d="M9.5 3H13v3.5M6.5 13H3V9.5M13 3L3 13M3 3l10 10"
-                  stroke="currentColor"
-                  stroke-width="1.75"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  fill="none"
-                />
-              </svg>
-            }
-            @case ('fullscreen') {
-              <svg class="ngx-workflow__zoom-icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
-                <path
-                  d="M9.25 2.75H13.25V6.75M13.25 2.75L9 7M6.75 13.25H2.75V9.25M2.75 13.25L7 9"
-                  stroke="currentColor"
-                  stroke-width="1.75"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  fill="none"
-                />
-              </svg>
-            }
-            @case ('exitFullscreen') {
-              <svg class="ngx-workflow__zoom-icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
-                <path
-                  d="M13.25 6.75H9.25V2.75M9.25 6.75L13.5 2.5M2.75 9.25H6.75V13.25M6.75 9.25L2.5 13.5"
-                  stroke="currentColor"
-                  stroke-width="1.75"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  fill="none"
-                />
-              </svg>
-            }
-            @case ('reset') {
-              <svg class="ngx-workflow__zoom-icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
-                <text x="8" y="11.5" text-anchor="middle" font-size="9" font-weight="600" fill="currentColor">
-                  1:1
-                </text>
-              </svg>
-            }
-            @case ('resetZoom') {
-              <svg class="ngx-workflow__zoom-icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
-                <text x="8" y="11.5" text-anchor="middle" font-size="9" font-weight="600" fill="currentColor">
-                  1:1
-                </text>
-              </svg>
-            }
-            @default {
-              @if (item.label) {
-                <span class="ngx-workflow__zoom-button-label">{{ item.label }}</span>
-              } @else {
-                <span class="ngx-workflow__zoom-button-label">•</span>
+          @if (item.svg) {
+            <span class="ngx-workflow__zoom-icon" [innerHTML]="safeSvg(item.svg)"></span>
+          } @else {
+            @switch (iconKey(item)) {
+              @case ('plus') {
+                <svg class="ngx-workflow__zoom-icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+                  <path
+                    d="M8 3.25v9.5M3.25 8h9.5"
+                    stroke="currentColor"
+                    stroke-width="1.75"
+                    stroke-linecap="round"
+                    fill="none"
+                  />
+                </svg>
+              }
+              @case ('zoomIn') {
+                <svg class="ngx-workflow__zoom-icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+                  <path
+                    d="M8 3.25v9.5M3.25 8h9.5"
+                    stroke="currentColor"
+                    stroke-width="1.75"
+                    stroke-linecap="round"
+                    fill="none"
+                  />
+                </svg>
+              }
+              @case ('minus') {
+                <svg class="ngx-workflow__zoom-icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+                  <path
+                    d="M3.25 8h9.5"
+                    stroke="currentColor"
+                    stroke-width="1.75"
+                    stroke-linecap="round"
+                    fill="none"
+                  />
+                </svg>
+              }
+              @case ('zoomOut') {
+                <svg class="ngx-workflow__zoom-icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+                  <path
+                    d="M3.25 8h9.5"
+                    stroke="currentColor"
+                    stroke-width="1.75"
+                    stroke-linecap="round"
+                    fill="none"
+                  />
+                </svg>
+              }
+              @case ('fit') {
+                <svg class="ngx-workflow__zoom-icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+                  <path
+                    d="M9.5 3H13v3.5M6.5 13H3V9.5M13 3L3 13M3 3l10 10"
+                    stroke="currentColor"
+                    stroke-width="1.75"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    fill="none"
+                  />
+                </svg>
+              }
+              @case ('fitView') {
+                <svg class="ngx-workflow__zoom-icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+                  <path
+                    d="M9.5 3H13v3.5M6.5 13H3V9.5M13 3L3 13M3 3l10 10"
+                    stroke="currentColor"
+                    stroke-width="1.75"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    fill="none"
+                  />
+                </svg>
+              }
+              @case ('fullscreen') {
+                <svg class="ngx-workflow__zoom-icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+                  <path
+                    d="M9.25 2.75H13.25V6.75M13.25 2.75L9 7M6.75 13.25H2.75V9.25M2.75 13.25L7 9"
+                    stroke="currentColor"
+                    stroke-width="1.75"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    fill="none"
+                  />
+                </svg>
+              }
+              @case ('exitFullscreen') {
+                <svg class="ngx-workflow__zoom-icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+                  <path
+                    d="M13.25 6.75H9.25V2.75M9.25 6.75L13.5 2.5M2.75 9.25H6.75V13.25M6.75 9.25L2.5 13.5"
+                    stroke="currentColor"
+                    stroke-width="1.75"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    fill="none"
+                  />
+                </svg>
+              }
+              @case ('undo') {
+                <svg class="ngx-workflow__zoom-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M6 3.5L2.5 7L6 10.5M2.5 7H10C11.933 7 13.5 8.567 13.5 10.5C13.5 12.433 11.933 14 10 14H8" />
+                </svg>
+              }
+              @case ('redo') {
+                <svg class="ngx-workflow__zoom-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M10 3.5L13.5 7L10 10.5M13.5 7H6C4.067 7 2.5 8.567 2.5 10.5C2.5 12.433 4.067 14 6 14H8" />
+                </svg>
+              }
+              @case ('reset') {
+                <svg class="ngx-workflow__zoom-icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+                  <text x="8" y="11.5" text-anchor="middle" font-size="9" font-weight="600" fill="currentColor">
+                    1:1
+                  </text>
+                </svg>
+              }
+              @case ('resetZoom') {
+                <svg class="ngx-workflow__zoom-icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+                  <text x="8" y="11.5" text-anchor="middle" font-size="9" font-weight="600" fill="currentColor">
+                    1:1
+                  </text>
+                </svg>
+              }
+              @default {
+                @if (item.label) {
+                  <span class="ngx-workflow__zoom-button-label">{{ item.label }}</span>
+                } @else {
+                  <span class="ngx-workflow__zoom-button-label">•</span>
+                }
               }
             }
           }
