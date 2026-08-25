@@ -332,4 +332,29 @@ describe('DiagramComponent Complete 100% Coverage Suite', () => {
     await component.copyToClipboard();
     expect(exportService.copyToClipboard).toHaveBeenCalled();
   });
+
+  it('should emit toolbar and zoom control outputs', () => {
+    const actionSpy = jasmine.createSpy('zoomControlsActionClick');
+    const fullscreenSpy = jasmine.createSpy('fullscreen');
+    const undoSpy = jasmine.createSpy('undo');
+    const redoSpy = jasmine.createSpy('redo');
+
+    component.zoomControlsActionClick.subscribe(actionSpy);
+    component.fullscreen.subscribe(fullscreenSpy);
+    component.undo.subscribe(undoSpy);
+    component.redo.subscribe(redoSpy);
+
+    const mouseEvt = new MouseEvent('click');
+    component.zoomControlsActionClick.emit({ id: 'export', action: 'export', event: mouseEvt });
+    expect(actionSpy).toHaveBeenCalledWith({ id: 'export', action: 'export', event: mouseEvt });
+
+    component.onZoomControlsFullscreen();
+    expect(fullscreenSpy).toHaveBeenCalled();
+
+    component.undo.emit();
+    expect(undoSpy).toHaveBeenCalled();
+
+    component.redo.emit();
+    expect(redoSpy).toHaveBeenCalled();
+  });
 });

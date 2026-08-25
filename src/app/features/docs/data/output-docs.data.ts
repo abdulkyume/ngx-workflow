@@ -159,11 +159,61 @@ onBeforeDelete(e: { nodes: Node[]; edges: Edge[]; cancel: () => void }) {
     description: 'Emitted when JSON import fails validation or parsing.',
     category: 'Global Events',
     example: `<ngx-workflow-diagram (importError)="toast.error($event.message)" />`
+  },
+
+  // --- Toolbar & Zoom Controls ---
+  {
+    name: 'zoomControlsActionClick',
+    type: 'output<{ id: string; action: string; event: MouseEvent }>',
+    description: 'Emitted whenever any custom or built-in action button on the zoom & workflow toolbar is clicked.',
+    category: 'Toolbar & Zoom Controls',
+    example: `<ngx-workflow-diagram
+  [zoomControlsConfig]="zoomConfig"
+  (zoomControlsActionClick)="onToolbarAction($event)"
+/>`
+  },
+  {
+    name: 'fullscreen',
+    type: 'output<void>',
+    description: 'Emitted when canvas fullscreen is toggled via the toolbar.',
+    category: 'Toolbar & Zoom Controls'
+  },
+  {
+    name: 'undo',
+    type: 'output<void>',
+    description: 'Emitted when undo is triggered via the toolbar.',
+    category: 'Toolbar & Zoom Controls'
+  },
+  {
+    name: 'redo',
+    type: 'output<void>',
+    description: 'Emitted when redo is triggered via the toolbar.',
+    category: 'Toolbar & Zoom Controls'
+  },
+  {
+    name: 'zoomIn',
+    type: 'output<void>',
+    description: 'Emitted when zoom-in is triggered via the toolbar.',
+    category: 'Toolbar & Zoom Controls'
+  },
+  {
+    name: 'zoomOut',
+    type: 'output<void>',
+    description: 'Emitted when zoom-out is triggered via the toolbar.',
+    category: 'Toolbar & Zoom Controls'
+  },
+  {
+    name: 'resetZoom',
+    type: 'output<void>',
+    description: 'Emitted when 1:1 zoom reset is triggered via the toolbar.',
+    category: 'Toolbar & Zoom Controls'
   }
 ];
 
 export const OUTPUT_CATEGORIES = [
   'Node Events',
   'Edge Events',
-  'Global Events'
+  'Global Events',
+  'Toolbar & Zoom Controls'
 ] as const;
+

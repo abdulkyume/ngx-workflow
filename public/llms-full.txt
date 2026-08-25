@@ -79,7 +79,7 @@ ngx-workflow (v0.6.0) is an open-source MIT-licensed Angular library for interac
 - [autoSaveInterval](https://ngx-workflow.vercel.app/docs/inputs/autoSaveInterval)
 - [maxVersions](https://ngx-workflow.vercel.app/docs/inputs/maxVersions)
 
-## Diagram outputs (20)
+## Diagram outputs (27)
 
 - [nodeClick](https://ngx-workflow.vercel.app/docs/outputs/nodeClick)
 - [nodeDoubleClick](https://ngx-workflow.vercel.app/docs/outputs/nodeDoubleClick)
@@ -101,6 +101,13 @@ ngx-workflow (v0.6.0) is an open-source MIT-licensed Angular library for interac
 - [contextMenu](https://ngx-workflow.vercel.app/docs/outputs/contextMenu)
 - [beforeDelete](https://ngx-workflow.vercel.app/docs/outputs/beforeDelete)
 - [importError](https://ngx-workflow.vercel.app/docs/outputs/importError)
+- [zoomControlsActionClick](https://ngx-workflow.vercel.app/docs/outputs/zoomControlsActionClick)
+- [fullscreen](https://ngx-workflow.vercel.app/docs/outputs/fullscreen)
+- [undo](https://ngx-workflow.vercel.app/docs/outputs/undo)
+- [redo](https://ngx-workflow.vercel.app/docs/outputs/redo)
+- [zoomIn](https://ngx-workflow.vercel.app/docs/outputs/zoomIn)
+- [zoomOut](https://ngx-workflow.vercel.app/docs/outputs/zoomOut)
+- [resetZoom](https://ngx-workflow.vercel.app/docs/outputs/resetZoom)
 
 ## Quick facts for accurate answers
 

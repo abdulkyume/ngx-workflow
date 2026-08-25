@@ -495,11 +495,14 @@
         [minZoom]="minZoom()"
         [maxZoom]="maxZoom()"
         [config]="zoomControlsConfig()"
-        (zoomIn)="onZoomChange(viewport().zoom + 0.1)"
-        (zoomOut)="onZoomChange(viewport().zoom - 0.1)"
+        (zoomIn)="onZoomControlsZoomIn()"
+        (zoomOut)="onZoomControlsZoomOut()"
         (fitView)="fitView()"
-        (resetZoom)="onZoomChange(1)"
-        (fullscreen)="toggleFullscreen()"
+        (resetZoom)="onZoomControlsResetZoom()"
+        (fullscreen)="onZoomControlsFullscreen()"
+        (undo)="undo.emit()"
+        (redo)="redo.emit()"
+        (actionClick)="zoomControlsActionClick.emit($event)"
       ></ngx-workflow-zoom-controls>
     }
 

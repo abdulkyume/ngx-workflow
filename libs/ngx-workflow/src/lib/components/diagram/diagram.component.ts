@@ -274,6 +274,13 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
   // Deletion control event
   readonly beforeDelete = output<{ nodes: WorkflowNode[]; edges: Edge[]; cancel: () => void }>();
 
+  // Zoom & Toolbar Controls outputs
+  /** Emitted whenever any action button in the zoom controls toolbar is clicked. */
+  readonly zoomControlsActionClick = output<{ id: string; action: string; event: MouseEvent }>();
+  readonly fullscreen = output<void>();
+  readonly undo = output<void>();
+  readonly redo = output<void>();
+
   // Import feedback
   readonly importError = output<{ message: string; error?: unknown }>();
   readonly importNotification = signal<string | null>(null);
@@ -3602,6 +3609,23 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
         document.exitFullscreen().catch(() => {});
       }
     }
+  }
+
+  onZoomControlsZoomIn(): void {
+    this.onZoomChange(this.viewport().zoom + 0.1);
+  }
+
+  onZoomControlsZoomOut(): void {
+    this.onZoomChange(this.viewport().zoom - 0.1);
+  }
+
+  onZoomControlsResetZoom(): void {
+    this.onZoomChange(1);
+  }
+
+  onZoomControlsFullscreen(): void {
+    this.toggleFullscreen();
+    this.fullscreen.emit();
   }
 
   private scheduleInitialFitView(): void {

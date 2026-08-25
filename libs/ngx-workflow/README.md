@@ -239,6 +239,10 @@ You can access these methods via `@ViewChild(DiagramComponent)`:
 | `nodeMouseEnter` / `nodeMouseLeave` | `output<Node>` | Pointer enter/leave node. |
 | `nodeMouseMove` | `output<{node, event}>` | Pointer move over a node. |
 | `edgeMouseEnter` / `edgeMouseLeave` | `output<Edge>` | Pointer enter/leave edge. |
+| `zoomControlsActionClick` | `output<{id, action, event}>` | Custom or built-in action button clicked in the zoom controls toolbar. |
+| `fullscreen` | `output<void>` | Canvas fullscreen toggled via toolbar. |
+| `undo` / `redo` | `output<void>` | Undo or redo triggered via toolbar. |
+| `zoomIn` / `zoomOut` / `resetZoom` | `output<void>` | Zoom changes triggered via toolbar. |
 
 ### Interfaces
 
