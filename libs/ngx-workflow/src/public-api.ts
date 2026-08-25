@@ -12,6 +12,7 @@ export * from './lib/components/node-toolbar/node-toolbar.component';
 export * from './lib/components/undo-redo-controls/undo-redo-controls.component';
 export * from './lib/components/version-history/version-history.component';
 export * from './lib/components/zoom-controls/zoom-controls.component';
+export * from './lib/components/zoom-controls/zoom-controls.model';
 export * from './lib/components/minimap/minimap.component';
 export * from './lib/components/panel/panel.component';
 export * from './lib/components/background/background.component';

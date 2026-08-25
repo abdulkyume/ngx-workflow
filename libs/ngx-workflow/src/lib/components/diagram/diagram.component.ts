@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, ElementRef, OnInit, Renderer2, NgZone, OnDestroy, HostListener, WritableSignal, Inject, Optional, computed, ViewChild, ContentChild, Signal, ChangeDetectorRef, TemplateRef, Type, signal, forwardRef, inject, input, output, effect } from '@angular/core';
+import { Component, ChangeDetectionStrategy, ElementRef, OnInit, Renderer2, NgZone, OnDestroy, HostListener, WritableSignal, Inject, Optional, computed, ViewChild, ContentChild, Signal, ChangeDetectorRef, TemplateRef, Type, signal, forwardRef, inject, input, output, effect, untracked } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { CommonModule, NgComponentOutlet, NgTemplateOutlet } from '@angular/common';
@@ -8,9 +8,10 @@ import { Subscription, Observable, combineLatest } from 'rxjs';
 import { debounceTime, skip } from 'rxjs/operators';
 import { NGX_WORKFLOW_NODE_TYPES, NGX_WORKFLOW_EDGE_TYPES } from '../../injection-tokens';
 import { NodeComponentType as WorkflowNodeComponentType, EdgeComponentType as WorkflowEdgeComponentType } from '../../types';
-import { getBezierPath, getStraightPath, getStepPath, getSmoothStepPath, getSelfLoopPath, getSmartEdgePath, getWaypointPath, PathFinder, getPolylineMidpoint, normalizeHandle, inferHandlePosition, HandlePosition } from '../../utils';
+import { getBezierPath, getBezierControlPoints, getStraightPath, getStepPath, getSmoothStepPath, getSelfLoopPath, getSmartEdgePath, getWaypointPath, PathFinder, getPolylineMidpoint, normalizeHandle, inferHandlePosition, HandlePosition, getArrowheadGeometry, ArrowheadGeometry, getCubicBezierPoint, getCubicBezierTangent } from '../../utils';
 import { v4 as uuidv4 } from 'uuid';
 import { ZoomControlsComponent } from '../zoom-controls/zoom-controls.component';
+import { ZoomControlsConfig } from '../zoom-controls/zoom-controls.model';
 import { MinimapComponent } from '../minimap/minimap.component';
 import { BackgroundComponent } from '../background/background.component';
 import { GridOverlayComponent } from '../grid-overlay/grid-overlay.component';
@@ -175,6 +176,8 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
   readonly edges = input<Edge[] | undefined>(undefined);
 
   readonly showZoomControls = input<boolean>(true);
+  /** Customize zoom toolbar items, separators, views, and corner position. */
+  readonly zoomControlsConfig = input<ZoomControlsConfig | undefined>(undefined);
   readonly minZoom = input<number>(0.1);
   readonly maxZoom = input<number>(4);
   readonly backgroundImage = input<string | null>(null);
@@ -567,6 +570,7 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
       if (node.draggable !== false) {
         this.startDraggingNode(event, { ...node, selected: true });
       }
+      this.diagramStateService.onNodeClick({ ...node, selected: true });
     } else {
       // Toggle this node's selection
       const isSelectedNow = !node.selected;
@@ -577,6 +581,7 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
       if (isSelectedNow && node.draggable !== false) {
         this.startDraggingNode(event, { ...node, selected: true });
       }
+      this.diagramStateService.onNodeClick({ ...node, selected: isSelectedNow });
     }
   }
 
@@ -911,13 +916,20 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
 
   /** Effective stroke used by the path and matching marker fills. */
   getEdgeStrokeColor(edge: Edge): string {
+    if (edge.selected) {
+      return 'var(--ngx-workflow-primary, #4640de)';
+    }
     if (edge.style?.['stroke']) return String(edge.style['stroke']);
-    if (edge.selected) return 'var(--ngx-workflow-primary, #2dd4bf)';
     return 'var(--ngx-workflow-edge-stroke, #94a3b8)';
   }
 
   /** Custom width only; omit when unset so CSS selected/default widths apply. */
   getEdgeStrokeWidth(edge: Edge): number | null {
+    if (edge.selected) {
+      const raw = edge.style?.['strokeWidth'];
+      const base = raw != null && raw !== '' && Number.isFinite(Number(raw)) ? Number(raw) : 1.2;
+      return Math.max(base, 2.5);
+    }
     const raw = edge.style?.['strokeWidth'];
     if (raw == null || raw === '') return null;
     const n = Number(raw);
@@ -1265,13 +1277,18 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
     effect(() => {
       // Controlled mode only: sync parent edges, including [] after the last edge is deleted
       const inputEdges = this.edges();
-      if (inputEdges !== undefined) {
-        if (inputEdges === this.diagramStateService.edges()) return;
-        if (this.syncingEdgesToParent) {
-          return;
-        }
-        this.diagramStateService.edges.set(inputEdges);
+      if (inputEdges === undefined) {
+        return;
       }
+      // Don't track service edges — otherwise selecting an edge re-runs this and wipes selection.
+      const current = untracked(() => this.diagramStateService.edges());
+      if (inputEdges === current) {
+        return;
+      }
+      if (this.syncingEdgesToParent) {
+        return;
+      }
+      this.diagramStateService.edges.set(inputEdges);
     });
 
     // Scope diagram theme to this host only — never write document.documentElement
@@ -1489,7 +1506,11 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
     this.viewport = this.diagramStateService.viewport;
     this.viewNodes = this.diagramStateService.viewNodes;
     this.filteredNodes = this.diagramStateService.visibleNodes; // Use visibleNodes for rendering
-    this.filteredEdges = this.diagramStateService.visibleEdges; // Use visibleEdges for rendering
+    // Selected edges paint last so their labels sit above overlapping chips.
+    this.filteredEdges = computed(() => {
+      const edges = this.diagramStateService.visibleEdges();
+      return [...edges].sort((a, b) => Number(!!a.selected) - Number(!!b.selected));
+    });
     this.tempEdges = this.diagramStateService.tempEdges;
     this.alignmentGuides = this.diagramStateService.alignmentGuides;
     this.diagramStateService.selectionMode = this.selectionMode();
@@ -1681,7 +1702,15 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
   }
 
   get lodLevel(): string {
-    return this.diagramStateService.lodLevel();
+    const zoom = this.viewport().zoom;
+    const hideBelow = this.optimization().hideEdgesBelowZoom ?? 0.4;
+    if (zoom < hideBelow) {
+      return 'low';
+    }
+    if (zoom < Math.max(hideBelow + 0.2, 0.85)) {
+      return 'medium';
+    }
+    return 'high';
   }
 
   get transform(): string {
@@ -2980,10 +3009,78 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
 
   // --- Edge Logic ---
 
-  getEdgePath(edge: Edge | TempEdge, isTemporary: boolean = false): string {
+  /** Triangle arrowheads drawn in user space (not SVG markers) for bezier/straight. */
+  private isGeometryArrowMarker(marker: string | undefined | null): boolean {
+    if (!marker) return false;
+    const id = String(marker).trim();
+    return id === 'arrow' || id === 'arrowclosed' || id === 'arrowhead';
+  }
+
+  usesGeometryArrowhead(edge: Edge | TempEdge): boolean {
+    if (!('markerEnd' in edge) || !this.isGeometryArrowMarker(edge.markerEnd)) {
+      return false;
+    }
+    const t = edge.type;
+    return t === 'bezier' || t === 'straight' || t === 'dashed';
+  }
+
+  getEdgeArrowhead(edge: Edge | TempEdge): ArrowheadGeometry | null {
+    if (!this.usesGeometryArrowhead(edge)) {
+      return null;
+    }
+    const endpoints = this.resolveEdgeEndpoints(edge, false);
+    if (!endpoints) {
+      return null;
+    }
+    const { sourcePos, targetPos, bezierOpts } = endpoints;
+    if ('waypoints' in edge && edge.waypoints && edge.waypoints.length > 0) {
+      const prev = edge.waypoints[edge.waypoints.length - 1];
+      return this.arrowheadFromSegment(prev, targetPos);
+    }
+    if (edge.type === 'straight' || edge.type === 'dashed') {
+      return this.arrowheadFromSegment(sourcePos, targetPos);
+    }
+    return getArrowheadGeometry(sourcePos, targetPos, bezierOpts);
+  }
+
+  private arrowheadFromSegment(
+    from: XYPosition,
+    tip: XYPosition,
+    size: { length?: number; width?: number } = {}
+  ): ArrowheadGeometry {
+    const length = size.length ?? 8;
+    const width = size.width ?? 6;
+    let tx = tip.x - from.x;
+    let ty = tip.y - from.y;
+    const len = Math.hypot(tx, ty) || 1;
+    tx /= len;
+    ty /= len;
+    const pathEnd = { x: tip.x - tx * length, y: tip.y - ty * length };
+    const px = -ty;
+    const py = tx;
+    const half = width / 2;
+    return {
+      tip,
+      pathEnd,
+      points: `${tip.x},${tip.y} ${pathEnd.x + px * half},${pathEnd.y + py * half} ${pathEnd.x - px * half},${pathEnd.y - py * half}`,
+    };
+  }
+
+  private resolveEdgeEndpoints(
+    edge: Edge | TempEdge,
+    isTemporary: boolean
+  ): {
+    sourcePos: XYPosition;
+    targetPos: XYPosition;
+    sourcePosition: HandlePosition;
+    targetPosition: HandlePosition;
+    bezierOpts: { offset: number; sourcePosition: HandlePosition; targetPosition: HandlePosition };
+    isSelfLoop: boolean;
+  } | null {
     const nodes = this.getLiveNodes();
     let sourcePos: XYPosition;
     let targetPos: XYPosition;
+    let isSelfLoop = false;
 
     if (isTemporary && 'sourceX' in edge && 'sourceY' in edge && 'targetX' in edge && 'targetY' in edge) {
       sourcePos = { x: edge.sourceX, y: edge.sourceY };
@@ -2991,51 +3088,132 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
     } else {
       const sourceNode = getNode(edge.source, nodes);
       const targetNode = getNode(edge.target, nodes);
-
       if (!sourceNode || !targetNode) {
-        return 'M 0 0';
+        return null;
       }
-
       sourcePos = this.getHandleAbsolutePosition(sourceNode, edge.sourceHandle);
       targetPos = this.getHandleAbsolutePosition(targetNode, edge.targetHandle);
-
-      if (sourceNode.id === targetNode.id) {
-        return getSelfLoopPath(sourcePos, edge.sourceHandle);
-      }
+      isSelfLoop = sourceNode.id === targetNode.id;
     }
 
-    if ('waypoints' in edge && edge.waypoints && edge.waypoints.length > 0 && !isTemporary) {
-      return getWaypointPath(sourcePos, targetPos, edge.waypoints);
-    }
-
-    // Calculate curvature offset for parallel edges between same source & target nodes
     let curvatureOffset = 0;
-    if (!isTemporary && 'source' in edge && 'target' in edge) {
+    let sourcePosResolved = sourcePos;
+    let targetPosResolved = targetPos;
+
+    if (!isTemporary && 'source' in edge && 'target' in edge && 'id' in edge) {
       const allEdges = this.diagramStateService.edges();
-      const nodePairKey = [edge.source, edge.target].sort().join('::');
-      const parallelEdges = allEdges.filter(
-        (e) => [e.source, e.target].sort().join('::') === nodePairKey
-      );
-      if (parallelEdges.length > 1) {
-        const edgeIndex = parallelEdges.findIndex((e) => e.id === edge.id);
-        if (edgeIndex !== -1) {
-          curvatureOffset = (edgeIndex - (parallelEdges.length - 1) / 2) * 35;
-        }
+      // Directed parallels: same lateral slot on BOTH ends, no extra curve offset (avoids braiding).
+      const parallelEdges = allEdges
+        .filter((e) => e.source === edge.source && e.target === edge.target)
+        .sort((a, b) => a.id.localeCompare(b.id));
+      const edgeIndex = parallelEdges.findIndex((e) => e.id === edge.id);
+      const parallelCount = parallelEdges.length;
+
+      const sourceNodeForSpread = getNode(edge.source, this.getLiveNodes());
+      const targetNodeForSpread = getNode(edge.target, this.getLiveNodes());
+      if (parallelCount > 1 && edgeIndex !== -1 && sourceNodeForSpread && targetNodeForSpread) {
+        const alongX =
+          (normalizeHandle(edge.sourceHandle) ?? 'bottom') === 'top' ||
+          (normalizeHandle(edge.sourceHandle) ?? 'bottom') === 'bottom';
+        const srcSize = alongX
+          ? sourceNodeForSpread.width || this.defaultNodeWidth
+          : sourceNodeForSpread.height || this.defaultNodeHeight;
+        const tgtSize = alongX
+          ? targetNodeForSpread.width || this.defaultNodeWidth
+          : targetNodeForSpread.height || this.defaultNodeHeight;
+        // Spread across nearly the full node width so parallel strokes stay distinct.
+        const usable = Math.max(0, Math.min(srcSize, tgtSize) - 24);
+        const gap = parallelCount > 1 ? usable / (parallelCount - 1) : 0;
+        const slot = (edgeIndex - (parallelCount - 1) / 2) * gap;
+        sourcePosResolved = alongX
+          ? { x: sourcePos.x + slot, y: sourcePos.y }
+          : { x: sourcePos.x, y: sourcePos.y + slot };
+        targetPosResolved = alongX
+          ? { x: targetPos.x + slot, y: targetPos.y }
+          : { x: targetPos.x, y: targetPos.y + slot };
       }
     }
 
     const sourcePosition: HandlePosition =
       normalizeHandle('sourceHandle' in edge ? edge.sourceHandle : undefined) ??
-      inferHandlePosition(sourcePos, targetPos, 'source');
+      inferHandlePosition(sourcePosResolved, targetPosResolved, 'source');
     const targetPosition: HandlePosition =
       normalizeHandle('targetHandle' in edge ? edge.targetHandle : undefined) ??
-      inferHandlePosition(sourcePos, targetPos, 'target');
+      inferHandlePosition(sourcePosResolved, targetPosResolved, 'target');
 
-    const bezierOpts = {
-      offset: curvatureOffset,
+    return {
+      sourcePos: sourcePosResolved,
+      targetPos: targetPosResolved,
       sourcePosition,
       targetPosition,
+      isSelfLoop,
+      bezierOpts: {
+        offset: curvatureOffset,
+        sourcePosition,
+        targetPosition,
+      },
     };
+  }
+
+  /**
+   * Fan multiple edges that share the same node+handle along the border so each
+   * stroke/arrow tip stays on its intended state card instead of stacking at center.
+   */
+  private spreadHandleAlongEdge(
+    edge: Edge,
+    end: 'source' | 'target',
+    base: XYPosition,
+    node: WorkflowNode,
+    allEdges: Edge[]
+  ): XYPosition {
+    const handleId = end === 'source' ? edge.sourceHandle : edge.targetHandle;
+    const siblings = allEdges.filter((e) => {
+      if (end === 'source') {
+        return e.source === edge.source && (e.sourceHandle || '') === (handleId || '');
+      }
+      return e.target === edge.target && (e.targetHandle || '') === (handleId || '');
+    });
+    if (siblings.length <= 1) {
+      return base;
+    }
+    const index = siblings.findIndex((e) => e.id === edge.id);
+    if (index < 0) {
+      return base;
+    }
+
+    const handle =
+      normalizeHandle(handleId) ?? (end === 'source' ? 'bottom' : 'top');
+    const alongX = handle === 'top' || handle === 'bottom';
+    const size = alongX ? node.width || this.defaultNodeWidth : node.height || this.defaultNodeHeight;
+    const usable = Math.max(0, size - 24);
+    const gap = siblings.length > 1 ? Math.min(18, usable / Math.max(1, siblings.length - 1)) : 0;
+    const offset = (index - (siblings.length - 1) / 2) * gap;
+
+    return alongX ? { x: base.x + offset, y: base.y } : { x: base.x, y: base.y + offset };
+  }
+
+  getEdgePath(edge: Edge | TempEdge, isTemporary: boolean = false): string {
+    const endpoints = this.resolveEdgeEndpoints(edge, isTemporary);
+    if (!endpoints) {
+      return 'M 0 0';
+    }
+
+    const { sourcePos, targetPos, sourcePosition, targetPosition, bezierOpts, isSelfLoop } =
+      endpoints;
+
+    if (isSelfLoop && !isTemporary) {
+      return getSelfLoopPath(sourcePos, 'sourceHandle' in edge ? edge.sourceHandle : undefined);
+    }
+
+    if ('waypoints' in edge && edge.waypoints && edge.waypoints.length > 0 && !isTemporary) {
+      const arrow = this.getEdgeArrowhead(edge);
+      if (arrow) {
+        return getWaypointPath(sourcePos, arrow.pathEnd, edge.waypoints);
+      }
+      return getWaypointPath(sourcePos, targetPos, edge.waypoints);
+    }
+
+    const arrow = !isTemporary ? this.getEdgeArrowhead(edge) : null;
 
     // Use smart routing if type is 'smart' or not specified (default).
     // Only edges attached to the dragged node(s) use a bezier fallback — other edges keep their path.
@@ -3065,16 +3243,22 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
     }
 
     switch (edge.type) {
-      case 'bezier':
+      case 'bezier': {
+        if (arrow) {
+          // Keep controls aimed at the tip; only the stroke end moves to the triangle base.
+          const { c1, c2 } = getBezierControlPoints(sourcePos, targetPos, bezierOpts);
+          return `M ${sourcePos.x},${sourcePos.y} C ${c1.x},${c1.y} ${c2.x},${c2.y} ${arrow.pathEnd.x},${arrow.pathEnd.y}`;
+        }
         return getBezierPath(sourcePos, targetPos, bezierOpts);
+      }
       case 'step':
         return getStepPath(sourcePos, targetPos, { sourcePosition, targetPosition });
       case 'smoothstep':
         return getSmoothStepPath(sourcePos, targetPos, { sourcePosition, targetPosition });
       case 'straight':
-        return getStraightPath(sourcePos, targetPos);
+        return getStraightPath(sourcePos, arrow?.pathEnd ?? targetPos);
       case 'dashed':
-        return getStraightPath(sourcePos, targetPos);
+        return getStraightPath(sourcePos, arrow?.pathEnd ?? targetPos);
       // Custom edge component/template types still need a geometry path for labels/hit-testing
       default:
         return getBezierPath(sourcePos, targetPos, bezierOpts);
@@ -3098,6 +3282,9 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
 
   /** Prefer per-edge tinted markers so start/end match the edge stroke color. */
   getMarkerUrlForEdge(edge: Edge, position: 'start' | 'end'): string | null {
+    if (position === 'end' && this.usesGeometryArrowhead(edge)) {
+      return null;
+    }
     const marker = position === 'start' ? edge.markerStart : edge.markerEnd;
     if (!marker) return null;
     const id = String(marker).trim();
@@ -3111,17 +3298,12 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
   }
 
   getEdgeLabelPosition(edge: Edge, position: EdgeLabelPosition = 'center'): XYPosition {
-    const nodes = this.getLiveNodes();
-    const sourceNode = getNode(edge.source, nodes);
-    const targetNode = getNode(edge.target, nodes);
-
-    if (!sourceNode || !targetNode) {
+    const endpoints = this.resolveEdgeEndpoints(edge, false);
+    if (!endpoints) {
       return { x: 0, y: 0 };
     }
 
-    const sourcePos = this.getHandleAbsolutePosition(sourceNode, edge.sourceHandle);
-    const targetPos = this.getHandleAbsolutePosition(targetNode, edge.targetHandle);
-
+    const { sourcePos, targetPos, bezierOpts } = endpoints;
     const lerp = (t: number): XYPosition => ({
       x: sourcePos.x + (targetPos.x - sourcePos.x) * t,
       y: sourcePos.y + (targetPos.y - sourcePos.y) * t,
@@ -3145,13 +3327,107 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
           this.pathPointsCache.set(cacheKey, path);
         }
 
-        return getPolylineMidpoint(path);
+        return this.applyLabelDeconflictOffset(edge, getPolylineMidpoint(path), sourcePos, targetPos);
       } catch (e) {
         console.warn('Pathfinding failed for label position', e);
       }
     }
 
-    return lerp(0.5);
+    // Bezier / straight: place chips along each stroke (fractions for parallels).
+    const slot = this.getEdgeLabelSlot(edge);
+    if ('waypoints' in edge && edge.waypoints && edge.waypoints.length > 0) {
+      return this.pointAlongPolyline([sourcePos, ...edge.waypoints, targetPos], slot.t);
+    }
+    if (edge.type === 'straight' || edge.type === 'dashed') {
+      return lerp(slot.t);
+    }
+
+    const { c1, c2 } = getBezierControlPoints(sourcePos, targetPos, bezierOpts);
+    return getCubicBezierPoint(sourcePos, c1, c2, targetPos, slot.t);
+  }
+
+  /** t ∈ [0,1] along a polyline by cumulative length. */
+  private pointAlongPolyline(points: XYPosition[], t: number): XYPosition {
+    if (points.length === 0) {
+      return { x: 0, y: 0 };
+    }
+    if (points.length === 1) {
+      return points[0];
+    }
+    let total = 0;
+    const segLens: number[] = [];
+    for (let i = 1; i < points.length; i++) {
+      const len = Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
+      segLens.push(len);
+      total += len;
+    }
+    if (total < 1e-6) {
+      return points[0];
+    }
+    let remaining = Math.min(1, Math.max(0, t)) * total;
+    for (let i = 0; i < segLens.length; i++) {
+      const len = segLens[i];
+      if (remaining <= len || i === segLens.length - 1) {
+        const u = len < 1e-6 ? 0 : remaining / len;
+        return {
+          x: points[i].x + (points[i + 1].x - points[i].x) * u,
+          y: points[i].y + (points[i + 1].y - points[i].y) * u,
+        };
+      }
+      remaining -= len;
+    }
+    return points[points.length - 1];
+  }
+
+  /**
+   * Spread overlapping edge chips: different t along the path + perpendicular nudge
+   * within the densest competing group (same pair → same target → same source).
+   */
+  private getEdgeLabelSlot(edge: Edge): { t: number; perp: number } {
+    // Only stagger labels among parallel edges that share the same directed path.
+    const allEdges = this.diagramStateService
+      .edges()
+      .filter((e) => !!this.edgeLabelText(this.resolveEdgeLabel(e, 'center')));
+    const group = allEdges
+      .filter((e) => e.source === edge.source && e.target === edge.target)
+      .sort((a, b) => a.id.localeCompare(b.id));
+    const idx = Math.max(0, group.findIndex((e) => e.id === edge.id));
+    const n = Math.max(1, group.length);
+
+    // 1 edge → center (1/2). n edges → 2/(n+2), 3/(n+2), …, (n+1)/(n+2)
+    // e.g. 2 edges → 2/4 & 3/4; 3 edges → 2/5, 3/5, 4/5.
+    if (n === 1) {
+      return { t: 0.5, perp: 0 };
+    }
+    const t = (idx + 2) / (n + 2);
+    return { t, perp: 0 };
+  }
+
+  private applyLabelDeconflictOffset(
+    edge: Edge,
+    base: XYPosition,
+    sourcePos: XYPosition,
+    targetPos: XYPosition
+  ): XYPosition {
+    const slot = this.getEdgeLabelSlot(edge);
+    return this.offsetPerpendicular(base, sourcePos, targetPos, slot.perp);
+  }
+
+  private offsetPerpendicular(
+    point: XYPosition,
+    from: XYPosition,
+    to: XYPosition,
+    distance: number
+  ): XYPosition {
+    if (!distance) {
+      return point;
+    }
+    let tx = to.x - from.x;
+    let ty = to.y - from.y;
+    const len = Math.hypot(tx, ty) || 1;
+    tx /= len;
+    ty /= len;
+    return { x: point.x + -ty * distance, y: point.y + tx * distance };
   }
 
   resolveEdgeLabel(edge: Edge, position: EdgeLabelPosition): EdgeLabel | string | undefined {
@@ -3186,12 +3462,12 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
       nodes.map(n => ({ ...n, selected: false }))
     );
 
-    // Toggle edge selection
+    // Select the clicked edge (keep multi-select when modifier keys are held)
     this.diagramStateService.edges.update(edges =>
       edges.map(e => ({
         ...e,
         selected: e.id === edge.id
-          ? !e.selected
+          ? true
           : (isMultiSelect ? e.selected : false)
       }))
     );
@@ -3237,7 +3513,7 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
     });
   }
 
-  fitView(): void {
+  fitView(options?: { zoom?: number }): void {
     // Prefer live service state — input can lag one tick behind mount
     const nodes = this.diagramStateService.nodes();
     if (nodes.length === 0) return;
@@ -3274,7 +3550,11 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
     const zoomY = availH / boundsHeight;
     const minZ = this.minZoom() || 0.1;
     const maxZ = Math.min(this.maxZoom() || 4, 1.35);
-    const zoom = Math.min(Math.max(Math.min(zoomX, zoomY), minZ), maxZ);
+    const fittedZoom = Math.min(Math.max(Math.min(zoomX, zoomY), minZ), maxZ);
+    const zoom =
+      options?.zoom != null
+        ? Math.min(Math.max(options.zoom, minZ), this.maxZoom() || 4)
+        : fittedZoom;
 
     // Calculate center position
     const x = (svgRect.width - boundsWidth * zoom) / 2 - minX * zoom;

@@ -38,26 +38,31 @@
   position: relative;
   width: 100%;
   height: 100%;
+  user-select: none;
+  -webkit-user-select: none;
   overflow: hidden;
   background-color: var(--ngx-workflow-bg, #f8fafc);
 
-  /* LOD: Low - Hide text and handles */
+  /* LOD: Low — hide edges (paths + labels + arrowheads); nodes stay for overview */
   &[data-lod="low"] {
-    .ngx-workflow__node-label,
-    .ngx-workflow__handle,
-    .ngx-workflow__edge-label {
+    .ngx-workflow__edge {
       display: none;
     }
-    
+
+    .ngx-workflow__node-label,
+    .ngx-workflow__handle {
+      display: none;
+    }
+
     .ngx-workflow__node-rect {
-      stroke-width: 1px; /* Thinner stroke */
+      stroke-width: 1px;
     }
   }
 
-  /* LOD: Medium - Hide handles */
+  /* LOD: Medium — keep edges, drop interactive handles */
   &[data-lod="medium"] {
     .ngx-workflow__handle {
-      opacity: 0; /* Hide but keep interactive if needed, or display: none */
+      opacity: 0;
       pointer-events: none;
     }
   }
@@ -194,6 +199,10 @@ foreignObject {
 .ngx-workflow__edge {
   pointer-events: none;
 
+  &.selected {
+    z-index: 5;
+  }
+
   &-path {
     fill: none;
     /* Default stroke only — custom colors use inline [style.stroke] from sidebar */
@@ -265,7 +274,30 @@ foreignObject {
 /* --- Edge Labels --- */
 .ngx-workflow__edge-label {
   pointer-events: none;
-  
+  user-select: none;
+  -webkit-user-select: none;
+
+  foreignObject {
+    overflow: visible;
+  }
+}
+
+.ngx-workflow__edge.selected .ngx-workflow__edge-label {
+  pointer-events: auto;
+  z-index: 20;
+
+  foreignObject {
+    z-index: 20;
+    position: relative;
+  }
+
+  .edge-label-content {
+    position: relative;
+    z-index: 20;
+  }
+}
+
+.ngx-workflow__edge-label {
   &-text {
     font-family: 'Inter', sans-serif;
     font-size: 12px;
@@ -273,6 +305,8 @@ foreignObject {
     fill: var(--ngx-workflow-text-secondary);
     text-anchor: middle;
     dominant-baseline: middle;
+    user-select: none;
+    -webkit-user-select: none;
   }
 
   &-bg {
@@ -304,10 +338,15 @@ foreignObject {
   justify-content: center;
   width: 100%;
   height: 100%;
-  
-  // Don't block edge clicks, but allow clicks on content
+  user-select: none;
+  -webkit-user-select: none;
+  pointer-events: auto;
+  cursor: pointer;
+
   > * {
-    pointer-events: all; // Components inside are interactive
+    pointer-events: auto;
+    user-select: none;
+    -webkit-user-select: none;
   }
 }
 

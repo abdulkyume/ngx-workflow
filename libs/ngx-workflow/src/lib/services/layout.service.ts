@@ -22,6 +22,18 @@ export interface CircularOptions {
   sortBy?: 'id' | 'type';   // Default: 'id'
 }
 
+/** Options for `LayoutService.applyElkLayout`. */
+export interface ElkLayoutOptions {
+  direction?: 'DOWN' | 'RIGHT' | 'UP' | 'LEFT';
+  spacing?: number;
+  /** Horizontal gap between nodes in the same layer. Defaults to `spacing`. */
+  nodeNodeSpacing?: number;
+  /** Vertical gap between layers. Defaults to `spacing`. */
+  layerSpacing?: number;
+  /** Gap between parallel edges. */
+  edgeEdgeSpacing?: number;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -34,8 +46,15 @@ export class LayoutService {
   }
 
   // --- ELK Layout ---
-  async applyElkLayout(nodes: Node[], edges: Edge[], options: { direction?: 'DOWN' | 'RIGHT' | 'UP' | 'LEFT', spacing?: number } = {}): Promise<Node[]> {
-    const isHorizontal = options.direction === 'RIGHT' || options.direction === 'LEFT';
+  async applyElkLayout(
+    nodes: Node[],
+    edges: Edge[],
+    options: ElkLayoutOptions = {},
+  ): Promise<Node[]> {
+    const spacing = options.spacing ?? 75;
+    const nodeNodeSpacing = options.nodeNodeSpacing ?? spacing;
+    const layerSpacing = options.layerSpacing ?? spacing;
+    const edgeEdgeSpacing = options.edgeEdgeSpacing ?? Math.max(16, Math.round(nodeNodeSpacing / 8));
 
     // Construct the ELK graph
     const graph: ElkNode = {
@@ -43,10 +62,17 @@ export class LayoutService {
       layoutOptions: {
         'elk.algorithm': 'layered',
         'elk.direction': options.direction || 'DOWN',
-        'elk.spacing.nodeNode': (options.spacing || 75).toString(),
-        'elk.layered.spacing.nodeNodeBetweenLayers': (options.spacing || 75).toString(),
-        'elk.padding': '[top=20,left=20,bottom=20,right=20]',
-        'elk.hierarchyHandling': 'INCLUDE_CHILDREN' // Enable hierarchical layout
+        // In-layer gap (horizontal when direction=DOWN)
+        'elk.spacing.nodeNode': nodeNodeSpacing.toString(),
+        // Between-layer gap (vertical when direction=DOWN)
+        'elk.layered.spacing.nodeNodeBetweenLayers': layerSpacing.toString(),
+        'elk.spacing.edgeEdge': edgeEdgeSpacing.toString(),
+        'elk.spacing.edgeNode': Math.max(24, Math.round(nodeNodeSpacing / 4)).toString(),
+        'elk.layered.spacing.edgeNodeBetweenLayers': Math.max(28, Math.round(layerSpacing / 2)).toString(),
+        'elk.layered.spacing.edgeEdgeBetweenLayers': edgeEdgeSpacing.toString(),
+        'elk.spacing.componentComponent': Math.max(nodeNodeSpacing, layerSpacing).toString(),
+        'elk.padding': '[top=40,left=40,bottom=40,right=40]',
+        'elk.hierarchyHandling': 'INCLUDE_CHILDREN',
       },
       children: [],
       edges: []

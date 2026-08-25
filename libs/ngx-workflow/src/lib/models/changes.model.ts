@@ -67,6 +67,11 @@ export interface FlowOptimization {
    * `both-endpoints`: require both ends visible (stricter for huge graphs).
    */
   edgeVirtualization?: EdgeVirtualizationMode;
+  /**
+   * Hide all edges (paths + labels) when viewport zoom is below this value.
+   * Default `0.4`. ATM dense graphs often use `~0.7`.
+   */
+  hideEdgesBelowZoom?: number;
 }
 
 export type KeyboardShortcutAction =

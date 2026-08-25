@@ -6,7 +6,8 @@ import {
   getSelfLoopPath,
   getSmartEdgePath,
   getWaypointPath,
-  getPolylineMidpoint
+  getPolylineMidpoint,
+  getArrowheadGeometry,
 } from './path-getters';
 import { XYPosition } from '../models';
 
@@ -18,6 +19,24 @@ describe('path-getters utility functions', () => {
     it('should format straight line path string', () => {
       const path = getStraightPath(source, target);
       expect(path).toBe('M 0,0 L 100,100');
+    });
+  });
+
+  describe('getArrowheadGeometry', () => {
+    it('places tip on target and pathEnd along approach tangent for top handle', () => {
+      const tip = { x: 50, y: 100 };
+      const from = { x: 50, y: 0 };
+      const arrow = getArrowheadGeometry(
+        from,
+        tip,
+        { sourcePosition: 'bottom', targetPosition: 'top' },
+        { length: 8, width: 6 }
+      );
+      expect(arrow.tip).toEqual(tip);
+      // approaching from above → pathEnd is above tip (smaller y)
+      expect(arrow.pathEnd.y).toBeLessThan(tip.y);
+      expect(Math.abs(arrow.pathEnd.x - tip.x)).toBeLessThan(0.01);
+      expect(arrow.points.startsWith('50,100')).toBeTrue();
     });
   });
 

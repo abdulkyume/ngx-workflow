@@ -82,6 +82,8 @@ npm install ngx-workflow
 
 Peer dependencies: `@angular/core`, `@angular/common`, and `@angular/forms` (**Angular 17.1 through 22**).
 
+> **Compile note:** Ivy partial compilation is **forward**-compatible only. Build/publish the library with the **oldest** Angular you need to support (or with the consumer’s Angular major). A FESM compiled with Angular 22 will not run correctly on Angular 21 (e.g. `NG0203`).
+
 ## 🏁 Quick Start
 
 Import `NgxWorkflowModule` directly into your standalone component's `imports` array.

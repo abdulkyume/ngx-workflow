@@ -22,6 +22,9 @@ export class NodeDragService {
   collidingNodeIds: string[] = [];
 
   private dragAnimationFrameId: number | null = null;
+  private readonly preventTextSelection = (event: Event): void => {
+    event.preventDefault();
+  };
 
   constructor(private ngZone: NgZone) {}
 
@@ -39,6 +42,11 @@ export class NodeDragService {
   startDraggingNode(event: PointerEvent, node: WorkflowNode, allNodes: WorkflowNode[]): void {
     if (!this.diagramStateService || !this.svgRef) return;
     event.stopPropagation();
+    event.preventDefault();
+
+    // Clear any active DOM selection so edge/node labels are not highlighted while dragging
+    window.getSelection()?.removeAllRanges();
+    document.addEventListener('selectstart', this.preventTextSelection, true);
 
     this.isDraggingNode = true;
     this.draggingNode = node;
@@ -129,6 +137,9 @@ export class NodeDragService {
 
   stopDraggingNode(event?: PointerEvent): void {
     if (!this.isDraggingNode) return;
+
+    document.removeEventListener('selectstart', this.preventTextSelection, true);
+    window.getSelection()?.removeAllRanges();
 
     if (this.dragAnimationFrameId !== null) {
       cancelAnimationFrame(this.dragAnimationFrameId);
