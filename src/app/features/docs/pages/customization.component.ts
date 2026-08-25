@@ -80,6 +80,13 @@ import { CodeBlockComponent } from '../../../shared/ui/code-block.component';
 
       <app-code-block label="HTML & TypeScript" [code]="apiInspectorSnippet" />
 
+      <h2 id="zoom-controls-config">9. Custom Zoom Controls Toolbar & Slots</h2>
+      <p>
+        Fully configure the zoom controls toolbar using <code>[zoomControlsConfig]</code>. Customize anchor positions (<code>bottom-left</code>, <code>bottom-right</code>, <code>top-left</code>, <code>top-right</code>), reorder buttons, or add custom action buttons and separators:
+      </p>
+
+      <app-code-block label="TypeScript" [code]="zoomControlsSnippet" />
+
       <div class="next-steps flex gap-4 margin-top-8">
         <a routerLink="/examples" class="btn btn-primary">View Interactive Gallery & Legends →</a>
         <a routerLink="/sandbox" class="btn btn-secondary">Try in Sandbox</a>
@@ -248,4 +255,21 @@ nodes = signal<Node[]>([
     </ngx-workflow-panel>
   }
 </ngx-workflow-diagram>`;
+
+  readonly zoomControlsSnippet = `import { ZoomControlsConfig } from 'ngx-workflow';
+
+const zoomConfig: ZoomControlsConfig = {
+  position: 'bottom-left',
+  items: [
+    { id: 'zoomIn', type: 'action', action: 'zoomIn', icon: 'plus', title: 'Zoom In' },
+    { id: 'zoomPercent', type: 'view', view: 'zoomPercent' },
+    { id: 'zoomOut', type: 'action', action: 'zoomOut', icon: 'minus', title: 'Zoom Out' },
+    { id: 'separator', type: 'separator' },
+    { id: 'fitView', type: 'action', action: 'fitView', icon: 'fit', title: 'Fit View' },
+    { id: 'fullscreen', type: 'action', action: 'fullscreen', icon: 'fullscreen', title: 'Fullscreen' },
+  ]
+};
+
+// In template:
+// <ngx-workflow-diagram [nodes]="nodes" [edges]="edges" [zoomControlsConfig]="zoomConfig" />`;
 }

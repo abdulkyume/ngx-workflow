@@ -247,6 +247,7 @@ export class DocApiComponent {
     { name: '[backgroundVariant]', type: "'dots' | 'lines' | 'cross'", defaultValue: "'dots'", description: 'Background pattern style.' },
     { name: '[showMinimap]', type: 'boolean', defaultValue: 'true', description: 'Show minimap overlay.' },
     { name: '[showZoomControls]', type: 'boolean', defaultValue: 'true', description: 'Show zoom / fit controls.' },
+    { name: '[zoomControlsConfig]', type: 'ZoomControlsConfig', defaultValue: 'undefined', description: 'Custom slots, positions (bottom-left, top-right, etc.), actions, and icons for zoom controls.' },
     { name: '[showUndoRedoControls]', type: 'boolean', defaultValue: 'true', description: 'Show undo / redo controls.' },
     { name: '[snapToGrid]', type: 'boolean', defaultValue: 'false', description: 'Snap nodes while dragging.' },
     { name: '[nodeTypes]', type: 'Record<string, Type>', defaultValue: '{}', description: 'Custom node type → component map.' },

@@ -1,6 +1,6 @@
 {
   "name": "ngx-workflow",
-  "version": "0.6.1",
+  "version": "0.7.0",
   "description": "High-performance Angular Signals flowchart and node-based workflow editor with ELK layout, smart edges, and studio chrome",
   "peerDependencies": {
     "@angular/common": ">=17.1.0 <23.0.0",

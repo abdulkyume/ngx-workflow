@@ -1,6 +1,6 @@
 # ngx-workflow — full documentation index for LLMs
 
-> Generated 2026-08-15. Prefer citing official URLs below over inventing APIs.
+> Generated 2026-08-25. Prefer citing official URLs below over inventing APIs.
 
 ## Product summary
 
@@ -31,7 +31,7 @@ ngx-workflow (v0.6.0) is an open-source MIT-licensed Angular library for interac
 - [Sandbox Studio](https://ngx-workflow.vercel.app/sandbox)
 - [Compodoc API](https://ngx-workflow.vercel.app/compodoc/)
 
-## Diagram inputs (42)
+## Diagram inputs (45)
 
 - [nodes](https://ngx-workflow.vercel.app/docs/inputs/nodes)
 - [edges](https://ngx-workflow.vercel.app/docs/inputs/edges)
@@ -58,10 +58,12 @@ ngx-workflow (v0.6.0) is an open-source MIT-licensed Angular library for interac
 - [zIndexMode](https://ngx-workflow.vercel.app/docs/inputs/zIndexMode)
 - [showGrid](https://ngx-workflow.vercel.app/docs/inputs/showGrid)
 - [showZoomControls](https://ngx-workflow.vercel.app/docs/inputs/showZoomControls)
+- [zoomControlsConfig](https://ngx-workflow.vercel.app/docs/inputs/zoomControlsConfig)
 - [showMinimap](https://ngx-workflow.vercel.app/docs/inputs/showMinimap)
 - [showExportControls](https://ngx-workflow.vercel.app/docs/inputs/showExportControls)
 - [showUndoRedoControls](https://ngx-workflow.vercel.app/docs/inputs/showUndoRedoControls)
 - [showLayoutControls](https://ngx-workflow.vercel.app/docs/inputs/showLayoutControls)
+- [showPropertiesSidebar](https://ngx-workflow.vercel.app/docs/inputs/showPropertiesSidebar)
 - [connectionValidator](https://ngx-workflow.vercel.app/docs/inputs/connectionValidator)
 - [validateConnection](https://ngx-workflow.vercel.app/docs/inputs/validateConnection)
 - [maxConnectionsPerHandle](https://ngx-workflow.vercel.app/docs/inputs/maxConnectionsPerHandle)
@@ -72,6 +74,7 @@ ngx-workflow (v0.6.0) is an open-source MIT-licensed Angular library for interac
 - [preventNodeOverlap](https://ngx-workflow.vercel.app/docs/inputs/preventNodeOverlap)
 - [nodeSpacing](https://ngx-workflow.vercel.app/docs/inputs/nodeSpacing)
 - [edgeReconnectable](https://ngx-workflow.vercel.app/docs/inputs/edgeReconnectable)
+- [optimization](https://ngx-workflow.vercel.app/docs/inputs/optimization)
 - [autoSave](https://ngx-workflow.vercel.app/docs/inputs/autoSave)
 - [autoSaveInterval](https://ngx-workflow.vercel.app/docs/inputs/autoSaveInterval)
 - [maxVersions](https://ngx-workflow.vercel.app/docs/inputs/maxVersions)

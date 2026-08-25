@@ -141,6 +141,7 @@ The main component for rendering the workflow.
 | `edges` | `Edge[]` | `[]` | Array of edges to display. |
 | `initialViewport` | `Viewport` | `undefined` | Initial viewport state `{ x, y, zoom }`. |
 | `showZoomControls` | `boolean` | `true` | Whether to show the zoom control buttons (bottom-left). |
+| `zoomControlsConfig` | `ZoomControlsConfig` | `undefined` | Custom slots, positions (bottom-left, top-right, etc.), actions, and icons for zoom controls. |
 | `minZoom` | `number` | `0.1` | Minimum zoom level. |
 | `maxZoom` | `number` | `4` | Maximum zoom level. |
 | `showMinimap` | `boolean` | `true` | Whether to show the minimap (bottom-right). |
@@ -164,6 +165,7 @@ The main component for rendering the workflow.
 | `preventNodeOverlap` | `boolean` | `false` | Enable collision detection to prevent partial overlaps. |
 | `nodeSpacing` | `number` | `10` | Minimum spacing between nodes when `preventNodeOverlap` is true. |
 | `edgeReconnectable` | `boolean` | `false` | Allow dragging edge endpoints to reconnect them. |
+| `optimization` | `FlowOptimization` | `{ ... }` | Performance tuning (spatial index culling, `hideEdgesBelowZoom`, adaptive buffer). |
 | `autoSave` | `boolean` | `false` | Enable auto-saving of diagram state to localStorage. |
 | `autoSaveInterval` | `number` | `1000` | throttled auto-save interval in ms. |
 | `autoPanOnNodeDrag` | `boolean` | `true` | Pan canvas automatically when dragging node near edge. |
@@ -208,7 +210,7 @@ You can access these methods via `@ViewChild(DiagramComponent)`:
 
 | Method | Return | Description |
 |--------|--------|-------------|
-| `fitView()` | `void` | Fits all nodes within the viewport. |
+| `fitView(options?)` | `void` | Fits all nodes in viewport. Options: `{ zoom?: number, align?: 'center' \| 'top-center', paddingTop?: number }`. |
 | `zoomIn()` | `void` | Increases zoom level by 20%. |
 | `zoomOut()` | `void` | Decreases zoom level by 20%. |
 | `resetZoom()` | `void` | Resets zoom to 100%. |

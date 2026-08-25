@@ -213,6 +213,26 @@ export const INPUT_DOCS: InputDoc[] = [
     category: 'Controls'
   },
   {
+    name: 'zoomControlsConfig',
+    type: 'ZoomControlsConfig | undefined',
+    default: 'undefined',
+    description:
+      'Customize zoom controls toolbar position (e.g. bottom-left, top-right), visible slots, custom action buttons, icons, or separators.',
+    category: 'Controls',
+    example: `<ngx-workflow-diagram
+  [zoomControlsConfig]="{
+    position: 'bottom-left',
+    items: [
+      { id: 'zoomIn', type: 'action', action: 'zoomIn', icon: 'plus', title: 'Zoom In' },
+      { id: 'zoomPercent', type: 'view', view: 'zoomPercent' },
+      { id: 'zoomOut', type: 'action', action: 'zoomOut', icon: 'minus', title: 'Zoom Out' },
+      { id: 'separator', type: 'separator' },
+      { id: 'fitView', type: 'action', action: 'fitView', icon: 'fit', title: 'Fit View' }
+    ]
+  }"
+/>`
+  },
+  {
     name: 'showMinimap',
     type: 'boolean',
     default: 'true',
@@ -338,6 +358,22 @@ nodes = [{
     default: 'false',
     description: 'Allow dragging edge endpoints to reconnect them to other ports.',
     category: 'Behavior'
+  },
+  {
+    name: 'optimization',
+    type: 'FlowOptimization',
+    default: '{ virtualization: true, adaptiveBuffer: true, hideEdgesBelowZoom: 0.4 }',
+    description:
+      'Performance tuning options for large diagrams (spatial culling, adaptive zoom buffer, edge virtualization, and hideEdgesBelowZoom threshold).',
+    category: 'Behavior',
+    example: `<ngx-workflow-diagram
+  [optimization]="{
+    virtualization: true,
+    adaptiveBuffer: true,
+    hideEdgesBelowZoom: 0.4,
+    edgeVirtualization: 'any-endpoint'
+  }"
+/>`
   },
 
   // --- Persistence ---
