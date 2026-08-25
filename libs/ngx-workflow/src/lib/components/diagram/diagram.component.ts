@@ -3513,7 +3513,13 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
     });
   }
 
-  fitView(options?: { zoom?: number }): void {
+  fitView(options?: {
+    zoom?: number;
+    /** `center` (default) frames the full graph; `top-center` pins the first/top node. */
+    align?: 'center' | 'top-center';
+    /** Top inset in screen px when `align` is `top-center` (default ~8% of height). */
+    paddingTop?: number;
+  }): void {
     // Prefer live service state — input can lag one tick behind mount
     const nodes = this.diagramStateService.nodes();
     if (nodes.length === 0) return;
@@ -3555,6 +3561,27 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
       options?.zoom != null
         ? Math.min(Math.max(options.zoom, minZ), this.maxZoom() || 4)
         : fittedZoom;
+
+    if (options?.align === 'top-center') {
+      // Topmost node (leftmost on ties) — treat as the graph "first" / root after layout.
+      const layerTol = 24;
+      let first = nodes[0];
+      for (const node of nodes) {
+        const dy = node.position.y - first.position.y;
+        if (dy < -layerTol || (Math.abs(dy) <= layerTol && node.position.x < first.position.x)) {
+          first = node;
+        }
+      }
+      const firstW = first.width || this.defaultNodeWidth;
+      const anchorX = first.position.x + firstW / 2;
+      const anchorY = first.position.y;
+      const topPad =
+        options.paddingTop ?? Math.min(56, Math.max(24, svgRect.height * 0.08));
+      const x = svgRect.width / 2 - anchorX * zoom;
+      const y = topPad - anchorY * zoom;
+      this.diagramStateService.setViewport({ x, y, zoom });
+      return;
+    }
 
     // Calculate center position
     const x = (svgRect.width - boundsWidth * zoom) / 2 - minX * zoom;
