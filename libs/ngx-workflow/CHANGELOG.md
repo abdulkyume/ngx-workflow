@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.2] - 2026-08-31
+
+### Added
+- **`edge.data.centerAnchors`**: When `true`, parallel edges between the same node pair keep a **single shared anchor** at `sourceHandle` / `targetHandle` instead of spreading along the node border. Also applies automatically for **`bottom` → `top`** handle pairs (typical top-down state graphs).
+- **`shouldRenderDefaultHandles()`**: Custom node types with `ports > 0` now render the built-in SVG port handles (top/bottom/left/right) so edge attachment matches default nodes.
+
+### Fixed
+- Custom node components (`nodeTypes` registry) with `ports: 2` no longer miss top/bottom handle anchors used by edge routing.
+
+### Notes
+- Peer dependencies remain `@angular/core|common|forms` **`>=17.1.0 <23.0.0`**. For strict template checking, use the same Angular major version as this workspace when linking locally (`file:` / `npm link`).
+
 ## [0.6.1] - 2026-08-23
 
 ### Added

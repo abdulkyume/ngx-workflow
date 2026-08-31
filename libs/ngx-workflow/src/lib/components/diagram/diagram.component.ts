@@ -1382,6 +1382,20 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
     return !!(types && types[node.type]);
   }
 
+  /** Render SVG port handles when the node declares `ports` (including custom node types). */
+  shouldRenderDefaultHandles(node: WorkflowNode): boolean {
+    if (node.type === 'group') {
+      return false;
+    }
+    if (node.ports === 0) {
+      return false;
+    }
+    if (node.ports != null) {
+      return node.ports > 0;
+    }
+    return !this.isCustomNode(node);
+  }
+
   isHtmlTemplateNode(node: WorkflowNode): boolean {
     return node.type === 'html-template' && !!this.nodeHtmlTemplate;
   }
@@ -3118,7 +3132,18 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
 
       const sourceNodeForSpread = getNode(edge.source, this.getLiveNodes());
       const targetNodeForSpread = getNode(edge.target, this.getLiveNodes());
-      if (parallelCount > 1 && edgeIndex !== -1 && sourceNodeForSpread && targetNodeForSpread) {
+      const sourceHandleSide = normalizeHandle(edge.sourceHandle) ?? 'bottom';
+      const targetHandleSide = normalizeHandle(edge.targetHandle) ?? 'top';
+      const lockCenterAnchors =
+        edge.data?.centerAnchors === true ||
+        (sourceHandleSide === 'bottom' && targetHandleSide === 'top');
+      if (
+        parallelCount > 1 &&
+        edgeIndex !== -1 &&
+        sourceNodeForSpread &&
+        targetNodeForSpread &&
+        !lockCenterAnchors
+      ) {
         const alongX =
           (normalizeHandle(edge.sourceHandle) ?? 'bottom') === 'top' ||
           (normalizeHandle(edge.sourceHandle) ?? 'bottom') === 'bottom';

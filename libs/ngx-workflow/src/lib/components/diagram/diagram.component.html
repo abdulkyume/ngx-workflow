@@ -294,7 +294,7 @@
             Usually custom nodes implement their own handles.
             Let's allow default handles to show only if NOT custom node for now to start clean.
             -->
-            @if (!isCustomNode(node)) {
+            @if (shouldRenderDefaultHandles(node)) {
               <ng-container>
                 <!-- Top Handle (ports: 1, 2, 4; undefined defaults to 4; 0 = none) -->
                 @if ((node.ports ?? 4) === 1 || (node.ports ?? 4) === 2 || (node.ports ?? 4) === 4) {

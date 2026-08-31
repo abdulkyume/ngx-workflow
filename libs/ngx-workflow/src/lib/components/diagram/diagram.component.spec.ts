@@ -166,6 +166,56 @@ describe('DiagramComponent Complete 100% Coverage Suite', () => {
     expect(component.getEdgePath(smoothStepEdge)).toBeDefined();
   });
 
+  it('should keep center anchors for parallel bottom→top edges when centerAnchors is set', () => {
+    diagramState.nodes.set([
+      { id: 'a', type: 'default', position: { x: 0, y: 0 }, width: 100, height: 50 },
+      { id: 'b', type: 'default', position: { x: 0, y: 220 }, width: 100, height: 50 },
+    ]);
+    diagramState.edges.set([
+      {
+        id: 'p1',
+        source: 'a',
+        target: 'b',
+        sourceHandle: 'bottom',
+        targetHandle: 'top',
+        type: 'bezier',
+        data: { centerAnchors: true },
+      },
+      {
+        id: 'p2',
+        source: 'a',
+        target: 'b',
+        sourceHandle: 'bottom',
+        targetHandle: 'top',
+        type: 'bezier',
+        data: { centerAnchors: true },
+      },
+    ]);
+    fixture.detectChanges();
+
+    const path1 = component.getEdgePath(diagramState.edges()[0]);
+    const path2 = component.getEdgePath(diagramState.edges()[1]);
+    const start1 = path1.match(/^M ([\d.-]+),([\d.-]+)/);
+    const start2 = path2.match(/^M ([\d.-]+),([\d.-]+)/);
+    expect(start1).withContext(path1).not.toBeNull();
+    expect(start2).withContext(path2).not.toBeNull();
+    expect(start1![1]).toBe(start2![1]);
+    expect(start1![2]).toBe(start2![2]);
+  });
+
+  it('shouldRenderDefaultHandles renders ports on custom nodes when ports > 0', () => {
+    const customType = class CustomNodeComponent {};
+    fixture.componentRef.setInput('nodeTypes', { 'custom-card': customType as never });
+    const withPorts = {
+      id: 'c',
+      type: 'custom-card',
+      position: { x: 0, y: 0 },
+      ports: 2,
+    } satisfies Node;
+    expect(component.shouldRenderDefaultHandles(withPorts)).toBeTrue();
+    expect(component.shouldRenderDefaultHandles({ ...withPorts, ports: 0 })).toBeFalse();
+  });
+
   it('should handle keyboard shortcut listeners', () => {
     diagramState.selectNodes(['n1']);
 
