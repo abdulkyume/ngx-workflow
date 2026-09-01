@@ -923,10 +923,12 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
 
   /** Effective stroke used by the path and matching marker fills. */
   getEdgeStrokeColor(edge: Edge): string {
+    if (edge.style?.['stroke']) {
+      return String(edge.style['stroke']);
+    }
     if (edge.selected) {
       return 'var(--ngx-workflow-primary, #4640de)';
     }
-    if (edge.style?.['stroke']) return String(edge.style['stroke']);
     return 'var(--ngx-workflow-edge-stroke, #94a3b8)';
   }
 
