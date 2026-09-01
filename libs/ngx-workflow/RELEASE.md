@@ -9,7 +9,7 @@
 | Double-click → detail panel (no center) | deferred selection in canvas | — |
 | Bezier edges (not smoothstep) | mapper + `routeAtmEdges` | — |
 | Outgoing: bottom-center, incoming: top-center | `sourceHandle` / `targetHandle` | handle positions |
-| Single anchor for multiple parallel edges | `data.centerAnchors: true` | `lockCenterAnchors` in `resolveEdgeEndpoints` |
+| Single anchor for multiple parallel edges | — (removed `centerAnchors` from mapper) | `centerAnchors: true` opt-in only |
 | Custom node ports (top/bottom) | `ports: 2` on nodes | `shouldRenderDefaultHandles()` |
 
 ## Version bump

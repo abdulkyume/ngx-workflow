@@ -3125,46 +3125,61 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
 
     if (!isTemporary && 'source' in edge && 'target' in edge && 'id' in edge) {
       const allEdges = this.diagramStateService.edges();
-      // Directed parallels: same lateral slot on BOTH ends, no extra curve offset (avoids braiding).
-      const parallelEdges = allEdges
-        .filter((e) => e.source === edge.source && e.target === edge.target)
-        .sort((a, b) => a.id.localeCompare(b.id));
-      const edgeIndex = parallelEdges.findIndex((e) => e.id === edge.id);
-      const parallelCount = parallelEdges.length;
-
       const sourceNodeForSpread = getNode(edge.source, this.getLiveNodes());
       const targetNodeForSpread = getNode(edge.target, this.getLiveNodes());
-      const sourceHandleSide = normalizeHandle(edge.sourceHandle) ?? 'bottom';
-      const targetHandleSide = normalizeHandle(edge.targetHandle) ?? 'top';
-      const lockCenterAnchors =
-        edge.data?.centerAnchors === true ||
-        (sourceHandleSide === 'bottom' && targetHandleSide === 'top');
-      if (
-        parallelCount > 1 &&
-        edgeIndex !== -1 &&
-        sourceNodeForSpread &&
-        targetNodeForSpread &&
-        !lockCenterAnchors
-      ) {
-        const alongX =
-          (normalizeHandle(edge.sourceHandle) ?? 'bottom') === 'top' ||
-          (normalizeHandle(edge.sourceHandle) ?? 'bottom') === 'bottom';
-        const srcSize = alongX
-          ? sourceNodeForSpread.width || this.defaultNodeWidth
-          : sourceNodeForSpread.height || this.defaultNodeHeight;
-        const tgtSize = alongX
-          ? targetNodeForSpread.width || this.defaultNodeWidth
-          : targetNodeForSpread.height || this.defaultNodeHeight;
-        // Spread across nearly the full node width so parallel strokes stay distinct.
-        const usable = Math.max(0, Math.min(srcSize, tgtSize) - 24);
-        const gap = parallelCount > 1 ? usable / (parallelCount - 1) : 0;
-        const slot = (edgeIndex - (parallelCount - 1) / 2) * gap;
-        sourcePosResolved = alongX
-          ? { x: sourcePos.x + slot, y: sourcePos.y }
-          : { x: sourcePos.x, y: sourcePos.y + slot };
-        targetPosResolved = alongX
-          ? { x: targetPos.x + slot, y: targetPos.y }
-          : { x: targetPos.x, y: targetPos.y + slot };
+      const lockCenterAnchors = edge.data?.centerAnchors === true;
+
+      if (!lockCenterAnchors) {
+        if (sourceNodeForSpread) {
+          sourcePosResolved = this.spreadHandleAlongEdge(
+            edge,
+            'source',
+            sourcePos,
+            sourceNodeForSpread,
+            allEdges
+          );
+        }
+        if (targetNodeForSpread) {
+          targetPosResolved = this.spreadHandleAlongEdge(
+            edge,
+            'target',
+            targetPos,
+            targetNodeForSpread,
+            allEdges
+          );
+        }
+
+        const parallelEdges = allEdges
+          .filter((e) => e.source === edge.source && e.target === edge.target)
+          .sort((a, b) => a.id.localeCompare(b.id));
+        const edgeIndex = parallelEdges.findIndex((e) => e.id === edge.id);
+        const parallelCount = parallelEdges.length;
+
+        if (
+          parallelCount > 1 &&
+          edgeIndex !== -1 &&
+          sourceNodeForSpread &&
+          targetNodeForSpread
+        ) {
+          const alongX =
+            (normalizeHandle(edge.sourceHandle) ?? 'bottom') === 'top' ||
+            (normalizeHandle(edge.sourceHandle) ?? 'bottom') === 'bottom';
+          const srcSize = alongX
+            ? sourceNodeForSpread.width || this.defaultNodeWidth
+            : sourceNodeForSpread.height || this.defaultNodeHeight;
+          const tgtSize = alongX
+            ? targetNodeForSpread.width || this.defaultNodeWidth
+            : targetNodeForSpread.height || this.defaultNodeHeight;
+          const usable = Math.max(0, Math.min(srcSize, tgtSize) - 24);
+          const gap = parallelCount > 1 ? usable / (parallelCount - 1) : 0;
+          const slot = (edgeIndex - (parallelCount - 1) / 2) * gap;
+          sourcePosResolved = alongX
+            ? { x: sourcePosResolved.x + slot, y: sourcePosResolved.y }
+            : { x: sourcePosResolved.x, y: sourcePosResolved.y + slot };
+          targetPosResolved = alongX
+            ? { x: targetPosResolved.x + slot, y: targetPosResolved.y }
+            : { x: targetPosResolved.x, y: targetPosResolved.y + slot };
+        }
       }
     }
 
