@@ -166,41 +166,7 @@ describe('DiagramComponent Complete 100% Coverage Suite', () => {
     expect(component.getEdgePath(smoothStepEdge)).toBeDefined();
   });
 
-  it('should spread parallel bottom→top edges by default', () => {
-    diagramState.nodes.set([
-      { id: 'a', type: 'default', position: { x: 0, y: 0 }, width: 100, height: 50 },
-      { id: 'b', type: 'default', position: { x: 0, y: 220 }, width: 100, height: 50 },
-    ]);
-    diagramState.edges.set([
-      {
-        id: 'p1',
-        source: 'a',
-        target: 'b',
-        sourceHandle: 'bottom',
-        targetHandle: 'top',
-        type: 'bezier',
-      },
-      {
-        id: 'p2',
-        source: 'a',
-        target: 'b',
-        sourceHandle: 'bottom',
-        targetHandle: 'top',
-        type: 'bezier',
-      },
-    ]);
-    fixture.detectChanges();
-
-    const path1 = component.getEdgePath(diagramState.edges()[0]);
-    const path2 = component.getEdgePath(diagramState.edges()[1]);
-    const start1 = path1.match(/^M ([\d.-]+),([\d.-]+)/);
-    const start2 = path2.match(/^M ([\d.-]+),([\d.-]+)/);
-    expect(start1).withContext(path1).not.toBeNull();
-    expect(start2).withContext(path2).not.toBeNull();
-    expect(start1![1]).not.toBe(start2![1]);
-  });
-
-  it('should keep center anchors for parallel edges only when centerAnchors is set', () => {
+  it('should keep center anchors for parallel bottom→top edges', () => {
     diagramState.nodes.set([
       { id: 'a', type: 'default', position: { x: 0, y: 0 }, width: 100, height: 50 },
       { id: 'b', type: 'default', position: { x: 0, y: 220 }, width: 100, height: 50 },
@@ -235,6 +201,44 @@ describe('DiagramComponent Complete 100% Coverage Suite', () => {
     expect(start2).withContext(path2).not.toBeNull();
     expect(start1![1]).toBe(start2![1]);
     expect(start1![2]).toBe(start2![2]);
+    expect(path1).not.toBe(path2);
+  });
+
+  it('should spread attach points when centerAnchors is explicitly false', () => {
+    diagramState.nodes.set([
+      { id: 'a', type: 'default', position: { x: 0, y: 0 }, width: 100, height: 50 },
+      { id: 'b', type: 'default', position: { x: 0, y: 220 }, width: 100, height: 50 },
+      { id: 'c', type: 'default', position: { x: 120, y: 220 }, width: 100, height: 50 },
+    ]);
+    diagramState.edges.set([
+      {
+        id: 'p1',
+        source: 'a',
+        target: 'b',
+        sourceHandle: 'bottom',
+        targetHandle: 'top',
+        type: 'bezier',
+        data: { centerAnchors: false, anchorSpreadMax: 56 },
+      },
+      {
+        id: 'p2',
+        source: 'a',
+        target: 'c',
+        sourceHandle: 'bottom',
+        targetHandle: 'top',
+        type: 'bezier',
+        data: { centerAnchors: false, anchorSpreadMax: 56 },
+      },
+    ]);
+    fixture.detectChanges();
+
+    const path1 = component.getEdgePath(diagramState.edges()[0]);
+    const path2 = component.getEdgePath(diagramState.edges()[1]);
+    const start1 = path1.match(/^M ([\d.-]+),([\d.-]+)/);
+    const start2 = path2.match(/^M ([\d.-]+),([\d.-]+)/);
+    expect(start1).withContext(path1).not.toBeNull();
+    expect(start2).withContext(path2).not.toBeNull();
+    expect(start1![1]).not.toBe(start2![1]);
   });
 
   it('shouldRenderDefaultHandles renders ports on custom nodes when ports > 0', () => {

@@ -65,7 +65,7 @@ export interface Edge<T = any> {
   // Custom Waypoints / Control Points
   waypoints?: Array<{ x: number; y: number }>;
 
-  /** When `true`, parallel edges between the same node pair share one anchor point. */
+  /** Custom payload. `centerAnchors: true` pins parallel edges to one handle point; `false` spreads siblings along the handle (use `anchorSpreadMax` to cap width). */
   data?: T;
 }
 

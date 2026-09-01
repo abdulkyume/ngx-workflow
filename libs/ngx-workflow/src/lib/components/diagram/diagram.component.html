@@ -83,6 +83,7 @@
           [class.hidden]="edge.hidden" [class.shadow]="edge.shadow" class="ngx-workflow__edge"
           [class.ngx-workflow__edge--custom-stroke]="!!edge.style?.['stroke']"
           role="img" [attr.aria-label]="getEdgeAriaLabel(edge)"
+          (pointerdown)="onEdgePointerDown($event, edge)"
           (click)="onEdgeClick($event, edge)" (dblclick)="onEdgeDoubleClick($event, edge)"
           (mouseenter)="onEdgeMouseEnter($event, edge)" (mouseleave)="onEdgeMouseLeave($event, edge)">
           @if (isCustomEdge(edge)) {

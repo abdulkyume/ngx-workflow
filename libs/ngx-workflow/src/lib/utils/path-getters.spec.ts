@@ -20,6 +20,16 @@ describe('path-getters utility functions', () => {
       const path = getStraightPath(source, target);
       expect(path).toBe('M 0,0 L 100,100');
     });
+
+    it('should fan straight paths with center-anchored offsets', () => {
+      const path = getStraightPath(
+        { x: 50, y: 0 },
+        { x: 50, y: 100 },
+        { sourceOffset: 40, targetOffset: 40 },
+      );
+      expect(path).toContain('L 10,50');
+      expect(path).not.toBe('M 50,0 L 50,100');
+    });
   });
 
   describe('getArrowheadGeometry', () => {
@@ -82,6 +92,16 @@ describe('path-getters utility functions', () => {
         { sourcePosition: 'right', targetPosition: 'left' }
       );
       expect(path).toBe('M 0,50 L 50,50 L 50,50 L 100,50');
+    });
+
+    it('should fan sibling step paths with center-anchored offsets', () => {
+      const path = getStepPath(
+        { x: 50, y: 0 },
+        { x: 50, y: 100 },
+        { sourcePosition: 'bottom', targetPosition: 'top', sourceOffset: 40, targetOffset: 0 }
+      );
+      expect(path).toContain('10,28');
+      expect(path).not.toBe('M 50,0 L 50,50 L 50,50 L 50,100');
     });
   });
 

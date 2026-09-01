@@ -23,7 +23,7 @@ A powerful, highly customizable Angular library for building interactive node-ba
 - **Reactive Forms Integration**: Full `ControlValueAccessor` (`formControlName` / `[(ngModel)]`) support with built-in graph validators (`noCycles`, `noOrphanNodes`, `minNodes`)
 - **Customizable**: Fully custom node and edge templates
 - **Rich UI**: Built-in minimap, background patterns, controls, alignment, and equal distribution tools
-- **Parallel Edge Offsetting**: Automatic curvature spacing for multi-edges between identical node pairs (disable with `edge.data.centerAnchors: true` or `sourceHandle: 'bottom'` + `targetHandle: 'top'`)
+- **Parallel Edge Offsetting**: Sibling edges fan along shared handles; set `edge.data.centerAnchors: true` to pin attach points to the handle center and fan paths instead
 - **Layouts**: Automatic layout support via ELK (plus force, hierarchical, and circular helpers)
 - **History**: Robust Undo/Redo history stack with Ctrl+Z/Ctrl+Shift+Z
 - **Theming**: Explicit `colorMode` and CSS variables for easy styling with dark mode support

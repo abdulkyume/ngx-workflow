@@ -69,7 +69,7 @@ export interface FlowOptimization {
   edgeVirtualization?: EdgeVirtualizationMode;
   /**
    * Hide all edges (paths + labels) when viewport zoom is below this value.
-   * Default `0.4`. ATM dense graphs often use `~0.7`.
+   * Default `0.4`. Use higher values (e.g. `0.7`) to hide edges sooner when zoomed out on dense graphs.
    */
   hideEdgesBelowZoom?: number;
 }

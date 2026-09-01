@@ -226,7 +226,7 @@ foreignObject {
     stroke: var(--ngx-workflow-primary);
   }
 
-  &.selected .ngx-workflow__edge-path {
+  &.selected:not(.ngx-workflow__edge--custom-stroke) .ngx-workflow__edge-path {
     filter: drop-shadow(0 0 6px color-mix(in srgb, var(--ngx-workflow-primary, #2dd4bf) 45%, transparent));
   }
 

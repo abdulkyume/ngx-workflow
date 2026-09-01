@@ -1,33 +1,33 @@
 # Releasing ngx-workflow
 
-## Requirements checklist (KIP ATM states canvas)
-
-| Requirement | Portal | Library (`0.7.2+`) |
-|-------------|--------|---------------------|
-| List click → center node at 100% zoom | `atm-group-states-panel` | — |
-| Canvas click → scroll list only (no center) | `atm-group-states-panel` | — |
-| Double-click → detail panel (no center) | deferred selection in canvas | — |
-| Bezier edges (not smoothstep) | mapper + `routeAtmEdges` | — |
-| Outgoing: bottom-center, incoming: top-center | `sourceHandle` / `targetHandle` | handle positions |
-| Single anchor for multiple parallel edges | — (removed `centerAnchors` from mapper) | `centerAnchors: true` opt-in only |
-| Custom node ports (top/bottom) | `ports: 2` on nodes | `shouldRenderDefaultHandles()` |
-
 ## Version bump
 
 1. Update `libs/ngx-workflow/package.json` `version`.
 2. Add a section to `libs/ngx-workflow/CHANGELOG.md`.
 
-## Build & pack
+## Pre-publish checklist
 
 ```bash
 cd ngx-workflow
 npm install
+npm run lint
 npm run test:lib
 npm run build:lib
 npm run pack:lib
 ```
 
-`pack:lib` writes `ngx-workflow-<version>.tgz` in the repo root.
+Verify the tarball:
+
+```bash
+tar -tf ngx-workflow-<version>.tgz
+# Expect: package.json, CHANGELOG.md, fesm2022/, types/, README.md, LICENSE
+```
+
+Dry-run publish (no upload):
+
+```bash
+npm publish ./dist/ngx-workflow --access public --dry-run
+```
 
 ## Publish to npm
 
@@ -35,14 +35,27 @@ npm run pack:lib
 npm run publish:lib
 ```
 
-## Consume in KIP Platform Portal
+Requires npm login (`npm whoami`) and publish rights on the `ngx-workflow` package.
 
-Install from npm after publish (do **not** use `file:` / `npm link` unless Portal and ngx-workflow share the same Angular major version):
+## Local tarball (development)
 
 ```bash
-cd kip-platform-portal
-npm install ngx-workflow@^0.7.2
-npm start
+npm run pack:lib
+# → ngx-workflow-<version>.tgz in repo root
 ```
 
-Until Portal upgrades to Angular 22, stay on published `ngx-workflow@0.7.1` or publish `0.7.2` and verify template compatibility before bumping the Portal dependency.
+Install in a consumer app:
+
+```bash
+npm install /path/to/ngx-workflow/ngx-workflow-<version>.tgz
+```
+
+## Edge anchor modes (library API)
+
+| Goal | Edge configuration |
+|------|-------------------|
+| Spread siblings along the handle border | Default when `centerAnchors` is unset or `false`; optional `data.anchorSpreadMax` (px) |
+| Single attach point, fan paths | `data.centerAnchors: true` |
+| Custom handle sides | `sourceHandle` / `targetHandle`: `top` \| `bottom` \| `left` \| `right` |
+
+Integration-specific routing (presets, persistence, UI) belongs in the **consumer app**, not this package.

@@ -8,7 +8,7 @@ import { Subscription, Observable, combineLatest } from 'rxjs';
 import { debounceTime, skip } from 'rxjs/operators';
 import { NGX_WORKFLOW_NODE_TYPES, NGX_WORKFLOW_EDGE_TYPES } from '../../injection-tokens';
 import { NodeComponentType as WorkflowNodeComponentType, EdgeComponentType as WorkflowEdgeComponentType } from '../../types';
-import { getBezierPath, getBezierControlPoints, getStraightPath, getStepPath, getSmoothStepPath, getSelfLoopPath, getSmartEdgePath, getWaypointPath, PathFinder, getPolylineMidpoint, normalizeHandle, inferHandlePosition, HandlePosition, getArrowheadGeometry, ArrowheadGeometry, getCubicBezierPoint, getCubicBezierTangent } from '../../utils';
+import { getBezierPath, getBezierControlPoints, getStraightPath, getStraightPathBendPoint, getStepPath, getSmoothStepPath, getSelfLoopPath, getSmartEdgePath, getWaypointPath, PathFinder, getPolylineMidpoint, normalizeHandle, inferHandlePosition, HandlePosition, getArrowheadGeometry, ArrowheadGeometry, getCubicBezierPoint, getCubicBezierTangent } from '../../utils';
 import { v4 as uuidv4 } from 'uuid';
 import { ZoomControlsComponent } from '../zoom-controls/zoom-controls.component';
 import { ZoomControlsConfig } from '../zoom-controls/zoom-controls.model';
@@ -329,6 +329,12 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
   // Edge reconnection feature
   readonly edgeReconnectable = input<boolean>(false);
 
+  /** When true, pointer drag pans the canvas (Figma hand tool) instead of box-selecting. */
+  readonly panOnDrag = input<boolean>(false);
+
+  /** When false, suppresses the built-in right-click context menu. */
+  readonly contextMenuEnabled = input<boolean>(true);
+
   /** Resolved lazy-loaded node components keyed by type. */
   private readonly resolvedLazyNodeTypes = signal<Record<string, Type<any>>>({});
   private readonly lazyLoadInFlight = new Set<string>();
@@ -488,12 +494,16 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
   // --- Node Interaction Handlers ---
 
   onNodePointerDown(event: PointerEvent, node: WorkflowNode): void {
-    // Spacebar panning override
-    if (this.isSpacePressed) {
-      this.isSpacePanning = true;
-      this.panStartPosition = { x: event.clientX, y: event.clientY };
-      this.viewportStartPosition = { ...this.viewport() };
-      this.svgRef.nativeElement.style.cursor = 'grabbing';
+    // Hand tool / spacebar panning override
+    if (this.isSpacePressed || this.panOnDrag()) {
+      if (this.panOnDrag()) {
+        this.startPanning(event);
+      } else {
+        this.isSpacePanning = true;
+        this.panStartPosition = { x: event.clientX, y: event.clientY };
+        this.viewportStartPosition = { ...this.viewport() };
+        this.svgRef.nativeElement.style.cursor = 'grabbing';
+      }
       event.preventDefault();
       event.stopPropagation();
       return;
@@ -647,6 +657,11 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
 
   @HostListener('contextmenu', ['$event'])
   onContextMenu(event: MouseEvent): void {
+    if (!this.contextMenuEnabled()) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
     event.preventDefault();
     event.stopPropagation();
 
@@ -934,13 +949,13 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
 
   /** Custom width only; omit when unset so CSS selected/default widths apply. */
   getEdgeStrokeWidth(edge: Edge): number | null {
-    if (edge.selected) {
-      const raw = edge.style?.['strokeWidth'];
-      const base = raw != null && raw !== '' && Number.isFinite(Number(raw)) ? Number(raw) : 1.2;
-      return Math.max(base, 2.5);
-    }
     const raw = edge.style?.['strokeWidth'];
-    if (raw == null || raw === '') return null;
+    if (raw == null || raw === '') {
+      if (edge.selected && !edge.style?.['stroke']) {
+        return 2.5;
+      }
+      return null;
+    }
     const n = Number(raw);
     return Number.isFinite(n) ? n : null;
   }
@@ -1314,6 +1329,14 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
 
     effect(() => {
       this.diagramStateService.selectionMode = this.selectionMode();
+    });
+
+    effect(() => {
+      const svg = this.svgRef?.nativeElement;
+      if (!svg || this.isPanning || this.isSpacePanning) {
+        return;
+      }
+      svg.style.cursor = this.panOnDrag() ? 'grab' : '';
     });
 
     effect(() => {
@@ -1977,11 +2000,15 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
     if (event.button === 2) return;
 
     // If space is pressed, start panning
-    if (this.isSpacePressed) {
-      this.isSpacePanning = true;
-      this.panStartPosition = { x: event.clientX, y: event.clientY };
-      this.viewportStartPosition = { ...this.viewport() };
-      this.svgRef.nativeElement.style.cursor = 'grabbing';
+    if (this.isSpacePressed || this.panOnDrag()) {
+      if (this.panOnDrag()) {
+        this.startPanning(event);
+      } else {
+        this.isSpacePanning = true;
+        this.panStartPosition = { x: event.clientX, y: event.clientY };
+        this.viewportStartPosition = { ...this.viewport() };
+        this.svgRef.nativeElement.style.cursor = 'grabbing';
+      }
       event.preventDefault();
       return;
     }
@@ -2008,6 +2035,10 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
     }
 
     if (nodeElement) {
+      if (this.panOnDrag()) {
+        this.startPanning(event);
+        return;
+      }
       const nodeId = nodeElement.dataset['id'];
       const node = this.nodes().find(n => n.id === nodeId);
       if (node) {
@@ -2044,6 +2075,9 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
 
     // If clicking an edge, let the specific handlers handle it (don't pan)
     if (edgeElement) {
+      if (this.panOnDrag()) {
+        this.startPanning(event);
+      }
       return;
     }
 
@@ -3026,7 +3060,11 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
 
   private stopPanning(event: PointerEvent): void {
     this.isPanning = false;
-    this.renderer.setStyle(this.svgRef.nativeElement, 'cursor', 'grab');
+    this.renderer.setStyle(
+      this.svgRef.nativeElement,
+      'cursor',
+      this.panOnDrag() || this.isSpacePressed ? 'grab' : '',
+    );
     this.svgRef.nativeElement.releasePointerCapture(event.pointerId);
   }
 
@@ -3061,6 +3099,10 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
       return this.arrowheadFromSegment(prev, targetPos);
     }
     if (edge.type === 'straight' || edge.type === 'dashed') {
+      const bend = getStraightPathBendPoint(sourcePos, targetPos, bezierOpts);
+      if (bend) {
+        return this.arrowheadFromSegment(bend, targetPos);
+      }
       return this.arrowheadFromSegment(sourcePos, targetPos);
     }
     return getArrowheadGeometry(sourcePos, targetPos, bezierOpts);
@@ -3097,7 +3139,13 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
     targetPos: XYPosition;
     sourcePosition: HandlePosition;
     targetPosition: HandlePosition;
-    bezierOpts: { offset: number; sourcePosition: HandlePosition; targetPosition: HandlePosition };
+    bezierOpts: {
+      sourceOffset: number;
+      targetOffset: number;
+      sourcePosition: HandlePosition;
+      targetPosition: HandlePosition;
+      minControlStem?: number;
+    };
     isSelfLoop: boolean;
   } | null {
     const nodes = this.getLiveNodes();
@@ -3119,15 +3167,20 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
       isSelfLoop = sourceNode.id === targetNode.id;
     }
 
-    let curvatureOffset = 0;
     let sourcePosResolved = sourcePos;
     let targetPosResolved = targetPos;
+    let sourceOffset = 0;
+    let targetOffset = 0;
+    let spreadAnchors = false;
 
     if (!isTemporary && 'source' in edge && 'target' in edge && 'id' in edge) {
       const allEdges = this.diagramStateService.edges();
       const sourceNodeForSpread = getNode(edge.source, this.getLiveNodes());
       const targetNodeForSpread = getNode(edge.target, this.getLiveNodes());
+      const sourceHandleSide = normalizeHandle(edge.sourceHandle) ?? 'bottom';
+      const targetHandleSide = normalizeHandle(edge.targetHandle) ?? 'top';
       const lockCenterAnchors = edge.data?.centerAnchors === true;
+      const spreadAnchors = edge.data?.centerAnchors === false;
 
       if (!lockCenterAnchors) {
         if (sourceNodeForSpread) {
@@ -3156,14 +3209,13 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
         const parallelCount = parallelEdges.length;
 
         if (
+          !spreadAnchors &&
           parallelCount > 1 &&
           edgeIndex !== -1 &&
           sourceNodeForSpread &&
           targetNodeForSpread
         ) {
-          const alongX =
-            (normalizeHandle(edge.sourceHandle) ?? 'bottom') === 'top' ||
-            (normalizeHandle(edge.sourceHandle) ?? 'bottom') === 'bottom';
+          const alongX = sourceHandleSide === 'top' || sourceHandleSide === 'bottom';
           const srcSize = alongX
             ? sourceNodeForSpread.width || this.defaultNodeWidth
             : sourceNodeForSpread.height || this.defaultNodeHeight;
@@ -3180,6 +3232,15 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
             ? { x: targetPosResolved.x + slot, y: targetPosResolved.y }
             : { x: targetPosResolved.x, y: targetPosResolved.y + slot };
         }
+      } else {
+        const fan = this.centerAnchoredPathOffset(
+          edge,
+          allEdges,
+          sourceHandleSide,
+          targetHandleSide,
+        );
+        sourceOffset = fan.sourceOffset;
+        targetOffset = fan.targetOffset;
       }
     }
 
@@ -3197,11 +3258,61 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
       targetPosition,
       isSelfLoop,
       bezierOpts: {
-        offset: curvatureOffset,
+        sourceOffset,
+        targetOffset,
         sourcePosition,
         targetPosition,
+        minControlStem: spreadAnchors ? 8 : 36,
       },
     };
+  }
+
+  /**
+   * Separate stroke geometry for center-anchored edges without moving attach points.
+   */
+  private centerAnchoredPathOffset(
+    edge: Edge,
+    allEdges: Edge[],
+    sourceHandleSide: HandlePosition,
+    targetHandleSide: HandlePosition,
+  ): { sourceOffset: number; targetOffset: number } {
+    const gap = 40;
+    const outgoingSiblings = allEdges
+      .filter(
+        (e) =>
+          e.source === edge.source &&
+          (normalizeHandle(e.sourceHandle) ?? 'bottom') === sourceHandleSide,
+      )
+      .sort((a, b) => a.id.localeCompare(b.id));
+    const incomingSiblings = allEdges
+      .filter(
+        (e) =>
+          e.target === edge.target &&
+          (normalizeHandle(e.targetHandle) ?? 'top') === targetHandleSide,
+      )
+      .sort((a, b) => a.id.localeCompare(b.id));
+    const duplicateEdges = allEdges
+      .filter((e) => e.source === edge.source && e.target === edge.target)
+      .sort((a, b) => a.id.localeCompare(b.id));
+
+    const outIndex = outgoingSiblings.findIndex((e) => e.id === edge.id);
+    const inIndex = incomingSiblings.findIndex((e) => e.id === edge.id);
+    const dupIndex = duplicateEdges.findIndex((e) => e.id === edge.id);
+
+    if (duplicateEdges.length > 1 && dupIndex !== -1) {
+      const offset = (dupIndex - (duplicateEdges.length - 1) / 2) * gap;
+      return { sourceOffset: offset, targetOffset: offset };
+    }
+
+    let sourceOffset = 0;
+    let targetOffset = 0;
+    if (outgoingSiblings.length > 1 && outIndex !== -1) {
+      sourceOffset = (outIndex - (outgoingSiblings.length - 1) / 2) * gap;
+    }
+    if (incomingSiblings.length > 1 && inIndex !== -1) {
+      targetOffset = (inIndex - (incomingSiblings.length - 1) / 2) * gap;
+    }
+    return { sourceOffset, targetOffset };
   }
 
   /**
@@ -3216,12 +3327,14 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
     allEdges: Edge[]
   ): XYPosition {
     const handleId = end === 'source' ? edge.sourceHandle : edge.targetHandle;
-    const siblings = allEdges.filter((e) => {
-      if (end === 'source') {
-        return e.source === edge.source && (e.sourceHandle || '') === (handleId || '');
-      }
-      return e.target === edge.target && (e.targetHandle || '') === (handleId || '');
-    });
+    const siblings = allEdges
+      .filter((e) => {
+        if (end === 'source') {
+          return e.source === edge.source && (e.sourceHandle || '') === (handleId || '');
+        }
+        return e.target === edge.target && (e.targetHandle || '') === (handleId || '');
+      })
+      .sort((a, b) => a.id.localeCompare(b.id));
     if (siblings.length <= 1) {
       return base;
     }
@@ -3235,7 +3348,18 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
     const alongX = handle === 'top' || handle === 'bottom';
     const size = alongX ? node.width || this.defaultNodeWidth : node.height || this.defaultNodeHeight;
     const usable = Math.max(0, size - 24);
-    const gap = siblings.length > 1 ? Math.min(18, usable / Math.max(1, siblings.length - 1)) : 0;
+    const anchorSpreadMax = edge.data?.anchorSpreadMax;
+    const useTightSpread =
+      typeof anchorSpreadMax === 'number' && anchorSpreadMax > 0;
+    const maxSpread = useTightSpread
+      ? Math.min(anchorSpreadMax, usable)
+      : usable;
+    const gap =
+      siblings.length > 1
+        ? useTightSpread
+          ? maxSpread / (siblings.length - 1)
+          : Math.min(18, maxSpread / Math.max(1, siblings.length - 1))
+        : 0;
     const offset = (index - (siblings.length - 1) / 2) * gap;
 
     return alongX ? { x: base.x + offset, y: base.y } : { x: base.x, y: base.y + offset };
@@ -3301,13 +3425,29 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
         return getBezierPath(sourcePos, targetPos, bezierOpts);
       }
       case 'step':
-        return getStepPath(sourcePos, targetPos, { sourcePosition, targetPosition });
+        return getStepPath(sourcePos, targetPos, {
+          sourcePosition,
+          targetPosition,
+          sourceOffset: bezierOpts.sourceOffset,
+          targetOffset: bezierOpts.targetOffset,
+        });
       case 'smoothstep':
-        return getSmoothStepPath(sourcePos, targetPos, { sourcePosition, targetPosition });
+        return getSmoothStepPath(sourcePos, targetPos, {
+          sourcePosition,
+          targetPosition,
+          sourceOffset: bezierOpts.sourceOffset,
+          targetOffset: bezierOpts.targetOffset,
+        });
       case 'straight':
-        return getStraightPath(sourcePos, arrow?.pathEnd ?? targetPos);
+        return getStraightPath(sourcePos, arrow?.pathEnd ?? targetPos, {
+          sourceOffset: bezierOpts.sourceOffset,
+          targetOffset: bezierOpts.targetOffset,
+        });
       case 'dashed':
-        return getStraightPath(sourcePos, arrow?.pathEnd ?? targetPos);
+        return getStraightPath(sourcePos, arrow?.pathEnd ?? targetPos, {
+          sourceOffset: bezierOpts.sourceOffset,
+          targetOffset: bezierOpts.targetOffset,
+        });
       // Custom edge component/template types still need a geometry path for labels/hit-testing
       default:
         return getBezierPath(sourcePos, targetPos, bezierOpts);
@@ -3498,7 +3638,19 @@ export class DiagramComponent implements OnInit, OnDestroy, ControlValueAccessor
     return !!(label.text || label.type === 'html-template' || label.data);
   }
 
+  onEdgePointerDown(event: PointerEvent, edge: Edge): void {
+    if (!this.panOnDrag()) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    this.startPanning(event);
+  }
+
   onEdgeClick(event: MouseEvent, edge: Edge): void {
+    if (this.panOnDrag()) {
+      return;
+    }
     event.stopPropagation();
     event.preventDefault();
 

@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.4] - 2026-09-01
+
+### Added
+- **`[panOnDrag]`** on `ngx-workflow-diagram`: hand-tool mode — pointer drag pans the canvas instead of box-selecting or dragging nodes.
+- **`[contextMenuEnabled]`** on `ngx-workflow-diagram`: disable the built-in right-click context menu when `false`.
+- **`edge.data.centerAnchors`**: when `true`, parallel edges share one attach point per handle and paths fan out (`sourceOffset` / `targetOffset` on bezier, step, smoothstep, straight, dashed).
+- **`edge.data.anchorSpreadMax`**: cap sibling spread width (px) when `centerAnchors: false`.
+- **`getStraightPathBendPoint()`** exported from path utilities for center-anchored straight/dashed edge fanning.
+- **`BezierPathOptions.minControlStem`**: shorter bezier stems for spread-anchor edges.
+
+### Changed
+- **`centerAnchors` is opt-in only** — parallel edges spread along handles by default unless `edge.data.centerAnchors: true`.
+
+### Fixed
+- Center-anchored bezier edges fan with asymmetric control points so curves do not overlap.
+- Center-anchored edges fan by outgoing/incoming sibling index while attach points stay centered when `centerAnchors: true`.
+- Spread-anchor mode no longer applies duplicate parallel-edge slot offsets.
+- Arrowheads align to handle normals so tips stay flush on attach points.
+- Selected edges with custom `style.stroke` no longer get an automatic stroke-width bump.
+- Consumer-agnostic docs and release notes (no app-specific integration in the package).
+
 ## [0.7.3] - 2026-09-01
 
 ### Fixed
