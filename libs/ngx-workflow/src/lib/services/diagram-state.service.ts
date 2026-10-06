@@ -222,9 +222,10 @@ export class DiagramStateService {
 
   readonly visibleEdges = computed(() => {
     const edges = this.edges();
+    const mode = this.edgeVirtualizationMode();
+    if (mode === 'off') return edges;
     const visibleNodes = this.visibleNodes();
     const visibleNodeIds = new Set(visibleNodes.map((n) => n.id));
-    const mode = this.edgeVirtualizationMode();
 
     return edges.filter((edge) => {
       const src = visibleNodeIds.has(edge.source);

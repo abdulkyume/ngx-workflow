@@ -37,7 +37,7 @@ export interface EdgeChange {
 export type ConnectionMode = 'strict' | 'loose';
 export type SelectionMode = 'partial' | 'full';
 
-export type EdgeVirtualizationMode = 'any-endpoint' | 'both-endpoints';
+export type EdgeVirtualizationMode = 'any-endpoint' | 'both-endpoints' | 'off';
 
 export interface FlowOptimization {
   /** When true, group backgrounds render in a detached bottom layer (default behavior). */
@@ -65,6 +65,7 @@ export interface FlowOptimization {
   /**
    * `any-endpoint` (default): keep an edge if source or target is visible.
    * `both-endpoints`: require both ends visible (stricter for huge graphs).
+   * `off`: never cull edges; only nodes are virtualized (long edges stay visible while panning).
    */
   edgeVirtualization?: EdgeVirtualizationMode;
   /**
